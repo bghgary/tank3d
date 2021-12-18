@@ -1,39 +1,49 @@
-import * as BABYLON from "@babylonjs/core";
-import "@babylonjs/loaders";
+import "@babylonjs/inspector";
+import { Color3, Engine, Mesh, MeshBuilder, Scene, StandardMaterial } from "@babylonjs/core";
+import { GridMaterial } from "@babylonjs/materials";
 
 class Playground {
-    public static CreateScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): BABYLON.Scene {
-        // This creates a basic Babylon Scene object (non-mesh)
-        var scene = new BABYLON.Scene(engine);
+    private static _createTank(scene: Scene, barrelDiameter: number, barrelLength: number): Mesh {
+        const body = MeshBuilder.CreateSphere("tankBody", { diameter: 1 }, scene);
+        const bodyMaterial = new StandardMaterial("tankBody", scene);
+        bodyMaterial.diffuseColor = new Color3(0.3, 0.7, 1);
+        body.material = bodyMaterial;
+        const barrel = MeshBuilder.CreateCylinder("tankBarrel", { diameter: barrelDiameter, height: barrelLength }, scene);
+        barrel.rotation.x = Math.PI * 0.5;
+        barrel.position.z = barrelLength * 0.5;
+        const barrelMaterial = new StandardMaterial("tankBarrel", scene);
+        barrelMaterial.diffuseColor = new Color3(0.5, 0.5, 0.5);
+        barrel.material = barrelMaterial;
+        const tank = Mesh.MergeMeshes([body, barrel], true, undefined, undefined, undefined, true)!;
+        tank.name = "tank";
+        tank.material!.name = "tank";
+        return tank;
+    }
 
-        // This creates and positions a free camera (non-mesh)
-        var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+    private static _createGround(scene: Scene): Mesh {
+        const ground = MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, scene);
+        const groundMaterial = new GridMaterial("ground", scene);
+        ground.material = groundMaterial;
+        return ground;
+    }
 
-        // This targets the camera to scene origin
-        camera.setTarget(BABYLON.Vector3.Zero());
+    public static CreateScene(engine: Engine, canvas: HTMLCanvasElement): Scene {
+        const scene = new Scene(engine);
 
-        // This attaches the camera to the canvas
-        camera.attachControl(canvas, true);
+        const tank = this._createTank(scene, 0.45, 0.75);
+        tank.position.y += 0.6;
 
-        // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
-        var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+        this._createGround(scene);
 
-        // Default intensity is 1. Let's dim the light a small amount
-        light.intensity = 0.7;
+        scene.createDefaultCamera(true, undefined, true);
+        scene.createDefaultLight();
 
-        // Our built-in 'sphere' shape. Params: name, subdivs, size, scene
-        var sphere = BABYLON.Mesh.CreateSphere("sphere1", 16, 2, scene);
-
-        // Move the sphere upward 1/2 its height
-        sphere.position.y = 1;
-
-        // Our built-in 'ground' shape. Params: name, width, depth, subdivs, scene
-        var ground = BABYLON.Mesh.CreateGround("ground1", 6, 6, 2, scene);
+        scene.debugLayer.show();
 
         return scene;
     }
 }
 
-export function CreatePlaygroundScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement): BABYLON.Scene {
+export function CreatePlaygroundScene(engine: Engine, canvas: HTMLCanvasElement): Scene {
     return Playground.CreateScene(engine, canvas);
 }
