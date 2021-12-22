@@ -1,4 +1,4 @@
-import { MeshBuilder, StandardMaterial, Color3, Mesh, Scene } from "@babylonjs/core";
+import { MeshBuilder, StandardMaterial, Color3, Mesh, Scene, Vector3 } from "@babylonjs/core";
 
 export interface TankOptions {
     barrelDiameter: number;
@@ -31,5 +31,14 @@ export class Tank {
         this._mesh = Mesh.MergeMeshes([body, barrel], true, undefined, undefined, undefined, true)!;
         this._mesh.name = name;
         this._mesh.material!.name = name;
+        this._mesh.isPickable = false;
+    }
+
+    public get position(): Vector3 {
+        return this._mesh.position;
+    }
+
+    public lookAt(targetPoint: Vector3): void {
+        this._mesh.lookAt(targetPoint);
     }
 }
