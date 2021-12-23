@@ -1,4 +1,4 @@
-import { Engine, MeshBuilder, Scene } from "@babylonjs/core";
+import { Engine, KeyboardEventTypes, MeshBuilder, Scene } from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials";
 import { Player } from "./player";
 
@@ -16,7 +16,15 @@ export class World {
 
         this._scene.createDefaultLight();
 
-        this._scene.debugLayer.show();
+        this._scene.onKeyboardObservable.add((data) => {
+            if (data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey && data.event.code === "KeyI") {
+                if (this._scene.debugLayer.isVisible()) {
+                    this._scene.debugLayer.hide();
+                } else {
+                    this._scene.debugLayer.show();
+                }
+            }
+        });
 
         engine.runRenderLoop(() => {
             this._scene.render();
