@@ -50,20 +50,10 @@ export class Tank {
         return this._mesh.position;
     }
 
-    public moveUp(): void {
-        this._mesh.position.z += this._properties.moveSpeed * this._scene.getAnimationRatio();
-    }
-
-    public moveDown(): void {
-        this._mesh.position.z -= this._properties.moveSpeed * this._scene.getAnimationRatio();
-    }
-
-    public moveLeft(): void {
-        this._mesh.position.x -= this._properties.moveSpeed * this._scene.getAnimationRatio();
-    }
-
-    public moveRight(): void {
-        this._mesh.position.x += this._properties.moveSpeed * this._scene.getAnimationRatio();
+    public move(x: number, y: number, z: number): void {
+        this._mesh.position.x += x * this._properties.moveSpeed * this._scene.getAnimationRatio();
+        this._mesh.position.y += y * this._properties.moveSpeed * this._scene.getAnimationRatio();
+        this._mesh.position.z += z * this._properties.moveSpeed * this._scene.getAnimationRatio();
     }
 
     public lookAt(targetPoint: Vector3): void {

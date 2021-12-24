@@ -1,7 +1,7 @@
 import { MeshBuilder, SolidParticle, Scene, SolidParticleSystem, TmpVectors, Vector3, Color4 } from "@babylonjs/core";
 
-const MAX_DISTANCE = 200;
-const MAX_BULLETS = 500;
+const MAX_DURATION = 3000;
+const MAX_COUNT = 1000;
 
 interface BulletParticle extends SolidParticle {
     endTime: number;
@@ -15,7 +15,7 @@ export class Bullets {
     constructor(scene: Scene) {
         this._sps = new SolidParticleSystem("bullets", scene);
         const bullet = MeshBuilder.CreateSphere("bullet", {}, scene);
-        this._sps.addShape(bullet, MAX_BULLETS);
+        this._sps.addShape(bullet, MAX_COUNT);
         bullet.dispose();
 
         this._sps.buildMesh();
@@ -66,7 +66,7 @@ export class Bullets {
 
     public add(position: Vector3, direction: Vector3, speed: number, offset: number, size: number): void {
         const bullet = this._sps.particles[(this._start + this._count) % this._sps.nbParticles] as BulletParticle;
-        bullet.endTime = Date.now() + MAX_DISTANCE / speed;
+        bullet.endTime = Date.now() + MAX_DURATION;
         bullet.isVisible = true;
         bullet.position.set(
             position.x + direction.x * offset,

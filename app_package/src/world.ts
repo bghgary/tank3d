@@ -34,10 +34,16 @@ export class World {
     }
 
     private _createGround(): void {
+        // Create the ground that is visible.
         const ground = MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, this._scene);
+        ground.position.y = -0.5;
         const material = new GridMaterial("ground", this._scene);
         // TODO: grid settings
         ground.material = material;
-        ground.isPickable = true;
+        ground.isPickable = false;
+
+        // Create imposter for picking.
+        const imposter = MeshBuilder.CreateGround("imposter", { width: 100, height: 100 }, this._scene);
+        imposter.visibility = 0;
     }
 }

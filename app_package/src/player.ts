@@ -1,4 +1,4 @@
-import { ArcRotateCamera, KeyboardEventTypes, PointerEventTypes, Scene } from "@babylonjs/core";
+import { ArcRotateCamera, KeyboardEventTypes, PointerEventTypes, Scene, Vector3 } from "@babylonjs/core";
 import { Bullets } from "./bullets";
 import { Tank } from "./tank";
 
@@ -35,10 +35,9 @@ export class Player {
     };
 
     public constructor(scene: Scene, bullets: Bullets) {
-        this._tank = new Tank("player", { moveSpeed: 0.02, barrelDiameter: 0.45, barrelLength: 0.75, bulletRepeatRate: 500, bulletSpeed: 0.05 }, bullets, scene);
-        this._tank.position.y = 0.6;
+        this._tank = new Tank("player", { moveSpeed: 0.08, barrelDiameter: 0.45, barrelLength: 0.75, bulletRepeatRate: 500, bulletSpeed: 0.1 }, bullets, scene);
 
-        const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3.5, 10, this._tank.position, scene);
+        const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3.5, 10, Vector3.Zero(), scene);
 
         scene.onKeyboardObservable.add((data) => {
             if ((data.event as any).repeat) {
@@ -59,7 +58,6 @@ export class Player {
         scene.onPointerObservable.add((data) => {
             const pickedPoint = data.pickInfo?.pickedPoint || scene.pick(data.event.offsetX, data.event.offsetY)?.pickedPoint;
             if (pickedPoint) {
-                pickedPoint.y = this._tank.position.y;
                 this._tank.lookAt(pickedPoint);
             }
 
@@ -73,25 +71,19 @@ export class Player {
         });
 
         scene.onBeforeRenderObservable.add(() => {
-            if (this._commandState[UP]) {
-                this._tank.moveUp();
-            }
-
-            if (this._commandState[DOWN]) {
-                this._tank.moveDown();
-            }
-
-            if (this._commandState[LEFT]) {
-                this._tank.moveLeft();
-            }
-
-            if (this._commandState[RIGHT]) {
-                this._tank.moveRight();
+            const x = (this._commandState[LEFT] ? -1 : 0) + (this._commandState[RIGHT] ? 1 : 0);
+            const z = (this._commandState[UP] ? 1 : 0) + (this._commandState[DOWN] ? -1 : 0);
+            const lengthSquared = x * x + z * z;
+            if (lengthSquared > 0) {
+                const oneOverLength = 1 / Math.sqrt(lengthSquared);
+                this._tank.move(x * oneOverLength, 0, z * oneOverLength); 
             }
 
             if (this._commandState[SHOOT]) {
                 this._tank.shoot();
             }
+
+            camera.target.copyFrom(this._tank.position);
         });
     }
 }
