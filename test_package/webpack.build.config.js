@@ -17,7 +17,7 @@ module.exports = {
         new DefinePlugin({
             DEV_BUILD: JSON.stringify(false)
         }),
-        new HtmlWebpackPlugin({ title: "Babylon.js NPM Package Template" })
+        new HtmlWebpackPlugin({ title: "tank3d.io" })
     ],
     module: {
         rules: [

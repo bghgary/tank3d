@@ -3,6 +3,7 @@ import { GridMaterial } from "@babylonjs/materials";
 import { Player } from "./player";
 
 import "@babylonjs/inspector";
+import { Bullets } from "./bullets";
 
 export class World {
     private readonly _scene: Scene;
@@ -10,7 +11,8 @@ export class World {
     public constructor(engine: Engine) {
         this._scene = new Scene(engine);
 
-        const player = new Player(this._scene);
+        const bullets = new Bullets(this._scene);
+        const player = new Player(this._scene, bullets);
 
         this._createGround();
 

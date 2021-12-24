@@ -1,7 +1,5 @@
 import { initialize } from "app_package";
 
-document.title = "tank3d.io";
-
 document.body.style.position = "fixed";
 document.body.style.width = "100%";
 document.body.style.height = "100%";
