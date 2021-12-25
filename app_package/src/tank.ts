@@ -1,71 +1,91 @@
-import { MeshBuilder, StandardMaterial, Color3, Mesh, Scene, Vector3, TmpVectors } from "@babylonjs/core";
+import { MeshBuilder, StandardMaterial, Color3, Scene, Vector3, TransformNode } from "@babylonjs/core";
 import { Bullets } from "./bullets";
 
 export interface TankProperties {
-    moveSpeed: number;
     barrelDiameter: number;
     barrelLength: number;
-    bulletRepeatRate: number;
+    reloadSpeed: number;
     bulletSpeed: number;
+    movementSpeed: number;
 }
 
 export class Tank {
     private readonly _scene: Scene;
-    private readonly _mesh: Mesh;
+    private readonly _node: TransformNode;
     private readonly _properties: TankProperties;
     private readonly _bullets: Bullets;
     private _lastBulletShotTime = 0;
+    private _velocity = Vector3.Zero();
 
     public constructor(name: string, properties: TankProperties, bullets: Bullets, scene: Scene) {
         this._properties = properties;
         this._bullets = bullets;
         this._scene = scene;
 
+        // Create parent node.
+        this._node = new TransformNode(name, scene);
+
         // Create tank body.
-        const body = MeshBuilder.CreateSphere("tankBody", {}, scene);
+        const body = MeshBuilder.CreateSphere("body", {}, scene);
+        body.parent = this._node;
+        body.isPickable = false;
 
         // Create tank material.
-        const bodyMaterial = new StandardMaterial("tankBody", scene);
+        const bodyMaterial = new StandardMaterial("body", scene);
         bodyMaterial.diffuseColor = new Color3(0.3, 0.7, 1);
         body.material = bodyMaterial;
 
         // Create tank barrel.
-        const barrel = MeshBuilder.CreateCylinder("tankBarrel", { diameter: properties.barrelDiameter, height: properties.barrelLength }, scene);
+        const barrel = MeshBuilder.CreateCylinder("barrel", { diameter: properties.barrelDiameter, height: properties.barrelLength }, scene);
+        barrel.parent = this._node;
         barrel.rotation.x = Math.PI * 0.5;
         barrel.position.z = properties.barrelLength * 0.5;
+        barrel.isPickable = false;
 
         // Create tank barrel material.
-        const barrelMaterial = new StandardMaterial("tankBarrel", scene);
+        const barrelMaterial = new StandardMaterial("barrel", scene);
         barrelMaterial.diffuseColor = new Color3(0.5, 0.5, 0.5);
         barrel.material = barrelMaterial;
-
-        // Merge meshes for efficiency.
-        this._mesh = Mesh.MergeMeshes([body, barrel], true, undefined, undefined, undefined, true)!;
-        this._mesh.name = name;
-        this._mesh.material!.name = name;
-        this._mesh.isPickable = false;
     }
 
     public get position(): Vector3 {
-        return this._mesh.position;
-    }
-
-    public move(x: number, y: number, z: number): void {
-        this._mesh.position.x += x * this._properties.moveSpeed * this._scene.getAnimationRatio();
-        this._mesh.position.y += y * this._properties.moveSpeed * this._scene.getAnimationRatio();
-        this._mesh.position.z += z * this._properties.moveSpeed * this._scene.getAnimationRatio();
+        return this._node.position;
     }
 
     public lookAt(targetPoint: Vector3): void {
-        this._mesh.lookAt(targetPoint);
+        this._node.lookAt(targetPoint);
+    }
+
+    public move(x: number, z: number): void {
+        const deltaTime = this._scene.deltaTime * 0.001;
+
+        const decayFactor = Math.exp(-deltaTime * 4);
+        const sqrLength = x * x + z * z;
+        if (sqrLength === 0) {
+            this._velocity.x = this._velocity.x * decayFactor;
+            this._velocity.z = this._velocity.z * decayFactor;
+        } else {
+            const movementFactor = this._properties.movementSpeed / Math.sqrt(sqrLength);
+            x *= movementFactor;
+            z *= movementFactor;
+            this._velocity.x = x - (x - this._velocity.x) * decayFactor;
+            this._velocity.z = z - (z - this._velocity.z) * decayFactor;
+        }
+
+        //console.log(`${this._properties.movementSpeed} ${this._velocity.length()}`);
+
+        this._node.position.x += this._velocity.x * deltaTime;
+        this._node.position.z += this._velocity.z * deltaTime;
     }
 
     public shoot(): void {
         const currentTime = Date.now();
-        if (currentTime - this._lastBulletShotTime > this._properties.bulletRepeatRate) {
+        if (currentTime - this._lastBulletShotTime > this._properties.reloadSpeed * 1000) {
             this._lastBulletShotTime = currentTime;
             const bulletDiameter = this._properties.barrelDiameter * 0.75;
-            this._bullets.add(this._mesh.position, this._mesh.forward, this._properties.bulletSpeed, this._properties.barrelLength + bulletDiameter * 0.5, bulletDiameter);
+
+            const initialSpeed = Vector3.Dot(this._velocity, this._node.forward) + this._properties.bulletSpeed;
+            this._bullets.add(this._node.position, this._node.forward, initialSpeed, this._properties.bulletSpeed, this._properties.barrelLength + bulletDiameter * 0.5, bulletDiameter);
         }
     }
 }
