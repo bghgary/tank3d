@@ -56,6 +56,11 @@ export class Tank {
         this._node.lookAt(targetPoint);
     }
 
+    public rotate(angularSpeed: number): void {
+        const deltaTime = this._scene.deltaTime * 0.001;
+        this._node.rotation.y += angularSpeed * deltaTime;
+    }
+
     public move(x: number, z: number): void {
         const deltaTime = this._scene.deltaTime * 0.001;
 
