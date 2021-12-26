@@ -13,49 +13,43 @@ const enum Command {
 }
 
 const enum State {
+    None = 0x0,
     Keyboard = 0x1,
     Pointer = 0x2,
 }
 
-const KeyMapping: { [code: string]: number } = {
-    "ArrowUp": Command.Up,
-    "ArrowDown": Command.Down,
-    "ArrowLeft": Command.Left,
-    "ArrowRight": Command.Right,
-    "KeyW": Command.Up,
-    "KeyS": Command.Down,
-    "KeyA": Command.Left,
-    "KeyD": Command.Right,
-    "Space": Command.Shoot,
-    "KeyE": Command.AutoShoot,
-    "KeyC": Command.AutoRotate,
-};
+const KeyMapping = new Map([
+    ["ArrowUp", Command.Up],
+    ["ArrowDown", Command.Down],
+    ["ArrowLeft", Command.Left],
+    ["ArrowRight", Command.Right],
+    ["KeyW", Command.Up],
+    ["KeyS", Command.Down],
+    ["KeyA", Command.Left],
+    ["KeyD", Command.Right],
+    ["Space", Command.Shoot],
+    ["KeyE", Command.AutoShoot],
+    ["KeyC", Command.AutoRotate],
+]);
 
 export class Player {
     private readonly _tank: Tank;
-
-    private readonly _commandState: { [command: number]: number } = {
-        [Command.Up]: 0,
-        [Command.Down]: 0,
-        [Command.Left]: 0,
-        [Command.Right]: 0,
-        [Command.Shoot]: 0,
-    };
+    private readonly _commandState = new Map<Command, State>();
 
     private _autoShoot = false;
     private _autoRotate = false;
 
     public constructor(scene: Scene, bullets: Bullets) {
-        this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadSpeed: 0.1, bulletSpeed: 5, movementSpeed: 5 }, bullets, scene);
+        this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadSpeed: 0.5, bulletSpeed: 5, movementSpeed: 5 }, bullets, scene);
 
-        const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3.5, 10, Vector3.Zero(), scene);
+        const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3.5, 20, Vector3.Zero(), scene);
 
         scene.onKeyboardObservable.add((data) => {
             if ((data.event as any).repeat) {
                 return;
             }
 
-            const command = KeyMapping[data.event.code];
+            const command = KeyMapping.get(data.event.code);
             if (command !== undefined) {
                 switch (command) {
                     case Command.AutoShoot: {
@@ -71,11 +65,13 @@ export class Player {
                         break;
                     }
                     default: {
+                        let state = this._commandState.get(command) ?? State.None;
                         if (data.type === KeyboardEventTypes.KEYDOWN) {
-                            this._commandState[command] |= State.Keyboard;
+                            state |= State.Keyboard;
                         } else {
-                            this._commandState[command] &= ~State.Keyboard;
+                            state &= ~State.Keyboard;
                         }
+                        this._commandState.set(command, state);
                     }
                 }
             }
@@ -89,23 +85,27 @@ export class Player {
                 }
             }
 
-            if (data.type === PointerEventTypes.POINTERDOWN && data.event.button === 0) {
-                this._commandState[Command.Shoot] |= State.Pointer;
-            } else if (data.type === PointerEventTypes.POINTERUP) {
-                this._commandState[Command.Shoot] &= ~State.Pointer;
+            if (data.event.button === 0) {
+                let state = this._commandState.get(Command.Shoot) ?? State.None;
+                if (data.type === PointerEventTypes.POINTERDOWN) {
+                    state |= State.Pointer;
+                } else if (data.type === PointerEventTypes.POINTERUP) {
+                    state &= ~State.Pointer;
+                }
+                this._commandState.set(Command.Shoot, state);
             }
         });
 
         scene.onBeforeRenderObservable.add(() => {
-            const x = (this._commandState[Command.Left] ? -1 : 0) + (this._commandState[Command.Right] ? 1 : 0);
-            const z = (this._commandState[Command.Up] ? 1 : 0) + (this._commandState[Command.Down] ? -1 : 0);
+            const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
+            const z = (this._commandState.get(Command.Up) ? 1 : 0) + (this._commandState.get(Command.Down) ? -1 : 0);
             this._tank.move(x, z);
 
             if (this._autoRotate) {
                 this._tank.rotate(1);
             }
 
-            if (this._autoShoot || this._commandState[Command.Shoot]) {
+            if (this._autoShoot || this._commandState.get(Command.Shoot)) {
                 this._tank.shoot();
             }
 
