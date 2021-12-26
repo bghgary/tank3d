@@ -1,4 +1,4 @@
-import { MeshBuilder, StandardMaterial, Color3, Scene, Vector3, TransformNode } from "@babylonjs/core";
+import { MeshBuilder, StandardMaterial, Color3, Scene, Vector3, TransformNode, Mesh } from "@babylonjs/core";
 import { Bullets } from "./bullets";
 
 export interface TankProperties {
@@ -26,7 +26,7 @@ export class Tank {
         this._node = new TransformNode(name, scene);
 
         // Create tank body.
-        const body = MeshBuilder.CreateSphere("body", {}, scene);
+        const body = MeshBuilder.CreateSphere("body", { segments: 12 }, scene);
         body.parent = this._node;
         body.isPickable = false;
 
@@ -36,7 +36,7 @@ export class Tank {
         body.material = bodyMaterial;
 
         // Create tank barrel.
-        const barrel = MeshBuilder.CreateCylinder("barrel", { diameter: properties.barrelDiameter, height: properties.barrelLength }, scene);
+        const barrel = MeshBuilder.CreateCylinder("barrel", { tessellation: 16, cap: Mesh.CAP_END, diameter: properties.barrelDiameter, height: properties.barrelLength }, scene);
         barrel.parent = this._node;
         barrel.rotation.x = Math.PI * 0.5;
         barrel.position.z = properties.barrelLength * 0.5;
