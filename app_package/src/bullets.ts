@@ -1,9 +1,9 @@
-import { MeshBuilder, SolidParticle, Scene, SolidParticleSystem, Vector3, Color4 } from "@babylonjs/core";
+import { MeshBuilder, Scene, Vector3, TransformNode, StandardMaterial, InstancedMesh } from "@babylonjs/core";
 
 const MAX_DURATION = 3;
-const MAX_COUNT = 1000;
+const MAX_COUNT = 100;
 
-interface Bullet extends SolidParticle {
+interface Bullet extends InstancedMesh {
     direction: Vector3;
     currentSpeed: number;
     targetSpeed: number;
@@ -11,88 +11,95 @@ interface Bullet extends SolidParticle {
 }
 
 export class Bullets {
-    private _sps: SolidParticleSystem;
+    private readonly _instances: Array<Bullet>;
     private _start = 0;
     private _count = 0;
 
     constructor(scene: Scene) {
-        this._sps = new SolidParticleSystem("bullets", scene);
-        const bullet = MeshBuilder.CreateSphere("bullet", {}, scene);
-        this._sps.addShape(bullet, MAX_COUNT);
-        bullet.dispose();
+        const bullets = new TransformNode("bullets", scene);
 
-        this._sps.buildMesh();
-        this._sps.isAlwaysVisible = true;
+        const sources = new TransformNode("sources", scene);
+        sources.parent = bullets;
+        sources.setEnabled(false);
 
-        this._sps.computeParticleRotation = false;
-        this._sps.computeParticleTexture = false;
-        this._sps.computeParticleVertex = false;
-        this._sps.computeBoundingBox = false;
+        const bullet = MeshBuilder.CreateSphere("bullet", { segments: 4 }, scene);
+        bullet.parent = sources;
+        const material = new StandardMaterial("bullet", scene);
+        material.diffuseColor.set(0.3, 0.7, 1);
+        bullet.material = material;
 
-        this._sps.updateParticle = (bullet: Bullet) => {
-            bullet.direction = Vector3.Zero();
-            bullet.isVisible = false;
-            bullet.color = new Color4(0.3, 0.7, 1);
-            return bullet;
-        };
+        this._instances = new Array<Bullet>(MAX_COUNT);
+        for (let index = 0; index < this._instances.length; ++index) {
+            const instance = bullet.createInstance(index.toString().padStart(2, "0")) as Bullet;
+            instance.parent = bullets;
+            instance.direction = Vector3.Zero();
+            instance.isPickable = false;
+            instance.setEnabled(false);
+            this._instances[index] = instance;
+        }
 
-        this._sps.setParticles();
-
-        this._sps.computeParticleColor = false;
-
-        this._sps.updateParticle = (bullet: Bullet) => {
+        const update = (index: number) => {
+            const instance = this._instances[index];
             const deltaTime = scene.deltaTime * 0.001;
 
-            if (bullet.time > 0) {
+            if (instance.time > 0) {
                 const decayFactor = Math.exp(-deltaTime * 2);
-                bullet.currentSpeed = bullet.targetSpeed - (bullet.targetSpeed - bullet.currentSpeed) * decayFactor;
+                instance.currentSpeed = instance.targetSpeed - (instance.targetSpeed - instance.currentSpeed) * decayFactor;
                 //console.log(`${bullet.currentSpeed} ${bullet.targetSpeed}`);
-                const speedFactor = bullet.currentSpeed * deltaTime;
-                bullet.position.x += bullet.direction.x * speedFactor;
-                bullet.position.y += bullet.direction.y * speedFactor;
-                bullet.position.z += bullet.direction.z * speedFactor;
+                const speedFactor = instance.currentSpeed * deltaTime;
+                instance.position.x += instance.direction.x * speedFactor;
+                instance.position.y += instance.direction.y * speedFactor;
+                instance.position.z += instance.direction.z * speedFactor;
             }
 
-            bullet.time += deltaTime;
-            if (bullet.time > MAX_DURATION) {
-                bullet.isVisible = false;
-                if (bullet.id === this._start) {
-                    while (this._count > 0 && !this._sps.particles[this._start].isVisible) {
-                        this._start = (this._start + 1) % this._sps.nbParticles;
+            instance.time += deltaTime;
+            if (instance.time > MAX_DURATION) {
+                instance.setEnabled(false);
+                if (index === this._start) {
+                    while (this._count > 0 && !this._instances[this._start].isEnabled()) {
+                        this._start = (this._start + 1) % this._instances.length;
                         --this._count;
                     }
                 }
             }
 
-            return bullet;
+            return instance;
         };
 
         scene.onAfterAnimationsObservable.add(() => {
-            const end = this._start + this._count;
-            if (end <= this._sps.nbParticles) {
-                this._sps.setParticles(this._start, end - 1);
-            } else {
-                this._sps.setParticles(this._start, this._sps.nbParticles - 1, false);
-                this._sps.setParticles(0, (end % this._sps.nbParticles) - 1);
+            if (this._count > 0) {
+                const end = this._start + this._count;
+                if (end <= this._instances.length) {
+                    for (let index = this._start; index < end; ++index) {
+                        update(index);
+                    }
+                } else {
+                    for (let index = this._start; index < this._instances.length; ++index) {
+                        update(index);
+                    }
+                    for (let index = 0; index < end % this._instances.length; ++index) {
+                        update(index);
+                    }
+                }
             }
         });
     }
 
     public add(position: Vector3, direction: Vector3, initialSpeed: number, targetSpeed: number, offset: number, size: number): void {
-        const bullet = this._sps.particles[(this._start + this._count) % this._sps.nbParticles] as Bullet;
-        bullet.direction.copyFrom(direction);
-        bullet.currentSpeed = initialSpeed;
-        bullet.targetSpeed = targetSpeed;
-        bullet.time = 0;
-        bullet.isVisible = true;
-        bullet.position.set(
+        const instance = this._instances[(this._start + this._count) % this._instances.length];
+        instance.direction.copyFrom(direction);
+        instance.currentSpeed = initialSpeed;
+        instance.targetSpeed = targetSpeed;
+        instance.time = 0;
+        instance.position.set(
             position.x + direction.x * offset,
             position.y + direction.y * offset,
             position.z + direction.z * offset);
-        bullet.scaling.setAll(size);
+        instance.scaling.setAll(size);
+        instance.setEnabled(true);
 
-        if (this._count == this._sps.nbParticles) {
-            this._start = (this._start + 1) % this._sps.nbParticles;
+        if (this._count == this._instances.length) {
+            this._start = (this._start + 1) % this._instances.length;
         } else {
             ++this._count;
         }
