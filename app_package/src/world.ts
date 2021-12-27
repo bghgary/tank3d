@@ -1,22 +1,36 @@
-import { Engine, KeyboardEventTypes, MeshBuilder, Scene } from "@babylonjs/core";
+import "@babylonjs/inspector";
+import { Engine, HemisphericLight, KeyboardEventTypes, MeshBuilder, Scalar, Scene, Vector3 } from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials";
 import { Player } from "./player";
+import { Shapes, ShapeType } from "./shapes";
+import { Collisions } from "./collisions";
 
-import "@babylonjs/inspector";
-import { Bullets } from "./bullets";
+export const enum ObjectType {
+    Bullet,
+    Shape
+}
 
 export class World {
     private readonly _scene: Scene;
+    private readonly _collisions: Collisions;
+    private readonly _size = 100;
 
     public constructor(engine: Engine) {
         this._scene = new Scene(engine);
+        this._collisions = new Collisions(this);
 
-        const bullets = new Bullets(this._scene);
-        const player = new Player(this._scene, bullets);
+        const player = new Player(this);
+        const shapes = new Shapes(this);
+
+        for (let i = 0; i < 1000; ++i) {
+            const n = Scalar.RandomRange(0, 100);
+            const type = (n < 60) ? ShapeType.Cube : (n < 95) ? ShapeType.Tetrahedron : (n < 99) ? ShapeType.Dodecahedron : ShapeType.Goldberg11;
+            shapes.add(type, Scalar.RandomRange(-50, 50), 0, Scalar.RandomRange(-50, 50));
+        }
 
         this._createGround();
 
-        this._scene.createDefaultLight();
+        new HemisphericLight("hemisphericLight", new Vector3(0.1, 1, 0.1), this._scene);
 
         this._scene.onKeyboardObservable.add((data) => {
             if (data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey && data.event.code === "KeyI") {
@@ -33,17 +47,30 @@ export class World {
         });
     }
 
+    public get scene(): Scene {
+        return this._scene;
+    }
+
+    public get collisions(): Collisions {
+        return this._collisions;
+    }
+
+    public get size(): number {
+        return this._size;
+    }
+
     private _createGround(): void {
-        // Create the ground that is visible.
-        const ground = MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, this._scene);
-        ground.position.y = -0.5;
+        const sizeWithBuffer = this._size * 2;
+        const ground = MeshBuilder.CreateGround("ground", { width: sizeWithBuffer, height: sizeWithBuffer }, this._scene);
+        ground.visibility = 0;
+
+        const mesh = MeshBuilder.CreateGround("mesh", { width: this._size, height: this._size }, this._scene);
+        mesh.parent = ground;
+        mesh.position.y = -1;
+
         const material = new GridMaterial("ground", this._scene);
         // TODO: grid settings
-        ground.material = material;
-        ground.isPickable = false;
-
-        // Create imposter for picking.
-        const imposter = MeshBuilder.CreateGround("imposter", { width: 100, height: 100 }, this._scene);
-        imposter.visibility = 0;
+        mesh.material = material;
+        mesh.isPickable = false;
     }
 }

@@ -1,6 +1,7 @@
 import { ArcRotateCamera, KeyboardEventTypes, PointerEventTypes, Scene, Vector3 } from "@babylonjs/core";
 import { Bullets } from "./bullets";
 import { Tank } from "./tank";
+import { World } from "./world";
 
 const enum Command {
     Up,
@@ -39,9 +40,10 @@ export class Player {
     private _autoShoot = false;
     private _autoRotate = false;
 
-    public constructor(scene: Scene, bullets: Bullets) {
-        this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadSpeed: 0.5, bulletSpeed: 5, movementSpeed: 5 }, bullets, scene);
+    public constructor(world: World) {
+        this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadSpeed: 0.1, bulletSpeed: 5, movementSpeed: 5 }, world);
 
+        const scene = world.scene;
         const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3.5, 20, Vector3.Zero(), scene);
 
         scene.onKeyboardObservable.add((data) => {

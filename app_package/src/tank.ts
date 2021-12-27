@@ -1,5 +1,6 @@
 import { MeshBuilder, StandardMaterial, Color3, Scene, Vector3, TransformNode, Mesh } from "@babylonjs/core";
 import { Bullets } from "./bullets";
+import { World } from "./world";
 
 export interface TankProperties {
     barrelDiameter: number;
@@ -10,42 +11,45 @@ export interface TankProperties {
 }
 
 export class Tank {
+    private readonly _properties: TankProperties;
     private readonly _scene: Scene;
     private readonly _node: TransformNode;
-    private readonly _properties: TankProperties;
     private readonly _bullets: Bullets;
     private _lastBulletShotTime = 0;
     private _velocity = Vector3.Zero();
 
-    public constructor(name: string, properties: TankProperties, bullets: Bullets, scene: Scene) {
+    public constructor(name: string, properties: TankProperties, world: World) {
         this._properties = properties;
-        this._bullets = bullets;
-        this._scene = scene;
+        this._scene = world.scene;
 
         // Create parent node.
-        this._node = new TransformNode(name, scene);
+        this._node = new TransformNode(name, this._scene);
 
         // Create tank body.
-        const body = MeshBuilder.CreateSphere("body", { segments: 12 }, scene);
+        const body = MeshBuilder.CreateSphere("body", { segments: 12 }, this._scene);
         body.parent = this._node;
         body.isPickable = false;
 
         // Create tank material.
-        const bodyMaterial = new StandardMaterial("body", scene);
+        const bodyMaterial = new StandardMaterial("body", this._scene);
         bodyMaterial.diffuseColor = new Color3(0.3, 0.7, 1);
         body.material = bodyMaterial;
 
         // Create tank barrel.
-        const barrel = MeshBuilder.CreateCylinder("barrel", { tessellation: 16, cap: Mesh.CAP_END, diameter: properties.barrelDiameter, height: properties.barrelLength }, scene);
+        const barrel = MeshBuilder.CreateCylinder("barrel", { tessellation: 16, cap: Mesh.CAP_END, diameter: properties.barrelDiameter, height: properties.barrelLength }, this._scene);
         barrel.parent = this._node;
         barrel.rotation.x = Math.PI * 0.5;
         barrel.position.z = properties.barrelLength * 0.5;
         barrel.isPickable = false;
 
         // Create tank barrel material.
-        const barrelMaterial = new StandardMaterial("barrel", scene);
+        const barrelMaterial = new StandardMaterial("barrel", this._scene);
         barrelMaterial.diffuseColor = new Color3(0.5, 0.5, 0.5);
         barrel.material = barrelMaterial;
+
+        // Create bullets.
+        const bulletDiameter = this._properties.barrelDiameter * 0.75;
+        this._bullets = new Bullets(world, bulletDiameter);
     }
 
     public get position(): Vector3 {
@@ -77,8 +81,6 @@ export class Tank {
             this._velocity.z = z - (z - this._velocity.z) * decayFactor;
         }
 
-        //console.log(`${this._properties.movementSpeed} ${this._velocity.length()}`);
-
         this._node.position.x += this._velocity.x * deltaTime;
         this._node.position.z += this._velocity.z * deltaTime;
     }
@@ -87,10 +89,9 @@ export class Tank {
         const currentTime = Date.now();
         if (currentTime - this._lastBulletShotTime > this._properties.reloadSpeed * 1000) {
             this._lastBulletShotTime = currentTime;
-            const bulletDiameter = this._properties.barrelDiameter * 0.75;
-
             const initialSpeed = Vector3.Dot(this._velocity, this._node.forward) + this._properties.bulletSpeed;
-            this._bullets.add(this._node.position, this._node.forward, initialSpeed, this._properties.bulletSpeed, this._properties.barrelLength + bulletDiameter * 0.5, bulletDiameter);
+            const bulletDiameter = this._properties.barrelDiameter * 0.75;
+            this._bullets.add(this._node.position, this._node.forward, initialSpeed, this._properties.bulletSpeed, this._properties.barrelLength + bulletDiameter * 0.5);
         }
     }
 }
