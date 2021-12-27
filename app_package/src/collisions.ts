@@ -57,10 +57,10 @@ export class Collisions {
             };
         };
 
-        const intersects = (target: Collidable, candidate: Collidable): boolean => {
-            const collisionDistance = target.metadata.collider.size + candidate.metadata.collider.size;
-            const x0 = target.position.x, z0 = target.position.z;
-            const x1 = candidate.position.x, z1 = candidate.position.z;
+        const intersects = (a: Collidable, b: Collidable): boolean => {
+            const collisionDistance = (a.metadata.collider.size + b.metadata.collider.size) * 0.5;
+            const x0 = a.position.x, z0 = a.position.z;
+            const x1 = b.position.x, z1 = b.position.z;
             const dx = x1 - x0, dz = z1 - z0;
             const sqrDistance = dx * dx + dz * dz;
             return (sqrDistance < collisionDistance * collisionDistance);
