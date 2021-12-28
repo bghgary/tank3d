@@ -1,30 +1,17 @@
 import Quadtree from "@timohausmann/quadtree-js";
-import { Vector3 } from "@babylonjs/core";
-import { ObjectType, World } from "./world";
+import { Entity } from "./entity";
+import { World } from "./world";
 
-// REVIEW: copy Quadtree and make it use Collidable directly to prevent allocations?
-
-export interface Collider {
-    size: number;
-    onCollide: (other: Collidable) => void;
-}
-
-export interface Collidable {
-    position: Vector3;
-    metadata: {
-        type: ObjectType;
-        collider: Collider;
-    }
-}
+// REVIEW: copy Quadtree and make it use Entity directly to prevent allocations?
 
 interface QuadtreeObject extends Quadtree.Rect {
-    collidable: Collidable;
+    entity: Entity;
 }
 
 export class Collisions {
     private readonly _quadtree: Quadtree;
     private readonly _entries = new Array<{
-        collidables: Iterable<Collidable>;
+        entities: Iterable<Entity>;
     }>();
 
     public constructor(world: World) {
@@ -37,28 +24,28 @@ export class Collisions {
         });
     }
 
-    public register(collidables: Iterable<Collidable>): void {
-        this._entries.push({ collidables: collidables });
+    public register(entities: Iterable<Entity>): void {
+        this._entries.push({ entities: entities });
     }
 
     public update(): void {
         this._quadtree.clear();
 
-        const objectFromCollidable = (collidable: Collidable): QuadtreeObject => {
-            const position = collidable.position;
-            const size = collidable.metadata.collider.size;
+        const objectFromEntity = (entity: Entity): QuadtreeObject => {
+            const position = entity.position;
+            const size = entity.metadata.size;
             const halfSize = size * 0.5;
             return {
                 x: position.x - halfSize,
                 y: position.z - halfSize,
                 width: size,
                 height: size,
-                collidable: collidable
+                entity: entity
             };
         };
 
-        const intersects = (a: Collidable, b: Collidable): boolean => {
-            const collisionDistance = (a.metadata.collider.size + b.metadata.collider.size) * 0.5;
+        const intersects = (a: Entity, b: Entity): boolean => {
+            const collisionDistance = (a.metadata.size + b.metadata.size) * 0.5;
             const x0 = a.position.x, z0 = a.position.z;
             const x1 = b.position.x, z1 = b.position.z;
             const dx = x1 - x0, dz = z1 - z0;
@@ -67,19 +54,19 @@ export class Collisions {
         };
 
         for (const entry of this._entries) {
-            const collidables = entry.collidables;
-
-            for (const collidable of collidables) {
-                this._quadtree.insert(objectFromCollidable(collidable));
+            for (const entity of entry.entities) {
+                this._quadtree.insert(objectFromEntity(entity));
             }
+        }
 
-            for (const collidable of collidables) {
-                const target = objectFromCollidable(collidable);
+        for (const entry of this._entries) {
+            for (const entity of entry.entities) {
+                const target = objectFromEntity(entity);
                 const candidates = this._quadtree.retrieve<QuadtreeObject>(target);
                 for (const candidate of candidates) {
-                    if (candidate.collidable !== collidable) {
-                        if (intersects(target.collidable, candidate.collidable)) {
-                            target.collidable.metadata.collider.onCollide(candidate.collidable);
+                    if (candidate.entity !== entity) {
+                        if (intersects(target.entity, candidate.entity)) {
+                            target.entity.metadata.onCollide(candidate.entity);
                         }
                     }
                 }

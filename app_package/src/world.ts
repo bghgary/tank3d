@@ -5,11 +5,6 @@ import { Player } from "./player";
 import { Shapes, ShapeType } from "./shapes";
 import { Collisions } from "./collisions";
 
-export const enum ObjectType {
-    Bullet,
-    Shape
-}
-
 export class World {
     private readonly _scene: Scene;
     private readonly _collisions: Collisions;

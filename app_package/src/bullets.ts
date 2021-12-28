@@ -1,19 +1,23 @@
 import { MeshBuilder, Vector3, TransformNode, StandardMaterial, InstancedMesh } from "@babylonjs/core";
-import { Collidable, Collider } from "./collisions";
-import { ObjectType, World } from "./world";
+import { Entity, EntityData, EntityType } from "./entity";
+import { ShapeData } from "./shapes";
+import { World } from "./world";
 
 const MAX_DURATION = 3;
 const MAX_COUNT = 100;
 
-interface Bullet extends InstancedMesh {
-    metadata: {
-        index: number;
+export interface BulletData {
+    readonly damage: number;
+}
+
+interface Bullet extends InstancedMesh, Entity {
+    metadata: EntityData & BulletData & {
+        readonly index: number;
         direction: Vector3;
         currentSpeed: number;
         targetSpeed: number;
         time: number;
-        type: ObjectType;
-        collider: Collider;
+        health: number;
     };
 }
 
@@ -40,12 +44,16 @@ export class Bullets {
         for (let index = 0; index < this._instances.length; ++index) {
             const instance = bullet.createInstance(index.toString().padStart(2, "0")) as Bullet;
             instance.metadata = {
-                index: index, direction: Vector3.Zero(), currentSpeed: 0, targetSpeed: 0, time: 0,
-                type: ObjectType.Bullet,
-                collider: {
-                    size: diameter,
-                    onCollide: () => {},
-                },
+                index: index,
+                type: EntityType.Bullet,
+                size: diameter,
+                damage: 5, // TODO
+                health: 10, // TODO
+                direction: Vector3.Zero(),
+                currentSpeed: 0,
+                targetSpeed: 0,
+                time: 0,
+                onCollide: (other) => this._onCollide(instance, other),
             };
             instance.parent = root;
             instance.scaling.setAll(diameter);
@@ -57,41 +65,42 @@ export class Bullets {
         }
 
         const update = (instance: Bullet): void => {
-            const metadata = instance.metadata;
-            const deltaTime = scene.deltaTime * 0.001;
+            if (instance.isEnabled()) {
+                const metadata = instance.metadata;
+                const deltaTime = scene.deltaTime * 0.001;
 
-            if (metadata.time > 0) {
-                const decayFactor = Math.exp(-deltaTime * 2);
-                metadata.currentSpeed = metadata.targetSpeed - (metadata.targetSpeed - metadata.currentSpeed) * decayFactor;
-                const speedFactor = metadata.currentSpeed * deltaTime;
-                instance.position.x += metadata.direction.x * speedFactor;
-                instance.position.y += metadata.direction.y * speedFactor;
-                instance.position.z += metadata.direction.z * speedFactor;
+                if (metadata.time > 0) {
+                    const decayFactor = Math.exp(-deltaTime * 2);
+                    metadata.currentSpeed = metadata.targetSpeed - (metadata.targetSpeed - metadata.currentSpeed) * decayFactor;
+                    const speedFactor = metadata.currentSpeed * deltaTime;
+                    instance.position.x += metadata.direction.x * speedFactor;
+                    instance.position.y += metadata.direction.y * speedFactor;
+                    instance.position.z += metadata.direction.z * speedFactor;
+                }
+
+                metadata.time += deltaTime;
+                if (metadata.time > MAX_DURATION) {
+                    instance.setEnabled(false);
+                }
             }
 
-            metadata.time += deltaTime;
-            if (metadata.time > MAX_DURATION) {
-                instance.setEnabled(false);
-                if (instance.metadata.index === this._start) {
-                    while (this._count > 0 && !this._instances[this._start].isEnabled()) {
-                        this._start = (this._start + 1) % this._instances.length;
-                        --this._count;
-                    }
-                }
+            while (this._count > 0 && !this._instances[this._start].isEnabled()) {
+                this._start = (this._start + 1) % this._instances.length;
+                --this._count;
             }
         };
 
-        const bullets = {
+        const instances = {
             [Symbol.iterator]: this._getIterator.bind(this)
         };
 
         scene.onAfterAnimationsObservable.add(() => {
-            for (const instance of bullets) {
+            for (const instance of instances) {
                 update(instance);
             }
         });
 
-        world.collisions.register(bullets);
+        world.collisions.register(instances);
     }
 
     public add(position: Vector3, direction: Vector3, initialSpeed: number, targetSpeed: number, offset: number): void {
@@ -129,6 +138,23 @@ export class Bullets {
             }
             for (let index = 0; index < end % this._instances.length; ++index) {
                 yield this._instances[index];
+            }
+        }
+    }
+
+    private _onCollide(instance: Bullet, other: Entity): void {
+        switch (other.metadata.type) {
+            case EntityType.Bullet: {
+                break;
+            }
+            case EntityType.Shape: {
+                const bulletData = instance.metadata;
+                const shapeData = other.metadata as unknown as ShapeData;
+                bulletData.health -= shapeData.damage;
+                if (bulletData.health < 0.001) {
+                    instance.setEnabled(false);
+                }
+                break;
             }
         }
     }
