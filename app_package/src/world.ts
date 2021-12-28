@@ -1,8 +1,8 @@
 import "@babylonjs/inspector";
-import { Engine, HemisphericLight, KeyboardEventTypes, MeshBuilder, Scalar, Scene, Vector3 } from "@babylonjs/core";
+import { Engine, HemisphericLight, KeyboardEventTypes, MeshBuilder, Scene, Vector3 } from "@babylonjs/core";
 import { GridMaterial } from "@babylonjs/materials";
 import { Player } from "./player";
-import { Shapes, ShapeType } from "./shapes";
+import { Shapes } from "./shapes";
 import { Collisions } from "./collisions";
 
 export class World {
@@ -15,13 +15,7 @@ export class World {
         this._collisions = new Collisions(this);
 
         const player = new Player(this);
-        const shapes = new Shapes(this);
-
-        for (let i = 0; i < 1000; ++i) {
-            const n = Scalar.RandomRange(0, 100);
-            const type = (n < 60) ? ShapeType.Cube : (n < 95) ? ShapeType.Tetrahedron : (n < 99) ? ShapeType.Dodecahedron : ShapeType.Goldberg11;
-            shapes.add(type, Scalar.RandomRange(-50, 50), 0, Scalar.RandomRange(-50, 50));
-        }
+        const shapes = new Shapes(this, 200);
 
         this._createGround();
 

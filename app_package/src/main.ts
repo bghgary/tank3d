@@ -10,4 +10,3 @@ export function initialize(canvas: HTMLCanvasElement) {
         engine.resize();
     });
 }
-

@@ -20,7 +20,7 @@ export class Collisions {
         this._quadtree = new Quadtree({ x: -halfSize, y: -halfSize, width: size, height: size });
 
         world.scene.onAfterAnimationsObservable.add(() => {
-            this.update();
+            this._update();
         });
     }
 
@@ -28,7 +28,7 @@ export class Collisions {
         this._entries.push({ entities: entities });
     }
 
-    public update(): void {
+    private _update(): void {
         this._quadtree.clear();
 
         const objectFromEntity = (entity: Entity): QuadtreeObject => {
