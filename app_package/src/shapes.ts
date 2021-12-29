@@ -1,6 +1,7 @@
 import { InstancedMesh, Mesh, MeshBuilder, Scalar, Scene, TransformNode, Vector3 } from "@babylonjs/core";
-import { BulletData } from "./bullets";
-import { ApplyCollisionForce, Entity, EntityData, EntityType } from "./entity";
+import { Bullet } from "./bullets";
+import { ApplyCollisionForce, CollidableEntity } from "./collisions";
+import { Entity, EntityType } from "./entity";
 import { World } from "./world";
 
 const IDLE_ROTATION_SPEED = 0.2;
@@ -11,50 +12,180 @@ const RESPAWN_TIME = 1;
 const RESPAWN_DROP_HEIGHT = 5;
 const GRAVITY = 9.8;
 
-export const enum ShapeType {
-    Cube,
-    Tetrahedron,
-    Dodecahedron,
-    Goldberg11,
-}
-
-export interface ShapeData {
-    readonly size: number;
-    readonly mass: number;
-    readonly health: number;
+export interface Shape extends Entity {
     readonly damage: number;
-};
-
-interface HealthBar extends InstancedMesh {
-    current: number;
-    target: number;
-    speed: number;
 }
 
-interface Shape extends InstancedMesh, Entity {
-    metadata: EntityData & ShapeData & {
-        velocity: Vector3;
-        rotationVelocity: number;
-        healthBar: HealthBar;
-        bulletIds: Set<number>;
-        regenTime: number;
-        respawnTime: number;
-    };
+class Health {
+    private readonly _mesh: InstancedMesh;
+
+    public constructor(mesh: InstancedMesh, max: number) {
+        this._mesh = mesh;
+        this.max = this.current = this.target = max;
+    }
+
+    public readonly max: number;
+    public current: number;
+    public target: number;
+    public speed = 0;
+
+    public isEnabled(): boolean {
+        return this._mesh.isEnabled();
+    }
+
+    public setEnabled(value: boolean): void {
+        this._mesh.setEnabled(value);
+    }
+
+    public update(shape: ShapeImpl, deltaTime: number): void {
+        if (this._mesh.isEnabled()) {
+            if (this.current > this.target) {
+                this.current = Math.max(this.current - this.speed * deltaTime, this.target);
+                this._mesh.scaling.x = this.current / this.max * shape.size;
+                if (this.current === 0) {
+                    shape.setEnabled(false);
+                    shape.respawnTime = RESPAWN_TIME;
+                }
+            } else if (this.current < this.target) {
+                this.current = Math.min(this.current + this.speed * deltaTime, this.target);
+                this._mesh.scaling.x = this.current / this.max * shape.size;
+                if (this.current === this.max) {
+                    this._mesh.setEnabled(false);
+                }
+            } else if (shape.regenTime > 0) {
+                shape.regenTime = Math.max(shape.regenTime - deltaTime, 0);
+                if (shape.regenTime === 0) {
+                    this.target = this.max;
+                    this.speed = REGEN_SPEED;
+                }
+            }
+        }
+    }
 }
 
-const shapeDataMap = new Map<ShapeType, ShapeData>([
-    [ShapeType.Cube,            { size: 0.60,   mass: 0.36,     health: 10,     damage: 10  }],
-    [ShapeType.Tetrahedron,     { size: 0.60,   mass: 0.36,     health: 30,     damage: 20  }],
-    [ShapeType.Dodecahedron,    { size: 1.00,   mass: 1.00,     health: 125,    damage: 50  }],
-    [ShapeType.Goldberg11,      { size: 1.62,   mass: 2.62,     health: 250,    damage: 130 }],
-]);
+class ShapeImpl implements Shape, CollidableEntity {
+    private readonly _mesh: InstancedMesh;
+    private readonly _health: Health;
+    private readonly _bulletIds = new Set<number>();
+
+    public constructor(mesh: InstancedMesh, healthMesh: InstancedMesh, size: number, health: number, damage: number) {
+        this._mesh = mesh;
+        this._health = new Health(healthMesh, health);
+        this.size = size;
+        this.mass = size * size;
+        this.damage = damage;
+    }
+
+    // Shape
+    public readonly type = EntityType.Shape;
+    public readonly size: number;
+    public readonly mass: number;
+    public readonly damage: number;
+    public get position(): Vector3 { return this._mesh.position; }
+    public readonly velocity = new Vector3();
+
+    // Quadtree.Rect
+    public get x() { return this._mesh.position.x - this.size * 0.5; }
+    public get y() { return this._mesh.position.z - this.size * 0.5; }
+    public get width() { return this.size; }
+    public get height() { return this.size; }
+
+    public rotationVelocity = 0;
+    public regenTime = 0;
+    public respawnTime = 0;
+
+    public get name(): string {
+        return this._mesh.name;
+    }
+
+    public isEnabled(): boolean {
+        return this._mesh.isEnabled();
+    }
+
+    public setEnabled(value: boolean): void {
+        this._mesh.setEnabled(value);
+    }
+
+    public update(deltaTime: number, halfWorldSize: number): boolean {
+        this._health.update(this, deltaTime);
+
+        if (this.isEnabled()) {
+            const halfSize = this.size * 0.5;
+
+            this._mesh.position.x += this.velocity.x * deltaTime;
+            if (this._mesh.position.x > halfWorldSize - halfSize) {
+                this._mesh.position.x = halfWorldSize - halfSize;
+                this.velocity.x = -this.velocity.x;
+            } else if (this._mesh.position.x < -halfWorldSize + halfSize) {
+                this._mesh.position.x = -halfWorldSize + halfSize;
+                this.velocity.x = -this.velocity.x;
+            }
+
+            this._mesh.position.z += this.velocity.z * deltaTime;
+            if (this._mesh.position.z > halfWorldSize - halfSize) {
+                this._mesh.position.z = halfWorldSize - halfSize;
+                this.velocity.z = -this.velocity.z;
+            } else if (this._mesh.position.z < -halfWorldSize + halfSize) {
+                this._mesh.position.z = -halfWorldSize + halfSize;
+                this.velocity.z = -this.velocity.z;
+            }
+
+            if (this._mesh.position.y > 0) {
+                this.velocity.y -= GRAVITY * deltaTime;
+                this._mesh.position.y = Math.max(this._mesh.position.y + this.velocity.y * deltaTime, 0);
+            } else {
+                const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
+                const decayFactor = Math.exp(-deltaTime * 2);
+                const newSpeed = IDLE_MOVEMENT_SPEED - (IDLE_MOVEMENT_SPEED - oldSpeed) * decayFactor;
+                const speedFactor = newSpeed / oldSpeed;
+                this.velocity.x *= speedFactor;
+                this.velocity.z *= speedFactor;
+            }
+
+            this._mesh.rotation.y = (this._mesh.rotation.y + this.rotationVelocity * deltaTime) % Scalar.TwoPi;
+        } else {
+            this.respawnTime = Math.max(this.respawnTime - deltaTime, 0);
+            if (this.respawnTime === 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public onCollide(other: Entity): void {
+        switch (other.type) {
+            case EntityType.Bullet: {
+                const bullet = other as Bullet;
+
+                this.regenTime = REGEN_TIME;
+                if (!this._bulletIds.has(bullet.uniqueId)) {
+                    this._bulletIds.add(bullet.uniqueId);
+                    this._health.target = Math.max(Math.min(this._health.current, this._health.target) - bullet.damage, 0);
+                    this._health.speed = (this._health.current - this._health.target) * 10;
+                    this._health.setEnabled(true);
+
+                    ApplyCollisionForce(this, other);
+                }
+                break;
+            }
+            case EntityType.Shape: {
+                ApplyCollisionForce(this, other);
+                break;
+            }
+        }
+    }
+}
 
 export class Shapes {
     private readonly _halfWorldSize: number;
     private readonly _root: TransformNode;
-    private readonly _shapeSources: Map<ShapeType, Mesh>;
-    private readonly _healthBarSource: Mesh;
-    private readonly _shapes: Array<Shape>;
+    private readonly _sourceMeshCube: Mesh;
+    private readonly _sourceMeshTetrahedron: Mesh;
+    private readonly _sourceMeshDodecahedron: Mesh;
+    private readonly _sourceMeshGoldberg11: Mesh;
+    private readonly _sourceMeshHealth: Mesh;
+    private readonly _shapes: Array<ShapeImpl>;
 
     constructor(world: World, numShapes: number) {
         this._halfWorldSize = world.size * 0.5;
@@ -67,12 +198,32 @@ export class Shapes {
         sources.parent = this._root;
         sources.setEnabled(false);
 
-        this._shapeSources = this._createShapeSources(sources);
-        this._healthBarSource = this._createHealthSource(sources);
+        this._sourceMeshCube = MeshBuilder.CreateBox("cube", { size: 0.4 }, scene);
+        this._sourceMeshCube.rotation.x = Math.atan(1 / Math.sqrt(2));
+        this._sourceMeshCube.rotation.z = Math.PI / 4;
+        this._sourceMeshCube.bakeCurrentTransformIntoVertices();
+        this._sourceMeshCube.parent = sources;
+
+        this._sourceMeshTetrahedron = MeshBuilder.CreatePolyhedron("tetrahedron", { type: 0, size: 0.25 }, scene);
+        this._sourceMeshTetrahedron.rotation.x = -Math.PI / 2;
+        this._sourceMeshTetrahedron.bakeCurrentTransformIntoVertices();
+        this._sourceMeshTetrahedron.parent = sources;
+
+        this._sourceMeshDodecahedron = MeshBuilder.CreatePolyhedron("dodecahedron", { type: 2, size: 0.5 }, scene);
+        this._sourceMeshDodecahedron.rotation.x = Math.PI / 2;
+        this._sourceMeshDodecahedron.bakeCurrentTransformIntoVertices();
+        this._sourceMeshDodecahedron.parent = sources;
+
+        this._sourceMeshGoldberg11 = MeshBuilder.CreateGoldberg("goldberg11", { m: 1, n: 1, size: 0.9 }, scene);
+        this._sourceMeshGoldberg11.parent = sources;
+
+        this._sourceMeshHealth = MeshBuilder.CreatePlane("health", { width: 1, height: 0.08 }, scene);
+        this._sourceMeshHealth.parent = sources;
 
         this._shapes = new Array(numShapes);
         for (let index = 0; index < this._shapes.length; ++index) {
-            this._shapes[index] = this._createShape(index, 0);
+            const name = index.toString().padStart(2, "0");
+            this._shapes[index] = this._createShape(name, 0);
         }
 
         scene.onAfterAnimationsObservable.add(() => {
@@ -84,95 +235,48 @@ export class Shapes {
         });
     }
 
-    private _createShape(index: number, dropHeight: number): Shape {
+    private _createShape(name: string, dropHeight: number): ShapeImpl {
+        const create = (sourceMesh: Mesh, size: number, health: number, damage: number): ShapeImpl => {
+            const mesh = sourceMesh.createInstance(name);
+            mesh.parent = this._root;
+            mesh.isPickable = false;
+            mesh.doNotSyncBoundingInfo = true;
+            mesh.alwaysSelectAsActiveMesh = true;
+
+            const x = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
+            const z = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
+            mesh.position.set(x, dropHeight, z);
+            mesh.rotation.y = Scalar.RandomRange(0, Scalar.TwoPi);
+
+            const healthMesh = this._sourceMeshHealth.createInstance("health");
+            healthMesh.parent = mesh;
+            healthMesh.isPickable = false;
+            healthMesh.doNotSyncBoundingInfo = true;
+            healthMesh.alwaysSelectAsActiveMesh = true;
+            healthMesh.position.y = size * 0.5 + 0.2;
+            healthMesh.scaling.x = size;
+            healthMesh.billboardMode = Mesh.BILLBOARDMODE_Y;
+            healthMesh.setEnabled(false);
+
+            const shape = new ShapeImpl(mesh, healthMesh, size, health, damage);
+            const mass = size * size;
+            const randomAngle = Scalar.RandomRange(0, Scalar.TwoPi);
+            shape.velocity.set(Math.cos(randomAngle) * IDLE_MOVEMENT_SPEED / mass, 0, Math.sin(randomAngle) * IDLE_MOVEMENT_SPEED / mass);
+            shape.rotationVelocity = Math.sign(Math.random() - 0.5) * IDLE_ROTATION_SPEED / mass;
+
+            return shape;
+        };
+
+        const entries = [
+            { sourceMesh: this._sourceMeshCube,         size: 0.60, health: 10,  damage: 10  },
+            { sourceMesh: this._sourceMeshTetrahedron,  size: 0.60, health: 30,  damage: 20  },
+            { sourceMesh: this._sourceMeshDodecahedron, size: 1.00, health: 125, damage: 50  },
+            { sourceMesh: this._sourceMeshGoldberg11,   size: 1.62, health: 250, damage: 130 },
+        ];
+
         const n = Math.random();
-        const shapeType = (n < 0.6) ? ShapeType.Cube : (n < 0.95) ? ShapeType.Tetrahedron : (n < 0.99) ? ShapeType.Dodecahedron : ShapeType.Goldberg11;
-        const shapeSource = this._shapeSources.get(shapeType)!;
-        const shapeData = shapeDataMap.get(shapeType)!;
-
-        const shape = shapeSource.createInstance(index.toString().padStart(2, "0")) as Shape;
-        shape.parent = this._root;
-        shape.isPickable = false;
-        shape.doNotSyncBoundingInfo = true;
-        shape.alwaysSelectAsActiveMesh = true;
-
-        const x = Scalar.RandomRange(-this._halfWorldSize + shapeData.size, this._halfWorldSize - shapeData.size);
-        const z = Scalar.RandomRange(-this._halfWorldSize + shapeData.size, this._halfWorldSize - shapeData.size);
-        shape.position.set(x, dropHeight, z);
-        shape.rotation.y = Scalar.RandomRange(0, Scalar.TwoPi);
-
-        const mass = shapeData.size * shapeData.size;
-        const randomAngle = Scalar.RandomRange(0, Scalar.TwoPi);
-        const velocity = new Vector3(Math.cos(randomAngle) * IDLE_MOVEMENT_SPEED / mass, 0, Math.sin(randomAngle) * IDLE_MOVEMENT_SPEED / mass);
-        const rotationVelocity = Math.sign(Math.random() - 0.5) * IDLE_ROTATION_SPEED / mass;
-
-        const healthBar = this._healthBarSource.createInstance("health") as HealthBar;
-        healthBar.parent = shape;
-        healthBar.isPickable = false;
-        healthBar.doNotSyncBoundingInfo = true;
-        healthBar.alwaysSelectAsActiveMesh = true;
-        healthBar.position.y = shapeData.size * 0.5 + 0.2;
-        healthBar.scaling.x = shapeData.size;
-        healthBar.billboardMode = Mesh.BILLBOARDMODE_Y;
-        healthBar.current = shapeData.health;
-        healthBar.target = shapeData.health;
-        healthBar.setEnabled(false);
-
-        shape.metadata = {
-            type: EntityType.Shape,
-            size: shapeData.size,
-            onCollide: (other) => this._onCollide(shape, other),
-            mass: mass,
-            health: shapeData.health,
-            damage: shapeData.damage,
-            velocity: velocity,
-            rotationVelocity: rotationVelocity,
-            healthBar: healthBar,
-            bulletIds: new Set(),
-            regenTime: 0,
-            respawnTime: 0,
-        };
-
-        return shape;
-    }
-
-    private _createShapeSources(sources: TransformNode): Map<ShapeType, Mesh> {
-        const scene = sources.getScene();
-
-        const shapeSources = new Map<ShapeType, Mesh>();
-
-        const addSource = (source: Mesh, type: ShapeType): void => {
-            source.bakeCurrentTransformIntoVertices();
-            source.parent = sources;
-            shapeSources.set(type, source);
-        };
-
-        const cube = MeshBuilder.CreateBox("cube", { size: 0.4 }, scene);
-        cube.rotation.x = Math.atan(1 / Math.sqrt(2));
-        cube.rotation.z = Math.PI / 4;
-        addSource(cube, ShapeType.Cube);
-
-        const tetrahedron = MeshBuilder.CreatePolyhedron("tetrahedron", { type: 0, size: 0.25 }, scene);
-        tetrahedron.rotation.x = -Math.PI / 2;
-        tetrahedron.bakeCurrentTransformIntoVertices();
-        addSource(tetrahedron, ShapeType.Tetrahedron);
-
-        const dodecahedron = MeshBuilder.CreatePolyhedron("dodecahedron", { type: 2, size: 0.5 }, scene);
-        dodecahedron.rotation.x = Math.PI / 2;
-        dodecahedron.bakeCurrentTransformIntoVertices();
-        addSource(dodecahedron, ShapeType.Dodecahedron);
-
-        const goldberg11 = MeshBuilder.CreateGoldberg("goldberg11", { m: 1, n: 1, size: 0.9 }, scene);
-        addSource(goldberg11, ShapeType.Goldberg11);
-
-        return shapeSources;
-    }
-
-    private _createHealthSource(sources: TransformNode): Mesh {
-        const scene = sources.getScene();
-        const plane = MeshBuilder.CreatePlane("health", { width: 1, height: 0.08 }, scene);
-        plane.parent = sources;
-        return plane;
+        const entry = entries[n < 0.6 ? 0 : n < 0.95 ? 1 : n < 0.99 ? 2 : 3];
+        return create(entry.sourceMesh, entry.size, entry.health, entry.damage);
     }
 
     private _update(scene: Scene): void {
@@ -180,103 +284,13 @@ export class Shapes {
 
         for (let index = 0; index < this._shapes.length; ++index) {
             const shape = this._shapes[index];
-            const shapeData = shape.metadata;
-
-            if (shape.isEnabled()) {
-                const healthBar = shapeData.healthBar;
-                if (healthBar.current > healthBar.target) {
-                    healthBar.current = Math.max(healthBar.current - healthBar.speed * deltaTime, healthBar.target);
-                    healthBar.scaling.x = healthBar.current / shapeData.health * shapeData.size;
-                    if (healthBar.current === 0) {
-                        shape.setEnabled(false);
-                        shapeData.respawnTime = RESPAWN_TIME;
-                    }
-                } else if (healthBar.target > healthBar.current) {
-                    healthBar.current = Math.min(healthBar.current + healthBar.speed * deltaTime, healthBar.target);
-                    healthBar.scaling.x = healthBar.current / shapeData.health * shapeData.size;
-                    if (healthBar.current === shapeData.health) {
-                        healthBar.setEnabled(false);
-                    }
-                } else if (shapeData.regenTime > 0) {
-                    shapeData.regenTime = Math.max(shapeData.regenTime - deltaTime, 0);
-                    if (shapeData.regenTime === 0) {
-                        healthBar.target = shapeData.health;
-                        healthBar.speed = REGEN_SPEED;
-                    }
-                }
-
-                const position = shape.position;
-                const rotation = shape.rotation;
-                const velocity = shapeData.velocity;
-                const halfSize = shapeData.size * 0.5;
-
-                position.x += velocity.x * deltaTime;
-                if (position.x > this._halfWorldSize - halfSize) {
-                    position.x = this._halfWorldSize - halfSize;
-                    velocity.x = -velocity.x;
-                } else if (position.x < -this._halfWorldSize + halfSize) {
-                    position.x = -this._halfWorldSize + halfSize;
-                    velocity.x = -velocity.x;
-                }
-
-                position.z += velocity.z * deltaTime;
-                if (position.z > this._halfWorldSize - halfSize) {
-                    position.z = this._halfWorldSize - halfSize;
-                    velocity.z = -velocity.z;
-                } else if (position.z < -this._halfWorldSize + halfSize) {
-                    position.z = -this._halfWorldSize + halfSize;
-                    velocity.z = -velocity.z;
-                }
-
-                if (position.y > 0) {
-                    velocity.y -= GRAVITY * deltaTime;
-                    position.y = Math.max(position.y + velocity.y * deltaTime, 0);
-                } else {
-                    const oldSpeed = Math.sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-                    const decayFactor = Math.exp(-deltaTime * 2);
-                    const newSpeed = IDLE_MOVEMENT_SPEED - (IDLE_MOVEMENT_SPEED - oldSpeed) * decayFactor;
-                    const speedFactor = newSpeed / oldSpeed;
-                    velocity.x *= speedFactor;
-                    velocity.z *= speedFactor;
-                }
-
-                rotation.y = (rotation.y + shapeData.rotationVelocity * deltaTime) % Scalar.TwoPi;
-            } else {
-                shapeData.respawnTime = Math.max(shapeData.respawnTime - deltaTime, 0);
-                if (shapeData.respawnTime === 0) {
-                    this._shapes[index].dispose();
-                    this._shapes[index] = this._createShape(index, RESPAWN_DROP_HEIGHT);
-                }
+            if (!shape.update(deltaTime, this._halfWorldSize)) {
+                this._shapes[index] = this._createShape(shape.name, RESPAWN_DROP_HEIGHT);
             }
         }
    }
 
-    private _onCollide(shape: Shape, other: Entity): void {
-        switch (other.metadata.type) {
-            case EntityType.Bullet: {
-                const shapeData = shape.metadata;
-                shapeData.regenTime = REGEN_TIME;
-                if (!shapeData.bulletIds.has(other.uniqueId)) {
-                    shapeData.bulletIds.add(other.uniqueId);
-
-                    const bulletData = other.metadata as unknown as BulletData;
-                    const healthBar = shapeData.healthBar;
-                    healthBar.target = Math.max(Math.min(healthBar.current, healthBar.target) - bulletData.damage, 0);
-                    healthBar.speed = (healthBar.current - healthBar.target) * 10;
-                    healthBar.setEnabled(true);
-
-                    ApplyCollisionForce(shape, other);
-                }
-                break;
-            }
-            case EntityType.Shape: {
-                ApplyCollisionForce(shape, other);
-                break;
-            }
-        }
-    }
-
-    private *_getIterator(): Iterator<Shape> {
+    private *_getIterator(): Iterator<ShapeImpl> {
         for (const shape of this._shapes) {
             if (shape.position.y === 0 && shape.isEnabled()) {
                 yield shape;

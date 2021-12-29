@@ -1,30 +1,95 @@
 import { MeshBuilder, Vector3, TransformNode, StandardMaterial, InstancedMesh } from "@babylonjs/core";
-import { Entity, EntityData, EntityType } from "./entity";
-import { ShapeData } from "./shapes";
+import { CollidableEntity } from "./collisions";
+import { Entity, EntityType } from "./entity";
+import { Shape } from "./shapes";
 import { World } from "./world";
 
 const MAX_DURATION = 3;
 const MAX_COUNT = 100;
 const BULLET_MASS = 0.3;
 
-export interface BulletData {
-    readonly mass: number;
+export interface Bullet extends Entity {
     readonly damage: number;
+    readonly uniqueId: number;
 }
 
-interface Bullet extends InstancedMesh, Entity {
-    metadata: EntityData & BulletData & {
-        readonly index: number;
-        direction: Vector3;
-        currentSpeed: number;
-        targetSpeed: number;
-        time: number;
-        health: number;
-    };
+class BulletImpl implements Bullet, CollidableEntity {
+    private readonly _mesh: InstancedMesh;
+    private _health: number;
+
+    public constructor(mesh: InstancedMesh, size: number) {
+        this._mesh = mesh;
+        this.size = size;
+        this.mass = BULLET_MASS;
+        this.damage = 6; // TODO
+        this._health = 10; // TODO
+    }
+
+    // Bullet
+    public readonly type = EntityType.Bullet;
+    public readonly size: number;
+    public readonly mass: number;
+    public readonly damage: number;
+    public get uniqueId(): number { return this._mesh.uniqueId; }
+    public get position(): Vector3 { return this._mesh.position; }
+    public readonly velocity = new Vector3();
+
+    // Quadtree.Rect
+    public get x() { return this._mesh.position.x - this.size * 0.5; }
+    public get y() { return this._mesh.position.z - this.size * 0.5; }
+    public get width() { return this.size; }
+    public get height() { return this.size; }
+
+    public targetSpeed = 0;
+    public time = 0;
+
+    public isEnabled(): boolean {
+        return this._mesh.isEnabled();
+    }
+
+    public setEnabled(value: boolean): void {
+        this._mesh.setEnabled(value);
+    }
+
+    public update(deltaTime: number): void {
+        if (this._mesh.isEnabled()) {
+            this._mesh.position.x += this.velocity.x * deltaTime;
+            this._mesh.position.y += this.velocity.y * deltaTime;
+            this._mesh.position.z += this.velocity.z * deltaTime;
+
+            const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
+            const decayFactor = Math.exp(-deltaTime * 2);
+            const newSpeed = this.targetSpeed - (this.targetSpeed - oldSpeed) * decayFactor;
+            const speedFactor = newSpeed / oldSpeed;
+            this.velocity.x *= speedFactor;
+            this.velocity.z *= speedFactor;
+
+            this.time += deltaTime;
+            if (this.time > MAX_DURATION) {
+                this._mesh.setEnabled(false);
+            }
+        }
+    }
+
+    public onCollide(other: Entity): void {
+        switch (other.type) {
+            case EntityType.Bullet: {
+                break;
+            }
+            case EntityType.Shape: {
+                const shape = other as Shape;
+                this._health = Math.max(this._health - shape.damage, 0);
+                if (this._health === 0) {
+                    this.setEnabled(false);
+                }
+                break;
+            }
+        }
+    }
 }
 
 export class Bullets {
-    private readonly _bullets: Array<Bullet>;
+    private readonly _bullets: Array<BulletImpl>;
     private _start = 0;
     private _count = 0;
 
@@ -36,62 +101,24 @@ export class Bullets {
         sources.parent = root;
         sources.setEnabled(false);
 
-        const bulletSource = MeshBuilder.CreateSphere("bullet", { segments: 4 }, scene);
-        bulletSource.parent = sources;
+        const bulletSourceMesh = MeshBuilder.CreateSphere("bullet", { segments: 4 }, scene);
+        bulletSourceMesh.parent = sources;
         const material = new StandardMaterial("bullet", scene);
         material.diffuseColor.set(0.3, 0.7, 1);
-        bulletSource.material = material;
+        bulletSourceMesh.material = material;
 
-        this._bullets = new Array<Bullet>(MAX_COUNT);
+        this._bullets = new Array<BulletImpl>(MAX_COUNT);
         for (let index = 0; index < this._bullets.length; ++index) {
-            const bullet = bulletSource.createInstance(index.toString().padStart(2, "0")) as Bullet;
-            bullet.metadata = {
-                index: index,
-                type: EntityType.Bullet,
-                size: diameter,
-                mass: BULLET_MASS,
-                damage: 5, // TODO
-                health: 10, // TODO
-                direction: Vector3.Zero(),
-                currentSpeed: 0,
-                targetSpeed: 0,
-                time: 0,
-                onCollide: (other) => this._onCollide(bullet, other),
-            };
-            bullet.parent = root;
-            bullet.scaling.setAll(diameter);
-            bullet.isPickable = false;
-            bullet.doNotSyncBoundingInfo = true;
-            bullet.alwaysSelectAsActiveMesh = true;
-            bullet.setEnabled(false);
-            this._bullets[index] = bullet;
+            const name = index.toString().padStart(2, "0");
+            const mesh = bulletSourceMesh.createInstance(name);
+            mesh.parent = root;
+            mesh.scaling.setAll(diameter);
+            mesh.isPickable = false;
+            mesh.doNotSyncBoundingInfo = true;
+            mesh.alwaysSelectAsActiveMesh = true;
+            mesh.setEnabled(false);
+            this._bullets[index] = new BulletImpl(mesh, diameter);
         }
-
-        const update = (bullet: Bullet): void => {
-            if (bullet.isEnabled()) {
-                const metadata = bullet.metadata;
-                const deltaTime = scene.deltaTime * 0.001;
-
-                if (metadata.time > 0) {
-                    const decayFactor = Math.exp(-deltaTime * 2);
-                    metadata.currentSpeed = metadata.targetSpeed - (metadata.targetSpeed - metadata.currentSpeed) * decayFactor;
-                    const speedFactor = metadata.currentSpeed * deltaTime;
-                    bullet.position.x += metadata.direction.x * speedFactor;
-                    bullet.position.y += metadata.direction.y * speedFactor;
-                    bullet.position.z += metadata.direction.z * speedFactor;
-                }
-
-                metadata.time += deltaTime;
-                if (metadata.time > MAX_DURATION) {
-                    bullet.setEnabled(false);
-                }
-            }
-
-            while (this._count > 0 && !this._bullets[this._start].isEnabled()) {
-                this._start = (this._start + 1) % this._bullets.length;
-                --this._count;
-            }
-        };
 
         const bullets = {
             [Symbol.iterator]: this._getIterator.bind(this)
@@ -99,7 +126,12 @@ export class Bullets {
 
         scene.onAfterAnimationsObservable.add(() => {
             for (const bullet of bullets) {
-                update(bullet);
+                bullet.update(scene.deltaTime * 0.001);
+            }
+
+            while (this._count > 0 && !this._bullets[this._start].isEnabled()) {
+                this._start = (this._start + 1) % this._bullets.length;
+                --this._count;
             }
         });
 
@@ -108,12 +140,9 @@ export class Bullets {
 
     public add(position: Vector3, direction: Vector3, initialSpeed: number, targetSpeed: number, offset: number): void {
         const bullet = this._bullets[(this._start + this._count) % this._bullets.length];
-
-        const metadata = bullet.metadata;
-        metadata.direction.copyFrom(direction);
-        metadata.currentSpeed = initialSpeed;
-        metadata.targetSpeed = targetSpeed;
-        metadata.time = 0;
+        direction.scaleToRef(initialSpeed, bullet.velocity);
+        bullet.targetSpeed = targetSpeed;
+        bullet.time = 0;
 
         bullet.position.set(
             position.x + direction.x * offset,
@@ -129,24 +158,7 @@ export class Bullets {
         }
     }
 
-    private _onCollide(bullet: Bullet, other: Entity): void {
-        switch (other.metadata.type) {
-            case EntityType.Bullet: {
-                break;
-            }
-            case EntityType.Shape: {
-                const bulletData = bullet.metadata;
-                const shapeData = other.metadata as unknown as ShapeData;
-                bulletData.health -= shapeData.damage;
-                if (bulletData.health < 0.001) {
-                    bullet.setEnabled(false);
-                }
-                break;
-            }
-        }
-    }
-
-    private *_getIterator(): Iterator<Bullet> {
+    private *_getIterator(): Iterator<BulletImpl> {
         const end = this._start + this._count;
         if (end <= this._bullets.length) {
             for (let index = this._start; index < end; ++index) {
