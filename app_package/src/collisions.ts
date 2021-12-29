@@ -2,6 +2,8 @@ import Quadtree from "@timohausmann/quadtree-js";
 import { Entity } from "./entity";
 import { World } from "./world";
 
+const COLLISION_REPEAT_RATE = 1;
+
 export function ApplyCollisionForce(target: Entity, other: Entity, strength = 1): void {
     const position = target.position;
     const velocity = target.velocity;
@@ -18,9 +20,8 @@ export interface CollidableEntity extends Entity, Quadtree.Rect {
 
 export class Collisions {
     private readonly _quadtree: Quadtree;
-    private readonly _entries = new Array<{
-        entities: Iterable<CollidableEntity>;
-    }>();
+    private readonly _entries = new Array<{ entities: Iterable<CollidableEntity> }>();
+    private readonly _collidedEntitiesMap = new Map<CollidableEntity, Map<CollidableEntity, { time: number }>>();
 
     public constructor(world: World) {
         const size = world.size;
@@ -28,7 +29,7 @@ export class Collisions {
         this._quadtree = new Quadtree({ x: -halfSize, y: -halfSize, width: size, height: size });
 
         world.scene.onAfterAnimationsObservable.add(() => {
-            this._update();
+            this._update(world.scene.deltaTime * 0.001);
         });
     }
 
@@ -36,7 +37,20 @@ export class Collisions {
         this._entries.push({ entities: entities });
     }
 
-    private _update(): void {
+    private _update(deltaTime: number): void {
+        const targetMap = this._collidedEntitiesMap;
+        for (const [target, candidateMap] of targetMap) {
+            for (const [candidate, data] of candidateMap) {
+                data.time += deltaTime;
+                if (data.time >= COLLISION_REPEAT_RATE) {
+                    candidateMap.delete(candidate);
+                    if (candidateMap.size === 0) {
+                        targetMap.delete(target);
+                    }
+                }
+            }
+        }
+
         this._quadtree.clear();
 
         const intersects = (a: Entity, b: Entity): boolean => {
@@ -60,7 +74,12 @@ export class Collisions {
                 for (const candidate of candidates) {
                     if (candidate !== target) {
                         if (intersects(target, candidate)) {
-                            target.onCollide(candidate);
+                            const candidateMap = targetMap.get(target) || new Map<CollidableEntity, { time: number }>();
+                            if (!candidateMap.has(candidate)) {
+                                target.onCollide(candidate);
+                                candidateMap.set(candidate, { time: 0 });
+                                targetMap.set(target, candidateMap);
+                            }
                         }
                     }
                 }

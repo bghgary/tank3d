@@ -1,19 +1,13 @@
-import { MeshBuilder, Vector3, TransformNode, StandardMaterial, InstancedMesh } from "@babylonjs/core";
+import { Vector3, TransformNode, InstancedMesh } from "@babylonjs/core";
 import { CollidableEntity } from "./collisions";
 import { Entity, EntityType } from "./entity";
-import { Shape } from "./shapes";
 import { World } from "./world";
 
 const MAX_DURATION = 3;
 const MAX_COUNT = 100;
 const BULLET_MASS = 0.3;
 
-export interface Bullet extends Entity {
-    readonly damage: number;
-    readonly uniqueId: number;
-}
-
-class BulletImpl implements Bullet, CollidableEntity {
+class Bullet implements CollidableEntity {
     private readonly _mesh: InstancedMesh;
     private _health: number;
 
@@ -30,7 +24,6 @@ class BulletImpl implements Bullet, CollidableEntity {
     public readonly size: number;
     public readonly mass: number;
     public readonly damage: number;
-    public get uniqueId(): number { return this._mesh.uniqueId; }
     public get position(): Vector3 { return this._mesh.position; }
     public readonly velocity = new Vector3();
 
@@ -43,13 +36,8 @@ class BulletImpl implements Bullet, CollidableEntity {
     public targetSpeed = 0;
     public time = 0;
 
-    public isEnabled(): boolean {
-        return this._mesh.isEnabled();
-    }
-
-    public setEnabled(value: boolean): void {
-        this._mesh.setEnabled(value);
-    }
+    public get enabled(): boolean { return this._mesh.isEnabled(); }
+    public set enabled(value: boolean) { this._mesh.setEnabled(value); }
 
     public update(deltaTime: number): void {
         if (this._mesh.isEnabled()) {
@@ -74,14 +62,19 @@ class BulletImpl implements Bullet, CollidableEntity {
     public onCollide(other: Entity): void {
         switch (other.type) {
             case EntityType.Bullet: {
+                // TODO
                 break;
             }
             case EntityType.Shape: {
-                const shape = other as Shape;
-                this._health = Math.max(this._health - shape.damage, 0);
+                // TODO
+                this._health = Math.max(this._health - other.damage, 0);
                 if (this._health === 0) {
-                    this.setEnabled(false);
+                    this._mesh.setEnabled(false);
                 }
+                break;
+            }
+            case EntityType.Tank: {
+                // TODO
                 break;
             }
         }
@@ -89,7 +82,7 @@ class BulletImpl implements Bullet, CollidableEntity {
 }
 
 export class Bullets {
-    private readonly _bullets: Array<BulletImpl>;
+    private readonly _bullets: Array<Bullet>;
     private _start = 0;
     private _count = 0;
 
@@ -97,27 +90,14 @@ export class Bullets {
         const scene = world.scene;
         const root = new TransformNode("bullets", scene);
 
-        const sources = new TransformNode("sources", scene);
-        sources.parent = root;
-        sources.setEnabled(false);
-
-        const bulletSourceMesh = MeshBuilder.CreateSphere("bullet", { segments: 4 }, scene);
-        bulletSourceMesh.parent = sources;
-        const material = new StandardMaterial("bullet", scene);
-        material.diffuseColor.set(0.3, 0.7, 1);
-        bulletSourceMesh.material = material;
-
-        this._bullets = new Array<BulletImpl>(MAX_COUNT);
+        this._bullets = new Array<Bullet>(MAX_COUNT);
+        const padLength = (this._bullets.length - 1).toString().length;
         for (let index = 0; index < this._bullets.length; ++index) {
-            const name = index.toString().padStart(2, "0");
-            const mesh = bulletSourceMesh.createInstance(name);
-            mesh.parent = root;
+            const name = index.toString().padStart(padLength, "0");
+            const mesh = world.sources.createInstance(world.sources.bullet, name, root);
             mesh.scaling.setAll(diameter);
-            mesh.isPickable = false;
-            mesh.doNotSyncBoundingInfo = true;
-            mesh.alwaysSelectAsActiveMesh = true;
             mesh.setEnabled(false);
-            this._bullets[index] = new BulletImpl(mesh, diameter);
+            this._bullets[index] = new Bullet(mesh, diameter);
         }
 
         const bullets = {
@@ -129,7 +109,7 @@ export class Bullets {
                 bullet.update(scene.deltaTime * 0.001);
             }
 
-            while (this._count > 0 && !this._bullets[this._start].isEnabled()) {
+            while (this._count > 0 && !this._bullets[this._start].enabled) {
                 this._start = (this._start + 1) % this._bullets.length;
                 --this._count;
             }
@@ -149,7 +129,7 @@ export class Bullets {
             position.y + direction.y * offset,
             position.z + direction.z * offset);
 
-        bullet.setEnabled(true);
+        bullet.enabled = true;
 
         if (this._count == this._bullets.length) {
             this._start = (this._start + 1) % this._bullets.length;
@@ -158,7 +138,7 @@ export class Bullets {
         }
     }
 
-    private *_getIterator(): Iterator<BulletImpl> {
+    private *_getIterator(): Iterator<Bullet> {
         const end = this._start + this._count;
         if (end <= this._bullets.length) {
             for (let index = this._start; index < end; ++index) {

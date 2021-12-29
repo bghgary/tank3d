@@ -1,22 +1,25 @@
 import { MeshBuilder, StandardMaterial, Color3, Scene, Vector3, TransformNode, Mesh } from "@babylonjs/core";
 import { Bullets } from "./bullets";
+import { ApplyCollisionForce, CollidableEntity } from "./collisions";
+import { Entity, EntityType } from "./entity";
+import { Health } from "./health";
 import { World } from "./world";
 
 export interface TankProperties {
     barrelDiameter: number;
     barrelLength: number;
-    reloadSpeed: number;
+    reloadTime: number;
     bulletSpeed: number;
     movementSpeed: number;
 }
 
-export class Tank {
+export class Tank implements CollidableEntity {
     private readonly _properties: TankProperties;
     private readonly _scene: Scene;
     private readonly _node: TransformNode;
+    private readonly _health: Health;
     private readonly _bullets: Bullets;
-    private _lastBulletShotTime = 0;
-    private _velocity = Vector3.Zero();
+    private _reloadTime = 0;
 
     public constructor(name: string, properties: TankProperties, world: World) {
         this._properties = properties;
@@ -26,72 +29,113 @@ export class Tank {
         this._node = new TransformNode(name, this._scene);
 
         // Create tank body.
-        const body = MeshBuilder.CreateSphere("body", { segments: 12 }, this._scene);
-        body.parent = this._node;
-        body.isPickable = false;
+        const bodyMesh = MeshBuilder.CreateSphere("body", { segments: 12 }, this._scene);
+        bodyMesh.parent = this._node;
+        bodyMesh.isPickable = false;
+        bodyMesh.doNotSyncBoundingInfo = true;
+        bodyMesh.alwaysSelectAsActiveMesh = true;
 
         // Create tank material.
         const bodyMaterial = new StandardMaterial("body", this._scene);
         bodyMaterial.diffuseColor = new Color3(0.3, 0.7, 1);
-        body.material = bodyMaterial;
+        bodyMesh.material = bodyMaterial;
 
         // Create tank barrel.
-        const barrel = MeshBuilder.CreateCylinder("barrel", { tessellation: 16, cap: Mesh.CAP_END, diameter: properties.barrelDiameter, height: properties.barrelLength }, this._scene);
-        barrel.parent = this._node;
-        barrel.rotation.x = Math.PI * 0.5;
-        barrel.position.z = properties.barrelLength * 0.5;
-        barrel.isPickable = false;
+        const barrelMesh = MeshBuilder.CreateCylinder("barrel", { tessellation: 16, cap: Mesh.CAP_END, diameter: properties.barrelDiameter, height: properties.barrelLength }, this._scene);
+        barrelMesh.parent = this._node;
+        barrelMesh.rotation.x = Math.PI * 0.5;
+        barrelMesh.position.z = properties.barrelLength * 0.5;
+        barrelMesh.isPickable = false;
+        barrelMesh.doNotSyncBoundingInfo = true;
+        barrelMesh.alwaysSelectAsActiveMesh = true;
 
         // Create tank barrel material.
         const barrelMaterial = new StandardMaterial("barrel", this._scene);
         barrelMaterial.diffuseColor = new Color3(0.5, 0.5, 0.5);
-        barrel.material = barrelMaterial;
+        barrelMesh.material = barrelMaterial;
+
+        // Create health.
+        const healthMesh = world.sources.createInstance(world.sources.health, "health", bodyMesh);
+        healthMesh.position.y = this.size * 0.5 + 0.4;
+        healthMesh.scaling.x = this.size;
+        healthMesh.billboardMode = Mesh.BILLBOARDMODE_Y;
+        healthMesh.setEnabled(false);
+        this._health = new Health(healthMesh, 1, 500);
 
         // Create bullets.
         const bulletDiameter = this._properties.barrelDiameter * 0.75;
         this._bullets = new Bullets(world, bulletDiameter);
+
+        // Register with collisions.
+        world.collisions.register([this]);
     }
 
-    public get position(): Vector3 {
-        return this._node.position;
-    }
+    // Entity
+    public readonly type = EntityType.Tank;
+    public readonly size = 1;
+    public readonly mass = 5;
+    public readonly damage = 15; // TODO
+    public get position(): Vector3 { return this._node.position; }
+    public readonly velocity = new Vector3();
+
+    // Quadtree.Rect
+    public get x() { return this._node.position.x - this.size * 0.5; }
+    public get y() { return this._node.position.z - this.size * 0.5; }
+    public get width() { return this.size; }
+    public get height() { return this.size; }
 
     public lookAt(targetPoint: Vector3): void {
         this._node.lookAt(targetPoint);
     }
 
-    public rotate(angularSpeed: number): void {
-        const deltaTime = this._scene.deltaTime * 0.001;
-        this._node.rotation.y += angularSpeed * deltaTime;
-    }
-
-    public move(x: number, z: number): void {
-        const deltaTime = this._scene.deltaTime * 0.001;
-
+    public update(x: number, z: number, angularSpeed: number, shoot: boolean, deltaTime: number): boolean {
         const decayFactor = Math.exp(-deltaTime * 4);
         const sqrLength = x * x + z * z;
         if (sqrLength === 0) {
-            this._velocity.x = this._velocity.x * decayFactor;
-            this._velocity.z = this._velocity.z * decayFactor;
+            this.velocity.x *= decayFactor;
+            this.velocity.z *= decayFactor;
         } else {
             const movementFactor = this._properties.movementSpeed / Math.sqrt(sqrLength);
             x *= movementFactor;
             z *= movementFactor;
-            this._velocity.x = x - (x - this._velocity.x) * decayFactor;
-            this._velocity.z = z - (z - this._velocity.z) * decayFactor;
+            this.velocity.x = x - (x - this.velocity.x) * decayFactor;
+            this.velocity.z = z - (z - this.velocity.z) * decayFactor;
         }
 
-        this._node.position.x += this._velocity.x * deltaTime;
-        this._node.position.z += this._velocity.z * deltaTime;
-    }
+        this._node.position.x += this.velocity.x * deltaTime;
+        this._node.position.z += this.velocity.z * deltaTime;
 
-    public shoot(): void {
-        const currentTime = Date.now();
-        if (currentTime - this._lastBulletShotTime > this._properties.reloadSpeed * 1000) {
-            this._lastBulletShotTime = currentTime;
-            const initialSpeed = Vector3.Dot(this._velocity, this._node.forward) + this._properties.bulletSpeed;
+        this._node.rotation.y += angularSpeed * deltaTime;
+
+        this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
+        if (shoot && this._reloadTime === 0) {
+            const initialSpeed = Vector3.Dot(this.velocity, this._node.forward) + this._properties.bulletSpeed;
             const bulletDiameter = this._properties.barrelDiameter * 0.75;
             this._bullets.add(this._node.position, this._node.forward, initialSpeed, this._properties.bulletSpeed, this._properties.barrelLength + bulletDiameter * 0.5);
+            this._reloadTime = this._properties.reloadTime;
+        }
+
+        if (!this._health.update(deltaTime)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public onCollide(other: Entity): void {
+        switch (other.type) {
+            case EntityType.Bullet: {
+                break;
+            }
+            case EntityType.Shape: {
+                this._health.damage(other.damage);
+                ApplyCollisionForce(this, other);
+                break;
+            }
+            case EntityType.Tank: {
+                // TODO
+                break;
+            }
         }
     }
 }

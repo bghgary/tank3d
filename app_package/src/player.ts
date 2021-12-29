@@ -2,6 +2,8 @@ import { ArcRotateCamera, KeyboardEventTypes, PointerEventTypes, Vector3 } from 
 import { Tank } from "./tank";
 import { World } from "./world";
 
+const AUTO_ROTATE_SPEED = 1;
+
 const enum Command {
     Up,
     Down,
@@ -40,7 +42,7 @@ export class Player {
     private _autoRotate = false;
 
     public constructor(world: World) {
-        this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadSpeed: 0.5, bulletSpeed: 5, movementSpeed: 5 }, world);
+        this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 }, world);
 
         const scene = world.scene;
         const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3.5, 15, Vector3.Zero(), scene);
@@ -97,17 +99,13 @@ export class Player {
             }
         });
 
-        scene.onBeforeRenderObservable.add(() => {
+        scene.onAfterAnimationsObservable.add(() => {
             const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
             const z = (this._commandState.get(Command.Up) ? 1 : 0) + (this._commandState.get(Command.Down) ? -1 : 0);
-            this._tank.move(x, z);
-
-            if (this._autoRotate) {
-                this._tank.rotate(1);
-            }
-
-            if (this._autoShoot || this._commandState.get(Command.Shoot)) {
-                this._tank.shoot();
+            const angularSpeed = this._autoRotate ? AUTO_ROTATE_SPEED : 0;
+            const shoot = this._autoShoot || !!this._commandState.get(Command.Shoot);
+            if (!this._tank.update(x, z, angularSpeed, shoot, scene.deltaTime * 0.001)) {
+                setTimeout(() => alert("You're dead!"), 0);
             }
 
             camera.target.copyFrom(this._tank.position);
