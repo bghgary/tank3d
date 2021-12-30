@@ -32,9 +32,9 @@ export class World {
         });
 
         let previousTime = performance.now() * 0.001;
-        engine.runRenderLoop(() => {
+        const renderLoop = () => {
             const currentTime = performance.now() * 0.001;
-            const deltaTime = Math.min((currentTime - previousTime), 1);
+            const deltaTime = currentTime - previousTime;
             previousTime = currentTime;
 
             this.collisions.update(deltaTime);
@@ -42,7 +42,18 @@ export class World {
             this.player.update(deltaTime);
 
             this.scene.render(false);
+        };
+
+        engine.onCanvasBlurObservable.add(() => {
+            engine.stopRenderLoop(renderLoop);
         });
+
+        engine.onCanvasFocusObservable.add(() => {
+            previousTime = performance.now() * 0.001;
+            engine.runRenderLoop(renderLoop);
+        });
+
+        engine.runRenderLoop(renderLoop);
     }
 
     public readonly size: number;

@@ -124,11 +124,14 @@ export class Player {
     }
 
     public update(deltaTime: number): void {
+        if (this._autoRotate) {
+            this._tank.rotate(AUTO_ROTATE_SPEED * deltaTime);
+        }
+
         const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
         const z = (this._commandState.get(Command.Up) ? 1 : 0) + (this._commandState.get(Command.Down) ? -1 : 0);
-        const angularSpeed = this._autoRotate ? AUTO_ROTATE_SPEED : 0;
         const shoot = this._autoShoot || !!this._commandState.get(Command.Shoot);
-        this._tank.update(deltaTime, x, z, angularSpeed, shoot, (entity) => {
+        this._tank.update(deltaTime, x, z, shoot, (entity) => {
             // TODO
             setTimeout(() => alert("You're dead!"), 0);
         });
