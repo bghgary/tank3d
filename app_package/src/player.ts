@@ -123,10 +123,19 @@ export class Player {
         });
 
         world.shapes.onShapeDestroyedObservable.add((event) => {
-            if (event.other.type === EntityType.Bullet) {
-                const bullet = event.other as Bullet;
-                if (bullet.owner === this._tank) {
-                    this._score.add(event.shape.points);
+            switch (event.other.type) {
+                case EntityType.Bullet: {
+                    const bullet = event.other as Bullet;
+                    if (bullet.owner === this._tank) {
+                        this._score.add(event.shape.points);
+                    }
+                    break;
+                }
+                case EntityType.Tank: {
+                    if (event.other === this._tank) {
+                        this._score.add(event.shape.points);
+                    }
+                    break;
                 }
             }
         });
