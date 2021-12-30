@@ -1,4 +1,4 @@
-import { InstancedMesh, Mesh, Scalar, Scene, TransformNode, Vector3 } from "@babylonjs/core";
+import { InstancedMesh, Mesh, Observable, Scalar, Scene, TransformNode, Vector3 } from "@babylonjs/core";
 import { ApplyCollisionForce, CollidableEntity } from "./collisions";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
@@ -11,16 +11,21 @@ const RESPAWN_TIME = 1;
 const RESPAWN_DROP_HEIGHT = 5;
 const GRAVITY = 9.8;
 
-class Shape implements CollidableEntity {
+export interface Shape extends Entity {
+    readonly points: number;
+}
+
+class ShapeImpl implements Shape, CollidableEntity {
     private readonly _mesh: InstancedMesh;
     private readonly _health: Health;
 
-    public constructor(mesh: InstancedMesh, healthMesh: InstancedMesh, size: number, health: number, damage: number) {
+    public constructor(mesh: InstancedMesh, healthMesh: InstancedMesh, size: number, health: number, damage: number, points: number) {
         this._mesh = mesh;
         this._health = new Health(healthMesh, size, health);
         this.size = size;
         this.mass = size * size;
         this.damage = damage;
+        this.points = points;
     }
 
     // Entity
@@ -28,6 +33,7 @@ class Shape implements CollidableEntity {
     public readonly size: number;
     public readonly mass: number;
     public readonly damage: number;
+    public readonly points: number;
     public get position(): Vector3 { return this._mesh.position; }
     public readonly velocity = new Vector3();
 
@@ -41,16 +47,16 @@ class Shape implements CollidableEntity {
     public set rotation(value: number) { this._mesh.rotation.y = value; }
     public rotationVelocity = 0;
 
-    public respawnTime = 0;
-
     public get name(): string { return this._mesh.name; }
     public get enabled(): boolean { return this._mesh.isEnabled(); }
 
-    public update(deltaTime: number, halfWorldSize: number): boolean {
-        if (!this._health.update(deltaTime)) {
+    public respawnTime = RESPAWN_TIME;
+
+    public update(deltaTime: number, halfWorldSize: number, onDestroyed: (entity: Entity) => void): void {
+        this._health.update(deltaTime, (entity) => {
             this._mesh.setEnabled(false);
-            this.respawnTime = RESPAWN_TIME;
-        }
+            onDestroyed(entity);
+        });
 
         if (this._mesh.isEnabled()) {
             const halfSize = this.size * 0.5;
@@ -92,21 +98,14 @@ class Shape implements CollidableEntity {
             }
 
             this._mesh.rotation.y = (this._mesh.rotation.y + this.rotationVelocity * deltaTime) % Scalar.TwoPi;
-        } else {
-            this.respawnTime = Math.max(this.respawnTime - deltaTime, 0);
-            if (this.respawnTime === 0) {
-                return false;
-            }
         }
-
-        return true;
     }
 
     public onCollide(other: Entity): void {
         switch (other.type) {
             case EntityType.Bullet:
             case EntityType.Tank: {
-                this._health.damage(other.damage);
+                this._health.damage(other);
                 ApplyCollisionForce(this, other);
                 break;
             }
@@ -122,7 +121,7 @@ export class Shapes {
     private readonly _sources: Sources;
     private readonly _halfWorldSize: number;
     private readonly _root: TransformNode;
-    private readonly _shapes: Array<Shape>;
+    private readonly _shapes: Array<ShapeImpl>;
 
     constructor(world: World, numShapes: number) {
         this._sources = world.sources;
@@ -148,8 +147,10 @@ export class Shapes {
         });
     }
 
-    private _createShape(name: string, dropHeight: number): Shape {
-        const create = (source: Mesh, size: number, health: number, damage: number): Shape => {
+    public onShapeDestroyedObservable = new Observable<{ shape: Shape, other: Entity }>();
+
+    private _createShape(name: string, dropHeight: number): ShapeImpl {
+        const create = (source: Mesh, size: number, health: number, damage: number, points: number): ShapeImpl => {
             const mesh = this._sources.createInstance(source, name, this._root);
 
             const healthMesh = this._sources.createInstance(this._sources.health, "health", mesh);
@@ -158,7 +159,7 @@ export class Shapes {
             healthMesh.billboardMode = Mesh.BILLBOARDMODE_Y;
             healthMesh.setEnabled(false);
 
-            const shape = new Shape(mesh, healthMesh, size, health, damage);
+            const shape = new ShapeImpl(mesh, healthMesh, size, health, damage, points);
 
             const x = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
             const z = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
@@ -173,15 +174,15 @@ export class Shapes {
         };
 
         const entries = [
-            { source: this._sources.cube,         size: 0.60, health: 10,  damage: 10  },
-            { source: this._sources.tetrahedron,  size: 0.60, health: 30,  damage: 20  },
-            { source: this._sources.dodecahedron, size: 1.00, health: 125, damage: 50  },
-            { source: this._sources.goldberg11,   size: 1.62, health: 250, damage: 130 },
+            { source: this._sources.cube,         size: 0.60, health: 10,  damage: 10,  points: 10  },
+            { source: this._sources.tetrahedron,  size: 0.60, health: 30,  damage: 20,  points: 25  },
+            { source: this._sources.dodecahedron, size: 1.00, health: 125, damage: 50,  points: 120 },
+            { source: this._sources.goldberg11,   size: 1.62, health: 250, damage: 130, points: 200 },
         ];
 
         const n = Math.random();
         const entry = entries[n < 0.6 ? 0 : n < 0.95 ? 1 : n < 0.99 ? 2 : 3];
-        return create(entry.source, entry.size, entry.health, entry.damage);
+        return create(entry.source, entry.size, entry.health, entry.damage, entry.points);
     }
 
     private _update(scene: Scene): void {
@@ -189,13 +190,20 @@ export class Shapes {
 
         for (let index = 0; index < this._shapes.length; ++index) {
             const shape = this._shapes[index];
-            if (!shape.update(deltaTime, this._halfWorldSize)) {
-                this._shapes[index] = this._createShape(shape.name, RESPAWN_DROP_HEIGHT);
+            if (shape.enabled) {
+                shape.update(deltaTime, this._halfWorldSize, (entity) => {
+                    this.onShapeDestroyedObservable.notifyObservers({ shape: shape, other: entity });
+                });
+            } else {
+                shape.respawnTime = Math.max(shape.respawnTime - deltaTime, 0);
+                if (shape.respawnTime === 0) {
+                    this._shapes[index] = this._createShape(shape.name, RESPAWN_DROP_HEIGHT);
+                }
             }
         }
-   }
+    }
 
-    private *_getIterator(): Iterator<Shape> {
+    private *_getIterator(): Iterator<ShapeImpl> {
         for (const shape of this._shapes) {
             if (shape.position.y === 0 && shape.enabled) {
                 yield shape;

@@ -1,17 +1,23 @@
 import { Vector3, TransformNode, InstancedMesh } from "@babylonjs/core";
 import { CollidableEntity } from "./collisions";
 import { Entity, EntityType } from "./entity";
+import { Tank } from "./tank";
 import { World } from "./world";
 
 const MAX_DURATION = 3;
 const MAX_COUNT = 100;
 const BULLET_MASS = 0.3;
 
-class Bullet implements CollidableEntity {
+export interface Bullet extends Entity {
+    readonly owner: Tank;
+}
+
+class BulletImpl implements Bullet, CollidableEntity {
     private readonly _mesh: InstancedMesh;
     private _health: number;
 
-    public constructor(mesh: InstancedMesh, size: number) {
+    public constructor(owner: Tank, mesh: InstancedMesh, size: number) {
+        this.owner = owner;
         this._mesh = mesh;
         this.size = size;
         this.mass = BULLET_MASS;
@@ -32,6 +38,8 @@ class Bullet implements CollidableEntity {
     public get y() { return this._mesh.position.z - this.size * 0.5; }
     public get width() { return this.size; }
     public get height() { return this.size; }
+
+    public readonly owner: Tank;
 
     public targetSpeed = 0;
     public time = 0;
@@ -82,22 +90,22 @@ class Bullet implements CollidableEntity {
 }
 
 export class Bullets {
-    private readonly _bullets: Array<Bullet>;
+    private readonly _bullets: Array<BulletImpl>;
     private _start = 0;
     private _count = 0;
 
-    constructor(world: World, diameter: number) {
+    constructor(owner: Tank, world: World, size: number) {
         const scene = world.scene;
         const root = new TransformNode("bullets", scene);
 
-        this._bullets = new Array<Bullet>(MAX_COUNT);
+        this._bullets = new Array<BulletImpl>(MAX_COUNT);
         const padLength = (this._bullets.length - 1).toString().length;
         for (let index = 0; index < this._bullets.length; ++index) {
             const name = index.toString().padStart(padLength, "0");
             const mesh = world.sources.createInstance(world.sources.bullet, name, root);
-            mesh.scaling.setAll(diameter);
+            mesh.scaling.setAll(size);
             mesh.setEnabled(false);
-            this._bullets[index] = new Bullet(mesh, diameter);
+            this._bullets[index] = new BulletImpl(owner, mesh, size);
         }
 
         const bullets = {
@@ -138,7 +146,7 @@ export class Bullets {
         }
     }
 
-    private *_getIterator(): Iterator<Bullet> {
+    private *_getIterator(): Iterator<BulletImpl> {
         const end = this._start + this._count;
         if (end <= this._bullets.length) {
             for (let index = this._start; index < end; ++index) {

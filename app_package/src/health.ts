@@ -1,4 +1,5 @@
-import { InstancedMesh } from "@babylonjs/core";
+import { InstancedMesh, Nullable } from "@babylonjs/core";
+import { Entity } from "./entity";
 
 const REGEN_TIME = 30;
 const REGEN_SPEED = 0.2;
@@ -12,6 +13,7 @@ export class Health {
     private _target: number;
     private _speed = 0;
     private _regenTime = 0;
+    private _lastDamageEntity: Nullable<Entity> = null;
 
     public constructor(mesh: InstancedMesh, size: number, max: number) {
         this._mesh = mesh;
@@ -19,14 +21,14 @@ export class Health {
         this._max = this._current = this._target = max;
     }
 
-    public update(deltaTime: number): boolean {
+    public update(deltaTime: number, onZero: (entity: Entity) => void): void {
         if (this._target < this._current) {
             this._mesh.setEnabled(true);
             this._current = Math.max(Math.max(this._current - this._speed * deltaTime, this._target), 0);
             this._mesh.scaling.x = this._current / this._max * this._size;
             if (this._current === 0) {
                 this._target = this._current;
-                return false;
+                onZero(this._lastDamageEntity!);
             }
         } else if (this._target > this._current) {
             this._mesh.setEnabled(true);
@@ -43,13 +45,15 @@ export class Health {
                 this._speed = this._max * REGEN_SPEED;
             }
         }
-
-        return true;
     }
 
-    public damage(value: number): void {
-        this._target = Math.min(this._current, this._target) - value;
+    public damage(entity: Entity): void {
+        this._target = Math.min(this._current, this._target) - entity.damage;
         this._speed = (this._current - this._target) * DAMAGE_SPEED;
         this._regenTime = REGEN_TIME;
+
+        if (this._target <= 0) {
+            this._lastDamageEntity = entity;
+        }
     }
 }

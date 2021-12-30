@@ -64,7 +64,7 @@ export class Tank implements CollidableEntity {
 
         // Create bullets.
         const bulletDiameter = this._properties.barrelDiameter * 0.75;
-        this._bullets = new Bullets(world, bulletDiameter);
+        this._bullets = new Bullets(this, world, bulletDiameter);
 
         // Register with collisions.
         world.collisions.register([this]);
@@ -88,7 +88,7 @@ export class Tank implements CollidableEntity {
         this._node.lookAt(targetPoint);
     }
 
-    public update(x: number, z: number, angularSpeed: number, shoot: boolean, deltaTime: number): boolean {
+    public update(x: number, z: number, angularSpeed: number, shoot: boolean, deltaTime: number, onDestroyed: (entity: Entity) => void): void {
         const decayFactor = Math.exp(-deltaTime * 4);
         const sqrLength = x * x + z * z;
         if (sqrLength === 0) {
@@ -115,11 +115,7 @@ export class Tank implements CollidableEntity {
             this._reloadTime = this._properties.reloadTime;
         }
 
-        if (!this._health.update(deltaTime)) {
-            return false;
-        }
-
-        return true;
+        this._health.update(deltaTime, onDestroyed);
     }
 
     public onCollide(other: Entity): void {
@@ -128,7 +124,7 @@ export class Tank implements CollidableEntity {
                 break;
             }
             case EntityType.Shape: {
-                this._health.damage(other.damage);
+                this._health.damage(other);
                 ApplyCollisionForce(this, other);
                 break;
             }
