@@ -34,6 +34,7 @@ class ShapeImpl implements Shape, CollidableEntity {
     public readonly mass: number;
     public readonly damage: number;
     public readonly points: number;
+    public readonly collisionRepeatRate = 1;
     public get position(): Vector3 { return this._mesh.position; }
     public readonly velocity = new Vector3();
 

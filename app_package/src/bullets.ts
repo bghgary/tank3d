@@ -1,5 +1,5 @@
 import { Vector3, TransformNode, InstancedMesh } from "@babylonjs/core";
-import { CollidableEntity } from "./collisions";
+import { ApplyCollisionForce, CollidableEntity } from "./collisions";
 import { Entity, EntityType } from "./entity";
 import { Tank } from "./tank";
 import { World } from "./world";
@@ -30,6 +30,7 @@ class BulletImpl implements Bullet, CollidableEntity {
     public readonly size: number;
     public readonly mass: number;
     public readonly damage: number;
+    public readonly collisionRepeatRate = 0.2;
     public get position(): Vector3 { return this._mesh.position; }
     public readonly velocity = new Vector3();
 
@@ -74,7 +75,7 @@ class BulletImpl implements Bullet, CollidableEntity {
                 break;
             }
             case EntityType.Shape: {
-                // TODO
+                ApplyCollisionForce(this, other, 5);
                 this._health = Math.max(this._health - other.damage, 0);
                 if (this._health === 0) {
                     this._mesh.setEnabled(false);

@@ -77,6 +77,7 @@ export class Tank implements CollidableEntity {
     public readonly size = 1;
     public readonly mass = 2;
     public readonly damage = 30; // TODO
+    public readonly collisionRepeatRate = 1;
     public get position(): Vector3 { return this._node.position; }
     public readonly velocity = new Vector3();
 

@@ -3,8 +3,6 @@ import Quadtree from "@timohausmann/quadtree-js";
 import { Entity } from "./entity";
 import { World } from "./world";
 
-const COLLISION_REPEAT_RATE = 1;
-
 export function ApplyCollisionForce(target: Entity, other: Entity, strength = 1): void {
     const position = target.position;
     const velocity = target.velocity;
@@ -23,6 +21,7 @@ export function ApplyCollisionForce(target: Entity, other: Entity, strength = 1)
 }
 
 export interface CollidableEntity extends Entity, Quadtree.Rect {
+    readonly collisionRepeatRate: number;
     readonly onCollide: (other: Entity) => void;
 }
 
@@ -46,7 +45,7 @@ export class Collisions {
         for (const [target, candidateMap] of targetMap) {
             for (const [candidate, data] of candidateMap) {
                 data.time += deltaTime;
-                if (data.time >= COLLISION_REPEAT_RATE) {
+                if (data.time >= target.collisionRepeatRate) {
                     candidateMap.delete(candidate);
                     if (candidateMap.size === 0) {
                         targetMap.delete(target);
