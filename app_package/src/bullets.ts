@@ -108,21 +108,7 @@ export class Bullets {
             this._bullets[index] = new BulletImpl(owner, mesh, size);
         }
 
-        const bullets = {
-            [Symbol.iterator]: this._getIterator.bind(this)
-        };
-
-        scene.onAfterAnimationsObservable.add(() => {
-            for (const bullet of bullets) {
-                bullet.update(scene.deltaTime * 0.001);
-            }
-
-            while (this._count > 0 && !this._bullets[this._start].enabled) {
-                this._start = (this._start + 1) % this._bullets.length;
-                --this._count;
-            }
-        });
-
+        const bullets = { [Symbol.iterator]: this._getIterator.bind(this) };
         world.collisions.register(bullets);
     }
 
@@ -143,6 +129,18 @@ export class Bullets {
             this._start = (this._start + 1) % this._bullets.length;
         } else {
             ++this._count;
+        }
+    }
+
+    public update(deltaTime: number): void {
+        const bullets = { [Symbol.iterator]: this._getIterator.bind(this) };
+        for (const bullet of bullets) {
+            bullet.update(deltaTime);
+        }
+
+        while (this._count > 0 && !this._bullets[this._start].enabled) {
+            this._start = (this._start + 1) % this._bullets.length;
+            --this._count;
         }
     }
 

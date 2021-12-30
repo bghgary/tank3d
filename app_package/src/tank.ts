@@ -88,7 +88,7 @@ export class Tank implements CollidableEntity {
         this._node.lookAt(targetPoint);
     }
 
-    public update(x: number, z: number, angularSpeed: number, shoot: boolean, deltaTime: number, onDestroyed: (entity: Entity) => void): void {
+    public update(deltaTime: number, x: number, z: number, angularSpeed: number, shoot: boolean, onDestroyed: (entity: Entity) => void): void {
         const decayFactor = Math.exp(-deltaTime * 4);
         const sqrLength = x * x + z * z;
         if (sqrLength === 0) {
@@ -116,6 +116,7 @@ export class Tank implements CollidableEntity {
         }
 
         this._health.update(deltaTime, onDestroyed);
+        this._bullets.update(deltaTime);
     }
 
     public onCollide(other: Entity): void {

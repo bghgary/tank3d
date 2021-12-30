@@ -1,4 +1,4 @@
-import { ArcRotateCamera, KeyboardEventTypes, PointerEventTypes, Vector3 } from "@babylonjs/core";
+import { ArcRotateCamera, Camera, KeyboardEventTypes, PointerEventTypes, Vector3 } from "@babylonjs/core";
 import { Bullet, Bullets } from "./bullets";
 import { EntityType } from "./entity";
 import { Score } from "./score";
@@ -41,6 +41,7 @@ const KeyMapping = new Map([
 export class Player {
     private readonly _tank: Tank;
     private readonly _score: Score;
+    private readonly _camera: ArcRotateCamera;
     private readonly _commandState = new Map<Command, State>();
 
     private _autoShoot = false;
@@ -49,11 +50,9 @@ export class Player {
     public constructor(world: World) {
         this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 }, world);
         this._score = new Score(world);
+        this._camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3.5, 15, Vector3.Zero(), world.scene);
 
-        const scene = world.scene;
-        const camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3.5, 15, Vector3.Zero(), scene);
-
-        scene.onKeyboardObservable.add((data) => {
+        world.scene.onKeyboardObservable.add((data) => {
             if ((data.event as any).repeat) {
                 return;
             }
@@ -86,9 +85,9 @@ export class Player {
             }
         });
 
-        scene.onPointerObservable.add((data) => {
+        world.scene.onPointerObservable.add((data) => {
             if (!this._autoRotate) {
-                const pickedPoint = data.pickInfo?.pickedPoint || scene.pick(data.event.offsetX, data.event.offsetY)?.pickedPoint;
+                const pickedPoint = data.pickInfo?.pickedPoint || world.scene.pick(data.event.offsetX, data.event.offsetY)?.pickedPoint;
                 if (pickedPoint) {
                     this._tank.lookAt(pickedPoint);
                 }
@@ -103,23 +102,6 @@ export class Player {
                 }
                 this._commandState.set(Command.Shoot, state);
             }
-        });
-
-        scene.onAfterAnimationsObservable.add(() => {
-            const deltaTime = scene.deltaTime * 0.001;
-
-            const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
-            const z = (this._commandState.get(Command.Up) ? 1 : 0) + (this._commandState.get(Command.Down) ? -1 : 0);
-            const angularSpeed = this._autoRotate ? AUTO_ROTATE_SPEED : 0;
-            const shoot = this._autoShoot || !!this._commandState.get(Command.Shoot);
-            this._tank.update(x, z, angularSpeed, shoot, deltaTime, (entity) => {
-                // TODO
-                setTimeout(() => alert("You're dead!"), 0);
-            });
-
-            camera.target.copyFrom(this._tank.position);
-
-            this._score.update(deltaTime);
         });
 
         world.shapes.onShapeDestroyedObservable.add((event) => {
@@ -139,5 +121,20 @@ export class Player {
                 }
             }
         });
+    }
+
+    public update(deltaTime: number): void {
+        const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
+        const z = (this._commandState.get(Command.Up) ? 1 : 0) + (this._commandState.get(Command.Down) ? -1 : 0);
+        const angularSpeed = this._autoRotate ? AUTO_ROTATE_SPEED : 0;
+        const shoot = this._autoShoot || !!this._commandState.get(Command.Shoot);
+        this._tank.update(deltaTime, x, z, angularSpeed, shoot, (entity) => {
+            // TODO
+            setTimeout(() => alert("You're dead!"), 0);
+        });
+
+        this._score.update(deltaTime);
+
+        this._camera.target.copyFrom(this._tank.position);
     }
 }

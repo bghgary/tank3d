@@ -1,5 +1,5 @@
 import "@babylonjs/inspector";
-import { Engine, HemisphericLight, KeyboardEventTypes, MeshBuilder, Scene, Vector3 } from "@babylonjs/core";
+import { Engine, HemisphericLight, KeyboardEventTypes, MeshBuilder, Observable, Scene, Vector3 } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
 import { GridMaterial } from "@babylonjs/materials";
 import { Player } from "./player";
@@ -15,8 +15,7 @@ export class World {
         this.uiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         this.collisions = new Collisions(this);
         this.shapes = new Shapes(this, 200);
-
-        const player = new Player(this);
+        this.player = new Player(this);
 
         this._createGround();
 
@@ -32,10 +31,19 @@ export class World {
             }
         });
 
+        let previousTime = performance.now() * 0.001;
         engine.runRenderLoop(() => {
-            this.scene.render();
+            const currentTime = performance.now() * 0.001;
+            const deltaTime = Math.min((currentTime - previousTime), 1);
+            previousTime = currentTime;
+
+            this.collisions.update(deltaTime);
+            this.shapes.update(deltaTime);
+            this.player.update(deltaTime);
+
+            this.scene.render(false);
         });
-   }
+    }
 
     public readonly size: number;
     public readonly scene: Scene;
@@ -43,6 +51,7 @@ export class World {
     public readonly uiTexture: AdvancedDynamicTexture;
     public readonly collisions: Collisions;
     public readonly shapes: Shapes;
+    public readonly player: Player;
 
     private _createGround(): void {
         const sizeWithBuffer = this.size * 2;

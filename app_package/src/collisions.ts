@@ -1,3 +1,4 @@
+import { Scalar } from "@babylonjs/core";
 import Quadtree from "@timohausmann/quadtree-js";
 import { Entity } from "./entity";
 import { World } from "./world";
@@ -9,9 +10,16 @@ export function ApplyCollisionForce(target: Entity, other: Entity, strength = 1)
     const velocity = target.velocity;
     const dx = position.x - other.position.x;
     const dz = position.z - other.position.z;
-    const factor = strength * other.mass / (target.mass + other.mass) / Math.sqrt(dx * dx + dz * dz);
-    velocity.x += dx * factor;
-    velocity.z += dz * factor;
+    if (dx === 0 && dz === 0) {
+        const randomAngle = Scalar.RandomRange(0, Scalar.TwoPi);
+        const speed = target.size * 60;
+        velocity.x = Math.cos(randomAngle) * speed;
+        velocity.y = Math.sin(randomAngle) * speed;
+    } else {
+        const factor = strength * other.mass / (target.mass + other.mass) / Math.sqrt(dx * dx + dz * dz);
+        velocity.x += dx * factor;
+        velocity.z += dz * factor;
+    }
 }
 
 export interface CollidableEntity extends Entity, Quadtree.Rect {
@@ -27,17 +35,13 @@ export class Collisions {
         const size = world.size;
         const halfSize = size * 0.5;
         this._quadtree = new Quadtree({ x: -halfSize, y: -halfSize, width: size, height: size });
-
-        world.scene.onAfterAnimationsObservable.add(() => {
-            this._update(world.scene.deltaTime * 0.001);
-        });
     }
 
     public register(entities: Iterable<CollidableEntity>): void {
         this._entries.push({ entities: entities });
     }
 
-    private _update(deltaTime: number): void {
+    public update(deltaTime: number): void {
         const targetMap = this._collidedEntitiesMap;
         for (const [target, candidateMap] of targetMap) {
             for (const [candidate, data] of candidateMap) {

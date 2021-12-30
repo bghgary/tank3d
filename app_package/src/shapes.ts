@@ -87,14 +87,9 @@ class ShapeImpl implements Shape, CollidableEntity {
                 const decayFactor = Math.exp(-deltaTime * 2);
                 const targetSpeed = IDLE_MOVEMENT_SPEED / this.mass;
                 const newSpeed = targetSpeed - (targetSpeed - oldSpeed) * decayFactor;
-                if (oldSpeed === 0) {
-                    const randomAngle = Scalar.RandomRange(0, Scalar.TwoPi);
-                    this.velocity.set(Math.cos(randomAngle) * newSpeed, 0, Math.sin(randomAngle) * newSpeed);
-                } else {
-                    const speedFactor = newSpeed / oldSpeed;
-                    this.velocity.x *= speedFactor;
-                    this.velocity.z *= speedFactor;
-                }
+                const speedFactor = newSpeed / oldSpeed;
+                this.velocity.x *= speedFactor;
+                this.velocity.z *= speedFactor;
             }
 
             this._mesh.rotation.y = (this._mesh.rotation.y + this.rotationVelocity * deltaTime) % Scalar.TwoPi;
@@ -138,16 +133,28 @@ export class Shapes {
             this._shapes[index] = this._createShape(name, 0);
         }
 
-        scene.onAfterAnimationsObservable.add(() => {
-            this._update(scene);
-        });
-
         world.collisions.register({
             [Symbol.iterator]: this._getIterator.bind(this)
         });
     }
 
     public onShapeDestroyedObservable = new Observable<{ shape: Shape, other: Entity }>();
+
+    public update(deltaTime: number): void {
+        for (let index = 0; index < this._shapes.length; ++index) {
+            const shape = this._shapes[index];
+            if (shape.enabled) {
+                shape.update(deltaTime, this._halfWorldSize, (entity) => {
+                    this.onShapeDestroyedObservable.notifyObservers({ shape: shape, other: entity });
+                });
+            } else {
+                shape.respawnTime = Math.max(shape.respawnTime - deltaTime, 0);
+                if (shape.respawnTime === 0) {
+                    this._shapes[index] = this._createShape(shape.name, RESPAWN_DROP_HEIGHT);
+                }
+            }
+        }
+    }
 
     private _createShape(name: string, dropHeight: number): ShapeImpl {
         const create = (source: Mesh, size: number, health: number, damage: number, points: number): ShapeImpl => {
@@ -164,11 +171,16 @@ export class Shapes {
             const x = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
             const z = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
             shape.position.set(x, dropHeight, z);
+
             const randomAngle = Scalar.RandomRange(0, Scalar.TwoPi);
-            shape.velocity.set(Math.cos(randomAngle) * IDLE_MOVEMENT_SPEED / shape.mass, 0, Math.sin(randomAngle) * IDLE_MOVEMENT_SPEED / shape.mass);
+            const speed = IDLE_MOVEMENT_SPEED / shape.mass;
+            shape.velocity.x = Math.cos(randomAngle) * speed;
+            shape.velocity.y = Math.sin(randomAngle) * speed;
 
             shape.rotation = Scalar.RandomRange(0, Scalar.TwoPi);
-            shape.rotationVelocity = Math.sign(Math.random() - 0.5) * IDLE_ROTATION_SPEED / shape.mass;
+
+            const rotationSpeed = IDLE_ROTATION_SPEED / shape.mass;
+            shape.rotationVelocity = Math.sign(Math.random() - 0.5) * rotationSpeed;
 
             return shape;
         };
@@ -183,24 +195,6 @@ export class Shapes {
         const n = Math.random();
         const entry = entries[n < 0.6 ? 0 : n < 0.95 ? 1 : n < 0.99 ? 2 : 3];
         return create(entry.source, entry.size, entry.health, entry.damage, entry.points);
-    }
-
-    private _update(scene: Scene): void {
-        const deltaTime = 0.001 * scene.deltaTime;
-
-        for (let index = 0; index < this._shapes.length; ++index) {
-            const shape = this._shapes[index];
-            if (shape.enabled) {
-                shape.update(deltaTime, this._halfWorldSize, (entity) => {
-                    this.onShapeDestroyedObservable.notifyObservers({ shape: shape, other: entity });
-                });
-            } else {
-                shape.respawnTime = Math.max(shape.respawnTime - deltaTime, 0);
-                if (shape.respawnTime === 0) {
-                    this._shapes[index] = this._createShape(shape.name, RESPAWN_DROP_HEIGHT);
-                }
-            }
-        }
     }
 
     private *_getIterator(): Iterator<ShapeImpl> {
