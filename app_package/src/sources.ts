@@ -32,7 +32,7 @@ export class Sources {
 
     private _createBullet(sources: TransformNode): Mesh {
         const scene = sources.getScene();
-        const source = MeshBuilder.CreateSphere("bullet", { segments: 4 }, scene);
+        const source = MeshBuilder.CreateSphere("bullet", { segments: 6 }, scene);
         source.parent = sources;
         const material = new StandardMaterial("bullet", scene);
         material.diffuseColor.set(0.3, 0.7, 1);

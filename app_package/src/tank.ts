@@ -74,7 +74,7 @@ export class Tank implements CollidableEntity {
     public readonly type = EntityType.Tank;
     public readonly size = 1;
     public readonly mass = 5;
-    public readonly damage = 15; // TODO
+    public readonly damage = 30; // TODO
     public get position(): Vector3 { return this._node.position; }
     public readonly velocity = new Vector3();
 

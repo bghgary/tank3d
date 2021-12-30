@@ -5,8 +5,8 @@ import { Health } from "./health";
 import { Sources } from "./sources";
 import { World } from "./world";
 
-const IDLE_ROTATION_SPEED = 0.2;
-const IDLE_MOVEMENT_SPEED = 0.1;
+const IDLE_ROTATION_SPEED = 0.15;
+const IDLE_MOVEMENT_SPEED = 0.05;
 const RESPAWN_TIME = 1;
 const RESPAWN_DROP_HEIGHT = 5;
 const GRAVITY = 9.8;
@@ -37,7 +37,10 @@ class Shape implements CollidableEntity {
     public get width() { return this.size; }
     public get height() { return this.size; }
 
+    public get rotation(): number { return this._mesh.rotation.y; }
+    public set rotation(value: number) { this._mesh.rotation.y = value; }
     public rotationVelocity = 0;
+
     public respawnTime = 0;
 
     public get name(): string { return this._mesh.name; }
@@ -76,10 +79,16 @@ class Shape implements CollidableEntity {
             } else {
                 const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
                 const decayFactor = Math.exp(-deltaTime * 2);
-                const newSpeed = IDLE_MOVEMENT_SPEED - (IDLE_MOVEMENT_SPEED - oldSpeed) * decayFactor;
-                const speedFactor = newSpeed / oldSpeed;
-                this.velocity.x *= speedFactor;
-                this.velocity.z *= speedFactor;
+                const targetSpeed = IDLE_MOVEMENT_SPEED / this.mass;
+                const newSpeed = targetSpeed - (targetSpeed - oldSpeed) * decayFactor;
+                if (oldSpeed === 0) {
+                    const randomAngle = Scalar.RandomRange(0, Scalar.TwoPi);
+                    this.velocity.set(Math.cos(randomAngle) * newSpeed, 0, Math.sin(randomAngle) * newSpeed);
+                } else {
+                    const speedFactor = newSpeed / oldSpeed;
+                    this.velocity.x *= speedFactor;
+                    this.velocity.z *= speedFactor;
+                }
             }
 
             this._mesh.rotation.y = (this._mesh.rotation.y + this.rotationVelocity * deltaTime) % Scalar.TwoPi;
@@ -142,10 +151,6 @@ export class Shapes {
     private _createShape(name: string, dropHeight: number): Shape {
         const create = (source: Mesh, size: number, health: number, damage: number): Shape => {
             const mesh = this._sources.createInstance(source, name, this._root);
-            const x = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
-            const z = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
-            mesh.position.set(x, dropHeight, z);
-            mesh.rotation.y = Scalar.RandomRange(0, Scalar.TwoPi);
 
             const healthMesh = this._sources.createInstance(this._sources.health, "health", mesh);
             healthMesh.position.y = size * 0.5 + 0.2;
@@ -154,10 +159,15 @@ export class Shapes {
             healthMesh.setEnabled(false);
 
             const shape = new Shape(mesh, healthMesh, size, health, damage);
-            const mass = size * size;
+
+            const x = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
+            const z = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
+            shape.position.set(x, dropHeight, z);
             const randomAngle = Scalar.RandomRange(0, Scalar.TwoPi);
-            shape.velocity.set(Math.cos(randomAngle) * IDLE_MOVEMENT_SPEED / mass, 0, Math.sin(randomAngle) * IDLE_MOVEMENT_SPEED / mass);
-            shape.rotationVelocity = Math.sign(Math.random() - 0.5) * IDLE_ROTATION_SPEED / mass;
+            shape.velocity.set(Math.cos(randomAngle) * IDLE_MOVEMENT_SPEED / shape.mass, 0, Math.sin(randomAngle) * IDLE_MOVEMENT_SPEED / shape.mass);
+
+            shape.rotation = Scalar.RandomRange(0, Scalar.TwoPi);
+            shape.rotationVelocity = Math.sign(Math.random() - 0.5) * IDLE_ROTATION_SPEED / shape.mass;
 
             return shape;
         };
