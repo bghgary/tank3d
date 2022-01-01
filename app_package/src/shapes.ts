@@ -1,5 +1,6 @@
-import { InstancedMesh, Mesh, Observable, Scalar, Scene, TransformNode, Vector3 } from "@babylonjs/core";
-import { ApplyCollisionForce, CollidableEntity } from "./collisions";
+import { Observable, Scalar, TransformNode, Vector3 } from "@babylonjs/core";
+import { CollidableEntity } from "./collisions";
+import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallBounce } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
 import { Sources } from "./sources";
@@ -9,23 +10,26 @@ const IDLE_ROTATION_SPEED = 0.15;
 const IDLE_MOVEMENT_SPEED = 0.05;
 const RESPAWN_TIME = 1;
 const RESPAWN_DROP_HEIGHT = 5;
-const GRAVITY = 9.8;
 
 export interface Shape extends Entity {
     readonly points: number;
 }
 
 class ShapeImpl implements Shape, CollidableEntity {
-    private readonly _mesh: InstancedMesh;
+    private readonly _node: TransformNode;
     private readonly _health: Health;
 
-    public constructor(mesh: InstancedMesh, healthMesh: InstancedMesh, size: number, health: number, damage: number, points: number) {
-        this._mesh = mesh;
-        this._health = new Health(healthMesh, size, health);
+    public constructor(node: TransformNode, healthNode: TransformNode, size: number, health: number, damage: number, points: number) {
+        this._node = node;
+        this._health = new Health(healthNode, size, health);
         this.size = size;
         this.mass = size * size;
         this.damage = damage;
         this.points = points;
+    }
+
+    public dispose(): void {
+        this._node.dispose();
     }
 
     // Entity
@@ -34,56 +38,37 @@ class ShapeImpl implements Shape, CollidableEntity {
     public readonly mass: number;
     public readonly damage: number;
     public readonly points: number;
-    public readonly collisionRepeatRate = 1;
-    public get position(): Vector3 { return this._mesh.position; }
+    public get position(): Vector3 { return this._node.position; }
     public readonly velocity = new Vector3();
 
     // Quadtree.Rect
-    public get x() { return this._mesh.position.x - this.size * 0.5; }
-    public get y() { return this._mesh.position.z - this.size * 0.5; }
+    public get x() { return this._node.position.x - this.size * 0.5; }
+    public get y() { return this._node.position.z - this.size * 0.5; }
     public get width() { return this.size; }
     public get height() { return this.size; }
 
-    public get rotation(): number { return this._mesh.rotation.y; }
-    public set rotation(value: number) { this._mesh.rotation.y = value; }
+    public get rotation(): number { return this._node.rotation.y; }
+    public set rotation(value: number) { this._node.rotation.y = value; }
     public rotationVelocity = 0;
 
-    public get name(): string { return this._mesh.name; }
-    public get enabled(): boolean { return this._mesh.isEnabled(); }
+    public get name(): string { return this._node.name; }
+    public get enabled(): boolean { return this._node.isEnabled(); }
 
     public respawnTime = RESPAWN_TIME;
 
-    public update(deltaTime: number, halfWorldSize: number, onDestroyed: (entity: Entity) => void): void {
+    public update(deltaTime: number, worldSize: number, onDestroyed: (entity: Entity) => void): void {
         this._health.update(deltaTime, (entity) => {
-            this._mesh.setEnabled(false);
+            this._node.setEnabled(false);
             onDestroyed(entity);
         });
 
-        if (this._mesh.isEnabled()) {
-            const halfSize = this.size * 0.5;
+        if (this._node.isEnabled()) {
+            ApplyGravity(deltaTime, this._node.position, this.velocity);
 
-            this._mesh.position.x += this.velocity.x * deltaTime;
-            if (this._mesh.position.x > halfWorldSize - halfSize) {
-                this._mesh.position.x = halfWorldSize - halfSize;
-                this.velocity.x = -this.velocity.x;
-            } else if (this._mesh.position.x < -halfWorldSize + halfSize) {
-                this._mesh.position.x = -halfWorldSize + halfSize;
-                this.velocity.x = -this.velocity.x;
-            }
+            if (this._node.position.y === 0) {
+                ApplyMovement(deltaTime, this._node.position, this.velocity);
+                ApplyWallBounce(this._node.position, this.velocity, this.size, worldSize);
 
-            this._mesh.position.z += this.velocity.z * deltaTime;
-            if (this._mesh.position.z > halfWorldSize - halfSize) {
-                this._mesh.position.z = halfWorldSize - halfSize;
-                this.velocity.z = -this.velocity.z;
-            } else if (this._mesh.position.z < -halfWorldSize + halfSize) {
-                this._mesh.position.z = -halfWorldSize + halfSize;
-                this.velocity.z = -this.velocity.z;
-            }
-
-            if (this._mesh.position.y > 0) {
-                this.velocity.y -= GRAVITY * deltaTime;
-                this._mesh.position.y = Math.max(this._mesh.position.y + this.velocity.y * deltaTime, 0);
-            } else {
                 const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
                 const decayFactor = Math.exp(-deltaTime * 2);
                 const targetSpeed = IDLE_MOVEMENT_SPEED / this.mass;
@@ -93,14 +78,19 @@ class ShapeImpl implements Shape, CollidableEntity {
                 this.velocity.z *= speedFactor;
             }
 
-            this._mesh.rotation.y = (this._mesh.rotation.y + this.rotationVelocity * deltaTime) % Scalar.TwoPi;
+            this._node.rotation.y = (this._node.rotation.y + this.rotationVelocity * deltaTime) % Scalar.TwoPi;
         }
+    }
+
+    public getCollisionRepeatRate(other: Entity): number {
+        return (other.type === EntityType.Shape) ? 0 : 1;
     }
 
     public onCollide(other: Entity): void {
         switch (other.type) {
             case EntityType.Bullet:
-            case EntityType.Tank: {
+            case EntityType.Tank:
+            case EntityType.Crasher: {
                 this._health.damage(other);
                 ApplyCollisionForce(this, other);
                 break;
@@ -115,19 +105,17 @@ class ShapeImpl implements Shape, CollidableEntity {
 
 export class Shapes {
     private readonly _sources: Sources;
-    private readonly _halfWorldSize: number;
+    private readonly _worldSize: number;
     private readonly _root: TransformNode;
     private readonly _shapes: Array<ShapeImpl>;
 
-    constructor(world: World, numShapes: number) {
+    constructor(world: World, count: number) {
         this._sources = world.sources;
-        this._halfWorldSize = world.size * 0.5;
+        this._worldSize = world.size;
 
-        const scene = world.scene;
+        this._root = new TransformNode("shapes", world.scene);
 
-        this._root = new TransformNode("shapes", scene);
-
-        this._shapes = new Array(numShapes);
+        this._shapes = new Array(count);
         const padLength = (this._shapes.length - 1).toString().length;
         for (let index = 0; index < this._shapes.length; ++index) {
             const name = index.toString().padStart(padLength, "0");
@@ -145,32 +133,29 @@ export class Shapes {
         for (let index = 0; index < this._shapes.length; ++index) {
             const shape = this._shapes[index];
             if (shape.enabled) {
-                shape.update(deltaTime, this._halfWorldSize, (entity) => {
+                shape.update(deltaTime, this._worldSize, (entity) => {
                     this.onShapeDestroyedObservable.notifyObservers({ shape: shape, other: entity });
                 });
             } else {
                 shape.respawnTime = Math.max(shape.respawnTime - deltaTime, 0);
                 if (shape.respawnTime === 0) {
-                    this._shapes[index] = this._createShape(shape.name, RESPAWN_DROP_HEIGHT);
+                    const name = shape.name;
+                    shape.dispose();
+                    this._shapes[index] = this._createShape(name, RESPAWN_DROP_HEIGHT);
                 }
             }
         }
     }
 
     private _createShape(name: string, dropHeight: number): ShapeImpl {
-        const create = (source: Mesh, size: number, health: number, damage: number, points: number): ShapeImpl => {
-            const mesh = this._sources.createInstance(source, name, this._root);
+        const create = (createInstance: (name: string, parent: TransformNode) => TransformNode, size: number, health: number, damage: number, points: number): ShapeImpl => {
+            const node = createInstance(name, this._root);
+            const healthNode = this._sources.createHealth("health", node, size, 0.2);
+            const shape = new ShapeImpl(node, healthNode, size, health, damage, points);
 
-            const healthMesh = this._sources.createInstance(this._sources.health, "health", mesh);
-            healthMesh.position.y = size * 0.5 + 0.2;
-            healthMesh.scaling.x = size;
-            healthMesh.billboardMode = Mesh.BILLBOARDMODE_Y;
-            healthMesh.setEnabled(false);
-
-            const shape = new ShapeImpl(mesh, healthMesh, size, health, damage, points);
-
-            const x = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
-            const z = Scalar.RandomRange(-this._halfWorldSize + size, this._halfWorldSize - size);
+            const limit = (this._worldSize - size) * 0.5;
+            const x = Scalar.RandomRange(-limit, limit);
+            const z = Scalar.RandomRange(-limit, limit);
             shape.position.set(x, dropHeight, z);
 
             const randomAngle = Scalar.RandomRange(0, Scalar.TwoPi);
@@ -187,15 +172,15 @@ export class Shapes {
         };
 
         const entries = [
-            { source: this._sources.cube,         size: 0.60, health: 10,  damage: 10,  points: 10  },
-            { source: this._sources.tetrahedron,  size: 0.60, health: 30,  damage: 20,  points: 25  },
-            { source: this._sources.dodecahedron, size: 1.00, health: 125, damage: 50,  points: 120 },
-            { source: this._sources.goldberg11,   size: 1.62, health: 250, damage: 130, points: 200 },
+            { createInstance: this._sources.createCube,         size: 0.60, health: 10,  damage: 10,  points: 10  },
+            { createInstance: this._sources.createTetrahedron,  size: 0.60, health: 30,  damage: 20,  points: 25  },
+            { createInstance: this._sources.createDodecahedron, size: 1.00, health: 125, damage: 50,  points: 120 },
+            { createInstance: this._sources.createGoldberg11,   size: 1.62, health: 250, damage: 130, points: 200 },
         ];
 
         const n = Math.random();
         const entry = entries[n < 0.6 ? 0 : n < 0.95 ? 1 : n < 0.99 ? 2 : 3];
-        return create(entry.source, entry.size, entry.health, entry.damage, entry.points);
+        return create(entry.createInstance.bind(this._sources), entry.size, entry.health, entry.damage, entry.points);
     }
 
     private *_getIterator(): Iterator<ShapeImpl> {

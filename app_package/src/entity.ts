@@ -2,6 +2,7 @@ import { Vector3 } from "@babylonjs/core";
 
 export const enum EntityType {
     Bullet,
+    Crasher,
     Shape,
     Tank,
 }

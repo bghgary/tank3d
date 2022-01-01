@@ -6,16 +6,29 @@ import { Player } from "./player";
 import { Shapes } from "./shapes";
 import { Collisions } from "./collisions";
 import { Sources } from "./sources";
+import { Crashers } from "./crashers";
+
+function now(): number {
+    return performance.now() * 0.001;
+}
 
 export class World {
+    private readonly _engine: Engine;
+    private readonly _renderLoop: () => void;
+    private _previousTime: number;
+
     public constructor(engine: Engine, size = 100) {
+        this._engine = engine;
+
         this.size = size;
         this.scene = new Scene(engine);
         this.sources = new Sources(this);
         this.uiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
         this.collisions = new Collisions(this);
-        this.shapes = new Shapes(this, 200);
-        this.player = new Player(this);
+
+        const shapes = new Shapes(this, 200);
+        const crashers = new Crashers(this);
+        const player = new Player(this, shapes, crashers);
 
         this._createGround();
 
@@ -31,29 +44,22 @@ export class World {
             }
         });
 
-        let previousTime = performance.now() * 0.001;
-        const renderLoop = () => {
-            const currentTime = performance.now() * 0.001;
-            const deltaTime = currentTime - previousTime;
-            previousTime = currentTime;
+        this._previousTime = now();
+        this._renderLoop = () => {
+            const currentTime = now();
+            const deltaTime = Math.min(currentTime - this._previousTime);
+            this._previousTime = currentTime;
+
+            shapes.update(deltaTime);
+            player.update(deltaTime);
+            crashers.update(deltaTime, player);
 
             this.collisions.update(deltaTime);
-            this.shapes.update(deltaTime);
-            this.player.update(deltaTime);
 
             this.scene.render(false);
         };
 
-        engine.onCanvasBlurObservable.add(() => {
-            engine.stopRenderLoop(renderLoop);
-        });
-
-        engine.onCanvasFocusObservable.add(() => {
-            previousTime = performance.now() * 0.001;
-            engine.runRenderLoop(renderLoop);
-        });
-
-        engine.runRenderLoop(renderLoop);
+        engine.runRenderLoop(this._renderLoop);
     }
 
     public readonly size: number;
@@ -61,12 +67,19 @@ export class World {
     public readonly sources: Sources;
     public readonly uiTexture: AdvancedDynamicTexture;
     public readonly collisions: Collisions;
-    public readonly shapes: Shapes;
-    public readonly player: Player;
+
+    public suspend(): void {
+        this._engine.stopRenderLoop(this._renderLoop);
+    }
+
+    public resume(): void {
+        this._previousTime = now();
+        this._engine.runRenderLoop(this._renderLoop);
+    }
 
     private _createGround(): void {
-        const sizeWithBuffer = this.size * 2;
-        const ground = MeshBuilder.CreateGround("ground", { width: sizeWithBuffer, height: sizeWithBuffer }, this.scene);
+        const bufferedSize = this.size * 2;
+        const ground = MeshBuilder.CreateGround("ground", { width: bufferedSize, height: bufferedSize }, this.scene);
         ground.visibility = 0;
 
         const mesh = MeshBuilder.CreateGround("mesh", { width: this.size, height: this.size }, this.scene);

@@ -1,7 +1,7 @@
-import { Vector3, TransformNode, InstancedMesh } from "@babylonjs/core";
-import { ApplyCollisionForce, CollidableEntity } from "./collisions";
+import { Vector3, TransformNode } from "@babylonjs/core";
+import { CollidableEntity } from "./collisions";
+import { ApplyCollisionForce, ApplyMovement } from "./common";
 import { Entity, EntityType } from "./entity";
-import { Tank } from "./tank";
 import { World } from "./world";
 
 const MAX_DURATION = 3;
@@ -9,16 +9,16 @@ const MAX_COUNT = 100;
 const BULLET_MASS = 0.3;
 
 export interface Bullet extends Entity {
-    readonly owner: Tank;
+    readonly owner: Entity;
 }
 
 class BulletImpl implements Bullet, CollidableEntity {
-    private readonly _mesh: InstancedMesh;
+    private readonly _root: TransformNode;
     private _health: number;
 
-    public constructor(owner: Tank, mesh: InstancedMesh, size: number) {
+    public constructor(owner: Entity, root: TransformNode, size: number) {
         this.owner = owner;
-        this._mesh = mesh;
+        this._root = root;
         this.size = size;
         this.mass = BULLET_MASS;
         this.damage = 6; // TODO
@@ -30,29 +30,26 @@ class BulletImpl implements Bullet, CollidableEntity {
     public readonly size: number;
     public readonly mass: number;
     public readonly damage: number;
-    public readonly collisionRepeatRate = 0.2;
-    public get position(): Vector3 { return this._mesh.position; }
+    public get position(): Vector3 { return this._root.position; }
     public readonly velocity = new Vector3();
 
     // Quadtree.Rect
-    public get x() { return this._mesh.position.x - this.size * 0.5; }
-    public get y() { return this._mesh.position.z - this.size * 0.5; }
+    public get x() { return this._root.position.x - this.size * 0.5; }
+    public get y() { return this._root.position.z - this.size * 0.5; }
     public get width() { return this.size; }
     public get height() { return this.size; }
 
-    public readonly owner: Tank;
+    public readonly owner: Entity;
 
     public targetSpeed = 0;
     public time = 0;
 
-    public get enabled(): boolean { return this._mesh.isEnabled(); }
-    public set enabled(value: boolean) { this._mesh.setEnabled(value); }
+    public get enabled(): boolean { return this._root.isEnabled(); }
+    public set enabled(value: boolean) { this._root.setEnabled(value); }
 
     public update(deltaTime: number): void {
-        if (this._mesh.isEnabled()) {
-            this._mesh.position.x += this.velocity.x * deltaTime;
-            this._mesh.position.y += this.velocity.y * deltaTime;
-            this._mesh.position.z += this.velocity.z * deltaTime;
+        if (this._root.isEnabled()) {
+            ApplyMovement(deltaTime, this._root.position, this.velocity);
 
             const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
             const decayFactor = Math.exp(-deltaTime * 2);
@@ -63,9 +60,13 @@ class BulletImpl implements Bullet, CollidableEntity {
 
             this.time += deltaTime;
             if (this.time > MAX_DURATION) {
-                this._mesh.setEnabled(false);
+                this._root.setEnabled(false);
             }
         }
+    }
+
+    public getCollisionRepeatRate(): number {
+        return 0.2;
     }
 
     public onCollide(other: Entity): void {
@@ -74,16 +75,17 @@ class BulletImpl implements Bullet, CollidableEntity {
                 // TODO
                 break;
             }
+            case EntityType.Tank: {
+                // TODO
+                break;
+            }
+            case EntityType.Crasher:
             case EntityType.Shape: {
                 ApplyCollisionForce(this, other, 5);
                 this._health = Math.max(this._health - other.damage, 0);
                 if (this._health === 0) {
-                    this._mesh.setEnabled(false);
+                    this._root.setEnabled(false);
                 }
-                break;
-            }
-            case EntityType.Tank: {
-                // TODO
                 break;
             }
         }
@@ -95,7 +97,7 @@ export class Bullets {
     private _start = 0;
     private _count = 0;
 
-    constructor(owner: Tank, world: World, size: number) {
+    constructor(owner: Entity, world: World, size: number) {
         const scene = world.scene;
         const root = new TransformNode("bullets", scene);
 
@@ -103,7 +105,7 @@ export class Bullets {
         const padLength = (this._bullets.length - 1).toString().length;
         for (let index = 0; index < this._bullets.length; ++index) {
             const name = index.toString().padStart(padLength, "0");
-            const mesh = world.sources.createInstance(world.sources.bullet, name, root);
+            const mesh = world.sources.createBullet(name, root);
             mesh.scaling.setAll(size);
             mesh.setEnabled(false);
             this._bullets[index] = new BulletImpl(owner, mesh, size);
@@ -149,14 +151,23 @@ export class Bullets {
         const end = this._start + this._count;
         if (end <= this._bullets.length) {
             for (let index = this._start; index < end; ++index) {
-                yield this._bullets[index];
+                const bullet = this._bullets[index];
+                if (bullet.enabled) {
+                    yield bullet;
+                }
             }
         } else {
             for (let index = this._start; index < this._bullets.length; ++index) {
-                yield this._bullets[index];
+                const bullet = this._bullets[index];
+                if (bullet.enabled) {
+                    yield bullet;
+                }
             }
             for (let index = 0; index < end % this._bullets.length; ++index) {
-                yield this._bullets[index];
+                const bullet = this._bullets[index];
+                if (bullet.enabled) {
+                    yield bullet;
+                }
             }
         }
     }

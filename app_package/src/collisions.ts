@@ -1,28 +1,10 @@
-import { Scalar } from "@babylonjs/core";
 import Quadtree from "@timohausmann/quadtree-js";
 import { Entity } from "./entity";
 import { World } from "./world";
 
-export function ApplyCollisionForce(target: Entity, other: Entity, strength = 1): void {
-    const position = target.position;
-    const velocity = target.velocity;
-    const dx = position.x - other.position.x;
-    const dz = position.z - other.position.z;
-    if (dx === 0 && dz === 0) {
-        const randomAngle = Scalar.RandomRange(0, Scalar.TwoPi);
-        const speed = target.size * 60;
-        velocity.x = Math.cos(randomAngle) * speed;
-        velocity.y = Math.sin(randomAngle) * speed;
-    } else {
-        const factor = strength * other.mass / (target.mass + other.mass) / Math.sqrt(dx * dx + dz * dz);
-        velocity.x += dx * factor;
-        velocity.z += dz * factor;
-    }
-}
-
 export interface CollidableEntity extends Entity, Quadtree.Rect {
-    readonly collisionRepeatRate: number;
-    readonly onCollide: (other: Entity) => void;
+    getCollisionRepeatRate(other: Entity): number;
+    onCollide(other: Entity): void;
 }
 
 export class Collisions {
@@ -42,12 +24,12 @@ export class Collisions {
 
     public update(deltaTime: number): void {
         const targetMap = this._collidedEntitiesMap;
-        for (const [target, candidateMap] of targetMap) {
-            for (const [candidate, data] of candidateMap) {
+        for (const [target, otherMap] of targetMap) {
+            for (const [other, data] of otherMap) {
                 data.time += deltaTime;
-                if (data.time >= target.collisionRepeatRate) {
-                    candidateMap.delete(candidate);
-                    if (candidateMap.size === 0) {
+                if (data.time >= target.getCollisionRepeatRate(other)) {
+                    otherMap.delete(other);
+                    if (otherMap.size === 0) {
                         targetMap.delete(target);
                     }
                 }
@@ -56,7 +38,7 @@ export class Collisions {
 
         this._quadtree.clear();
 
-        const intersects = (a: Entity, b: Entity): boolean => {
+        const intersects = (a: CollidableEntity, b: CollidableEntity): boolean => {
             const collisionDistance = (a.size + b.size) * 0.5;
             const x0 = a.position.x, z0 = a.position.z;
             const x1 = b.position.x, z1 = b.position.z;
@@ -73,15 +55,15 @@ export class Collisions {
 
         for (const entry of this._entries) {
             for (const target of entry.entities) {
-                const candidates = this._quadtree.retrieve<CollidableEntity>(target);
-                for (const candidate of candidates) {
-                    if (candidate !== target) {
-                        if (intersects(target, candidate)) {
-                            const candidateMap = targetMap.get(target) || new Map<CollidableEntity, { time: number }>();
-                            if (!candidateMap.has(candidate)) {
-                                target.onCollide(candidate);
-                                candidateMap.set(candidate, { time: 0 });
-                                targetMap.set(target, candidateMap);
+                const others = this._quadtree.retrieve<CollidableEntity>(target);
+                for (const other of others) {
+                    if (other !== target) {
+                        if (intersects(target, other)) {
+                            const otherMap = targetMap.get(target) || new Map<CollidableEntity, { time: number }>();
+                            if (!otherMap.has(other)) {
+                                target.onCollide(other);
+                                otherMap.set(other, { time: 0 });
+                                targetMap.set(target, otherMap);
                             }
                         }
                     }

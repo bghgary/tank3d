@@ -1,6 +1,7 @@
 import { MeshBuilder, StandardMaterial, Color3, Scene, Vector3, TransformNode, Mesh } from "@babylonjs/core";
-import { Bullets } from "./bullets";
-import { ApplyCollisionForce, CollidableEntity } from "./collisions";
+import { Bullet, Bullets } from "./bullets";
+import { CollidableEntity } from "./collisions";
+import { ApplyCollisionForce } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
 import { World } from "./world";
@@ -57,12 +58,8 @@ export class Tank implements CollidableEntity {
         barrelMesh.material = barrelMaterial;
 
         // Create health.
-        const healthMesh = world.sources.createInstance(world.sources.health, "health", bodyMesh);
-        healthMesh.position.y = this.size * 0.5 + 0.4;
-        healthMesh.scaling.x = this.size;
-        healthMesh.billboardMode = Mesh.BILLBOARDMODE_Y;
-        healthMesh.setEnabled(false);
-        this._health = new Health(healthMesh, 1, 500);
+        const healthMesh = world.sources.createHealth("health", this._node, this.size, 0.4);
+        this._health = new Health(healthMesh, 1, 100);
 
         // Create bullets.
         const bulletDiameter = this._properties.barrelDiameter * 0.75;
@@ -134,20 +131,16 @@ export class Tank implements CollidableEntity {
         this._health.update(deltaTime, onDestroyed);
     }
 
+    public getCollisionRepeatRate(): number {
+        return 1;
+    }
+
     public onCollide(other: Entity): void {
-        switch (other.type) {
-            case EntityType.Bullet: {
-                break;
-            }
-            case EntityType.Shape: {
-                this._health.damage(other);
-                ApplyCollisionForce(this, other);
-                break;
-            }
-            case EntityType.Tank: {
-                // TODO
-                break;
-            }
+        if (other.type === EntityType.Bullet && (other as Bullet).owner === this) {
+            return;
         }
+
+        this._health.damage(other);
+        ApplyCollisionForce(this, other);
     }
 }

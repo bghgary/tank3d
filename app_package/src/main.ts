@@ -4,9 +4,17 @@ import { World } from "./world";
 export function initialize(canvas: HTMLCanvasElement) {
     const engine = new Engine(canvas);
 
-    new World(engine);
+    const world = new World(engine);
 
     window.addEventListener("resize", () => {
         engine.resize();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            world.resume();
+        } else {
+            world.suspend();
+        }
     });
 }
