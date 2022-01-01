@@ -1,5 +1,5 @@
 import { Vector3, TransformNode } from "@babylonjs/core";
-import { CollidableEntity } from "./collisions";
+import { CollidableEntity, CollisionRegisterToken } from "./collisions";
 import { ApplyCollisionForce, ApplyMovement } from "./common";
 import { Entity, EntityType } from "./entity";
 import { World } from "./world";
@@ -13,26 +13,33 @@ export interface Bullet extends Entity {
 }
 
 export class Bullets {
+    private readonly _root: TransformNode;
     private readonly _bullets: Array<BulletImpl>;
+    private readonly _collisionRegisterToken: CollisionRegisterToken;
     private _start = 0;
     private _count = 0;
 
     constructor(owner: Entity, world: World, size: number) {
         const scene = world.scene;
-        const root = new TransformNode("bullets", scene);
+        this._root = new TransformNode("bullets", scene);
 
         this._bullets = new Array<BulletImpl>(MAX_COUNT);
         const padLength = (this._bullets.length - 1).toString().length;
         for (let index = 0; index < this._bullets.length; ++index) {
             const name = index.toString().padStart(padLength, "0");
-            const mesh = world.sources.createBullet(name, root);
+            const mesh = world.sources.createBullet(name, this._root);
             mesh.scaling.setAll(size);
             mesh.setEnabled(false);
             this._bullets[index] = new BulletImpl(owner, mesh, size);
         }
 
         const bullets = { [Symbol.iterator]: this._getIterator.bind(this) };
-        world.collisions.register(bullets);
+        this._collisionRegisterToken = world.collisions.register(bullets);
+    }
+
+    public dispose(): void {
+        this._collisionRegisterToken.dispose();
+        this._root.dispose();
     }
 
     public add(position: Vector3, direction: Vector3, initialSpeed: number, targetSpeed: number, offset: number): void {
@@ -133,11 +140,13 @@ class BulletImpl implements Bullet, CollidableEntity {
             ApplyMovement(deltaTime, this._root.position, this.velocity);
 
             const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
-            const decayFactor = Math.exp(-deltaTime * 2);
-            const newSpeed = this.targetSpeed - (this.targetSpeed - oldSpeed) * decayFactor;
-            const speedFactor = newSpeed / oldSpeed;
-            this.velocity.x *= speedFactor;
-            this.velocity.z *= speedFactor;
+            if (oldSpeed > 0) {
+                const decayFactor = Math.exp(-deltaTime * 2);
+                const newSpeed = this.targetSpeed - (this.targetSpeed - oldSpeed) * decayFactor;
+                const speedFactor = newSpeed / oldSpeed;
+                this.velocity.x *= speedFactor;
+                this.velocity.z *= speedFactor;
+            }
 
             this.time += deltaTime;
             if (this.time > MAX_DURATION) {
@@ -151,9 +160,19 @@ class BulletImpl implements Bullet, CollidableEntity {
     }
 
     public onCollide(other: Entity): void {
+        const takeDamage = () => {
+            this._health = Math.max(this._health - other.damage, 0);
+            if (this._health === 0) {
+                this._root.setEnabled(false);
+            }
+        };
+
         switch (other.type) {
             case EntityType.Bullet: {
-                // TODO
+                const bullet = other as Bullet;
+                if (bullet.owner !== this.owner) {
+                    takeDamage();
+                }
                 break;
             }
             case EntityType.Tank: {
@@ -163,10 +182,7 @@ class BulletImpl implements Bullet, CollidableEntity {
             case EntityType.Crasher:
             case EntityType.Shape: {
                 ApplyCollisionForce(this, other, 5);
-                this._health = Math.max(this._health - other.damage, 0);
-                if (this._health === 0) {
-                    this._root.setEnabled(false);
-                }
+                takeDamage();
                 break;
             }
         }

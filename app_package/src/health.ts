@@ -47,7 +47,7 @@ export class Health {
         }
     }
 
-    public damage(entity: Entity): void {
+    public takeDamage(entity: Entity): void {
         this._target = Math.min(this._current, this._target) - entity.damage;
         this._speed = (this._current - this._target) * DAMAGE_SPEED;
         this._regenTime = REGEN_TIME;

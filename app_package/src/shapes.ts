@@ -159,12 +159,14 @@ class ShapeImpl implements Shape, CollidableEntity {
                 ApplyWallBounce(this._node.position, this.velocity, this.size, worldSize);
 
                 const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
-                const decayFactor = Math.exp(-deltaTime * 2);
-                const targetSpeed = IDLE_MOVEMENT_SPEED / this.mass;
-                const newSpeed = targetSpeed - (targetSpeed - oldSpeed) * decayFactor;
-                const speedFactor = newSpeed / oldSpeed;
-                this.velocity.x *= speedFactor;
-                this.velocity.z *= speedFactor;
+                if (oldSpeed > 0) {
+                    const decayFactor = Math.exp(-deltaTime * 2);
+                    const targetSpeed = IDLE_MOVEMENT_SPEED / this.mass;
+                    const newSpeed = targetSpeed - (targetSpeed - oldSpeed) * decayFactor;
+                    const speedFactor = newSpeed / oldSpeed;
+                    this.velocity.x *= speedFactor;
+                    this.velocity.z *= speedFactor;
+                }
             }
 
             this._node.rotation.y = (this._node.rotation.y + this.rotationVelocity * deltaTime) % Scalar.TwoPi;
@@ -180,7 +182,7 @@ class ShapeImpl implements Shape, CollidableEntity {
             case EntityType.Bullet:
             case EntityType.Tank:
             case EntityType.Crasher: {
-                this._health.damage(other);
+                this._health.takeDamage(other);
                 ApplyCollisionForce(this, other);
                 break;
             }

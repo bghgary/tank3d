@@ -2,6 +2,10 @@ import Quadtree from "@timohausmann/quadtree-js";
 import { Entity } from "./entity";
 import { World } from "./world";
 
+export interface CollisionRegisterToken {
+    dispose(): void;
+}
+
 export interface CollidableEntity extends Entity, Quadtree.Rect {
     getCollisionRepeatRate(other: Entity): number;
     onCollide(other: Entity): void;
@@ -9,7 +13,8 @@ export interface CollidableEntity extends Entity, Quadtree.Rect {
 
 export class Collisions {
     private readonly _quadtree: Quadtree;
-    private readonly _entries = new Array<{ entities: Iterable<CollidableEntity> }>();
+    private readonly _entries = new Map<number, { entities: Iterable<CollidableEntity> }>();
+    private _registerToken: number = 0;
     private readonly _collidedEntitiesMap = new Map<CollidableEntity, Map<CollidableEntity, { time: number }>>();
 
     public constructor(world: World) {
@@ -18,8 +23,12 @@ export class Collisions {
         this._quadtree = new Quadtree({ x: -halfSize, y: -halfSize, width: size, height: size });
     }
 
-    public register(entities: Iterable<CollidableEntity>): void {
-        this._entries.push({ entities: entities });
+    public register(entities: Iterable<CollidableEntity>): CollisionRegisterToken {
+        const registerToken = this._registerToken++;
+        this._entries.set(registerToken, { entities: entities });
+        return {
+            dispose: () => this._entries.delete(registerToken)
+        };
     }
 
     public update(deltaTime: number): void {
@@ -47,13 +56,13 @@ export class Collisions {
             return (sqrDistance < collisionDistance * collisionDistance);
         };
 
-        for (const entry of this._entries) {
+        for (const entry of this._entries.values()) {
             for (const entity of entry.entities) {
                 this._quadtree.insert(entity);
             }
         }
 
-        for (const entry of this._entries) {
+        for (const entry of this._entries.values()) {
             for (const target of entry.entities) {
                 const others = this._quadtree.retrieve<CollidableEntity>(target);
                 for (const other of others) {
