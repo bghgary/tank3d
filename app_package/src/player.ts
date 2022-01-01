@@ -43,15 +43,17 @@ export class Player {
     private readonly _tank: Tank;
     private readonly _score: Score;
     private readonly _camera: ArcRotateCamera;
+    private readonly _worldSize: number;
     private readonly _commandState = new Map<Command, State>();
 
     private _autoShoot = false;
     private _autoRotate = false;
 
     public constructor(world: World, shapes: Shapes, crashers: Crashers) {
-        this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadTime: 0.1, bulletSpeed: 5, movementSpeed: 5 }, world);
+        this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 }, world);
         this._score = new Score(world);
         this._camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3.5, 15, Vector3.Zero(), world.scene);
+        this._worldSize = world.size;
 
         world.scene.onKeyboardObservable.add((data) => {
             if ((data.event as any).repeat) {
@@ -139,7 +141,7 @@ export class Player {
         const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
         const z = (this._commandState.get(Command.Up) ? 1 : 0) + (this._commandState.get(Command.Down) ? -1 : 0);
         const shoot = this._autoShoot || !!this._commandState.get(Command.Shoot);
-        this._tank.update(deltaTime, x, z, shoot, (entity) => {
+        this._tank.update(deltaTime, x, z, shoot, this._worldSize + 10, (entity) => {
             // TODO
             setTimeout(() => alert("You're dead!"), 0);
         });

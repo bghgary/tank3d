@@ -1,5 +1,5 @@
 import { Nullable, Observable, Scalar, TmpVectors, TransformNode, Vector3 } from "@babylonjs/core";
-import { Bullet, Bullets } from "./bullets";
+import { Bullet, ShooterCrasherBullets } from "./bullets";
 import { CollidableEntity } from "./collisions";
 import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallClamp } from "./common";
 import { Entity, EntityType } from "./entity";
@@ -8,12 +8,15 @@ import { Player } from "./player";
 import { Sources } from "./sources";
 import { World } from "./world";
 
-const MAX_COUNT = 100;
 const DROP_HEIGHT = 5;
 const IDLE_MOVEMENT_SPEED = 1;
 const IDLE_ROTATION_SPEED = 1;
 const CHASE_DISTANCE = 15;
 const CHASE_SPEED = 5;
+
+const SHOOTER_BULLET_SPEED = 5;
+const SHOOTER_BULLET_RELOAD_TIME = 0.5;
+const SHOOTER_BULLET_MAX_COUNT = 6;
 
 export interface Crasher extends Entity {
     readonly points: number;
@@ -22,13 +25,15 @@ export interface Crasher extends Entity {
 export class Crashers {
     private readonly _sources: Sources;
     private readonly _world: World;
+    private readonly _maxCount: number;
     private readonly _root: TransformNode;
     private readonly _crashers = new Set<CrasherImpl>();
     private _spawnTime = 0;
 
-    public constructor(world: World) {
+    public constructor(world: World, maxCount: number) {
         this._sources = world.sources;
         this._world = world;
+        this._maxCount = maxCount;
 
         const scene = world.scene;
 
@@ -52,7 +57,7 @@ export class Crashers {
 
         this._spawnTime = Math.max(this._spawnTime - deltaTime, 0);
         if (this._spawnTime === 0) {
-            if (this._crashers.size < MAX_COUNT) {
+            if (this._crashers.size < this._maxCount) {
                 this._createClump();
                 this._spawnTime = Scalar.RandomRange(5, 15);
             }
@@ -60,8 +65,7 @@ export class Crashers {
     }
 
     private _createClump(): void {
-        const create = (createInstance: (name: string, parent: TransformNode) => TransformNode, x: number, z: number, rotation: number, size: number, health: number, damage: number, points: number, canShoot: boolean): void => {
-            const node = createInstance("crasher", this._root);
+        const create = (node: TransformNode, x: number, z: number, rotation: number, size: number, health: number, damage: number, points: number, canShoot: boolean): void => {
             const healthNode = this._sources.createHealth("health", node, size, 0.2);
             const crasher = new CrasherImpl(node, healthNode, size, health, damage, points, canShoot, this._world);
             crasher.position.set(x, DROP_HEIGHT, z);
@@ -71,9 +75,9 @@ export class Crashers {
         };
 
         const entries = [
-            { createInstance: this._sources.createSmallCrasher,   size: 0.60, health: 10, damage: 20, points: 10, canShoot: false },
-            { createInstance: this._sources.createBigCrasher,     size: 0.80, health: 20, damage: 40, points: 25, canShoot: false },
-            { createInstance: this._sources.createShooterCrasher, size: 0.80, health: 20, damage: 30, points: 50, canShoot: true  },
+            { createInstance: () => this._sources.createSmallCrasher("small", this._root),     size: 0.60, health: 10, damage: 20, points: 10, canShoot: false },
+            { createInstance: () => this._sources.createBigCrasher("big", this._root),         size: 0.80, health: 20, damage: 40, points: 25, canShoot: false },
+            { createInstance: () => this._sources.createShooterCrasher("shooter", this._root), size: 0.80, health: 20, damage: 30, points: 50, canShoot: true  },
         ];
 
         const clumpSize = Math.round(Scalar.RandomRange(4, 7));
@@ -87,7 +91,7 @@ export class Crashers {
             const rotation1 = Math.random() * Math.PI * 0.5;
             const n = Math.random();
             const entry = entries[n < 0.6 ? 0 : n < 0.9 ? 1 : 2];
-            create(entry.createInstance.bind(this._sources), x + x1, z + z1, rotation + rotation1, entry.size, entry.health, entry.damage, entry.points, entry.canShoot);
+            create(entry.createInstance(), x + x1, z + z1, rotation + rotation1, entry.size, entry.health, entry.damage, entry.points, entry.canShoot);
         }
     }
 
@@ -103,7 +107,7 @@ export class Crashers {
 class CrasherImpl implements Crasher, CollidableEntity {
     private readonly _node: TransformNode;
     private readonly _health: Health;
-    private readonly _bullets: Nullable<Bullets> = null;
+    private readonly _bullets: Nullable<ShooterCrasherBullets> = null;
     private _reloadTime = 0;
 
     public constructor(node: TransformNode, healthNode: TransformNode, size: number, health: number, damage: number, points: number, canShoot: boolean, world: World) {
@@ -115,7 +119,7 @@ class CrasherImpl implements Crasher, CollidableEntity {
         this.points = points;
 
         if (canShoot) {
-            this._bullets = new Bullets(this, world, 0.15);
+            this._bullets = new ShooterCrasherBullets(this, world, 0.15, SHOOTER_BULLET_MAX_COUNT);
         }
     }
 
@@ -156,7 +160,7 @@ class CrasherImpl implements Crasher, CollidableEntity {
 
         if (this._node.position.y === 0) {
             ApplyMovement(deltaTime, this._node.position, this.velocity);
-            ApplyWallClamp(this._node.position, this.velocity, this.size, worldSize);
+            ApplyWallClamp(this._node.position, this.size, worldSize);
 
             if (this._bullets) {
                 this._bullets.update(deltaTime);
@@ -178,10 +182,9 @@ class CrasherImpl implements Crasher, CollidableEntity {
                 if (this._bullets && angle < Math.PI * 0.1) {
                     this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
                     if (this._reloadTime === 0) {
-                        const bulletSpeed = 5;
-                        const initialSpeed = Vector3.Dot(this.velocity, this._node.forward) + bulletSpeed;
-                        this._bullets.add(this._node.position, this._node.forward, initialSpeed, bulletSpeed, 0.625);
-                        this._reloadTime = 0.5;
+                        const initialSpeed = Vector3.Dot(this.velocity, this._node.forward) + SHOOTER_BULLET_SPEED;
+                        this._bullets.add(this._node.position, this._node.forward, initialSpeed, SHOOTER_BULLET_SPEED, 0.625);
+                        this._reloadTime = SHOOTER_BULLET_RELOAD_TIME;
                     }
 
                 }
@@ -203,6 +206,10 @@ class CrasherImpl implements Crasher, CollidableEntity {
     }
 
     public onCollide(other: Entity): void {
+        if (other.type === EntityType.Bullet && (other as Bullet).owner.type === EntityType.Crasher) {
+            return;
+        }
+
         if (other.type !== EntityType.Crasher) {
             this._health.takeDamage(other);
         }

@@ -27,12 +27,12 @@ export class World {
         this.collisions = new Collisions(this);
 
         const shapes = new Shapes(this, 200);
-        const crashers = new Crashers(this);
+        const crashers = new Crashers(this, 100);
         const player = new Player(this, shapes, crashers);
 
         this._createGround();
 
-        new HemisphericLight("hemisphericLight", new Vector3(0.1, 1, 0.1), this.scene);
+        new HemisphericLight("hemisphericLight", new Vector3(0.1, 1, -0.5), this.scene);
 
         this.scene.onKeyboardObservable.add((data) => {
             if (data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey && data.event.code === "KeyI") {
@@ -78,17 +78,34 @@ export class World {
     }
 
     private _createGround(): void {
-        const bufferedSize = this.size * 2;
+        const bufferedSize = 10000;
         const ground = MeshBuilder.CreateGround("ground", { width: bufferedSize, height: bufferedSize }, this.scene);
         ground.visibility = 0;
 
-        const mesh = MeshBuilder.CreateGround("mesh", { width: this.size, height: this.size }, this.scene);
-        mesh.parent = ground;
-        mesh.position.y = -1;
+        const innerGrid = MeshBuilder.CreateGround("innerGrid", { width: this.size, height: this.size }, this.scene);
+        innerGrid.parent = ground;
+        innerGrid.position.y = -1;
+        innerGrid.isPickable = false;
+        innerGrid.doNotSyncBoundingInfo = true;
+        innerGrid.alwaysSelectAsActiveMesh = true;
 
-        const material = new GridMaterial("ground", this.scene);
-        // TODO: grid settings
-        mesh.material = material;
-        mesh.isPickable = false;
+        const innerMaterial = new GridMaterial("innerGrid", this.scene);
+        innerMaterial.majorUnitFrequency = 0;
+        innerMaterial.mainColor.set(0.6, 0.6, 0.6);
+        innerMaterial.lineColor.set(0.4, 0.4, 0.4);
+        innerGrid.material = innerMaterial;
+
+        const outerGrid = MeshBuilder.CreateGround("outerGrid", { width: bufferedSize, height: bufferedSize }, this.scene);
+        outerGrid.parent = ground;
+        outerGrid.position.y = -1.01;
+        outerGrid.isPickable = false;
+        outerGrid.doNotSyncBoundingInfo = true;
+        outerGrid.alwaysSelectAsActiveMesh = true;
+
+        const outerMaterial = new GridMaterial("outerGrid", this.scene);
+        outerMaterial.majorUnitFrequency = 0;
+        outerMaterial.mainColor.set(0.3, 0.3, 0.3);
+        outerMaterial.lineColor.set(0.1, 0.1, 0.1);
+        outerGrid.material = outerMaterial;
     }
 }

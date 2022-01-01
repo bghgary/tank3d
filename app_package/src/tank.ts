@@ -1,7 +1,7 @@
 import { MeshBuilder, StandardMaterial, Color3, Scene, Vector3, TransformNode, Mesh } from "@babylonjs/core";
-import { Bullet, Bullets } from "./bullets";
+import { Bullet, PlayerTankBullets } from "./bullets";
 import { CollidableEntity } from "./collisions";
-import { ApplyCollisionForce } from "./common";
+import { ApplyCollisionForce, ApplyWallClamp } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
 import { World } from "./world";
@@ -19,9 +19,9 @@ export interface TankProperties {
 export class Tank implements CollidableEntity {
     private readonly _properties: TankProperties;
     private readonly _scene: Scene;
-    private readonly _root: TransformNode;
+    private readonly _node: TransformNode;
     private readonly _health: Health;
-    private readonly _bullets: Bullets;
+    private readonly _bullets: PlayerTankBullets;
     private _reloadTime = 0;
 
     public constructor(name: string, properties: TankProperties, world: World) {
@@ -29,11 +29,11 @@ export class Tank implements CollidableEntity {
         this._scene = world.scene;
 
         // Create parent node.
-        this._root = new TransformNode(name, this._scene);
+        this._node = new TransformNode(name, this._scene);
 
         // Create tank body.
-        const bodyMesh = MeshBuilder.CreateSphere("body", { segments: 12 }, this._scene);
-        bodyMesh.parent = this._root;
+        const bodyMesh = MeshBuilder.CreateSphere("body", { segments: 16 }, this._scene);
+        bodyMesh.parent = this._node;
         bodyMesh.isPickable = false;
         bodyMesh.doNotSyncBoundingInfo = true;
         bodyMesh.alwaysSelectAsActiveMesh = true;
@@ -45,7 +45,7 @@ export class Tank implements CollidableEntity {
 
         // Create tank barrel.
         const barrelMesh = MeshBuilder.CreateCylinder("barrel", { tessellation: 16, cap: Mesh.CAP_END, diameter: properties.barrelDiameter, height: properties.barrelLength }, this._scene);
-        barrelMesh.parent = this._root;
+        barrelMesh.parent = this._node;
         barrelMesh.rotation.x = Math.PI * 0.5;
         barrelMesh.position.z = properties.barrelLength * 0.5;
         barrelMesh.isPickable = false;
@@ -58,12 +58,12 @@ export class Tank implements CollidableEntity {
         barrelMesh.material = barrelMaterial;
 
         // Create health.
-        const healthMesh = world.sources.createHealth("health", this._root, this.size, 0.4);
+        const healthMesh = world.sources.createHealth("health", this._node, this.size, 0.4);
         this._health = new Health(healthMesh, 1, 100);
 
         // Create bullets.
         const bulletDiameter = this._properties.barrelDiameter * 0.75;
-        this._bullets = new Bullets(this, world, bulletDiameter);
+        this._bullets = new PlayerTankBullets(this, world, bulletDiameter, 100);
 
         // Register with collisions.
         world.collisions.register([this]);
@@ -75,24 +75,24 @@ export class Tank implements CollidableEntity {
     public readonly mass = 2;
     public readonly damage = 30; // TODO
     public readonly collisionRepeatRate = 1;
-    public get position(): Vector3 { return this._root.position; }
+    public get position(): Vector3 { return this._node.position; }
     public readonly velocity = new Vector3();
 
     // Quadtree.Rect
-    public get x() { return this._root.position.x - this.size * 0.5; }
-    public get y() { return this._root.position.z - this.size * 0.5; }
+    public get x() { return this._node.position.x - this.size * 0.5; }
+    public get y() { return this._node.position.z - this.size * 0.5; }
     public get width() { return this.size; }
     public get height() { return this.size; }
 
     public lookAt(targetPoint: Vector3): void {
-        this._root.lookAt(targetPoint);
+        this._node.lookAt(targetPoint);
     }
 
     public rotate(value: number): void {
-        this._root.rotation.y += value;
+        this._node.rotation.y += value;
     }
 
-    public update(deltaTime: number, x: number, z: number, shoot: boolean, onDestroyed: (entity: Entity) => void): void {
+    public update(deltaTime: number, x: number, z: number, shoot: boolean, worldSize: number, onDestroyed: (entity: Entity) => void): void {
         // Movement
         const move = x !== 0 || z !== 0;
         const decayFactor = Math.exp(-deltaTime * 2);
@@ -108,22 +108,23 @@ export class Tank implements CollidableEntity {
         }
 
         // Position
-        this._root.position.x += this.velocity.x * deltaTime;
-        this._root.position.z += this.velocity.z * deltaTime;
+        this._node.position.x += this.velocity.x * deltaTime;
+        this._node.position.z += this.velocity.z * deltaTime;
+        ApplyWallClamp(this._node.position, this.size, worldSize);
 
         // Bullets
         this._bullets.update(deltaTime);
         this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
         if (shoot && this._reloadTime === 0) {
-            const initialSpeed = Vector3.Dot(this.velocity, this._root.forward) + this._properties.bulletSpeed;
+            const initialSpeed = Vector3.Dot(this.velocity, this._node.forward) + this._properties.bulletSpeed;
             const bulletDiameter = this._properties.barrelDiameter * 0.75;
-            this._bullets.add(this._root.position, this._root.forward, initialSpeed, this._properties.bulletSpeed, this._properties.barrelLength + bulletDiameter * 0.5);
+            this._bullets.add(this._node.position, this._node.forward, initialSpeed, this._properties.bulletSpeed, this._properties.barrelLength + bulletDiameter * 0.5);
             this._reloadTime = this._properties.reloadTime;
 
             if (!move) {
                 const knockBackFactor = initialSpeed * deltaTime * KNOCK_BACK;
-                this.velocity.x -= this._root.forward.x * knockBackFactor;
-                this.velocity.z -= this._root.forward.z * knockBackFactor;
+                this.velocity.x -= this._node.forward.x * knockBackFactor;
+                this.velocity.z -= this._node.forward.z * knockBackFactor;
             }
         }
 

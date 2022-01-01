@@ -56,7 +56,7 @@ export function ApplyWallBounce(position: Vector3, velocity: Vector3, size: numb
     }
 }
 
-export function ApplyWallClamp(position: Vector3, velocity: Vector3, size: number, worldSize: number): void {
+export function ApplyWallClamp(position: Vector3, size: number, worldSize: number): void {
     const limit = (worldSize - size) * 0.5;
 
     if (position.x > limit) {

@@ -21,7 +21,7 @@ export class Shapes {
     private readonly _root: TransformNode;
     private readonly _shapes: Array<ShapeImpl>;
 
-    constructor(world: World, count: number) {
+    public constructor(world: World, count: number) {
         this._sources = world.sources;
         this._worldSize = world.size;
 
