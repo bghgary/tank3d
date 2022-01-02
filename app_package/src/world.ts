@@ -7,6 +7,7 @@ import { Shapes } from "./shapes";
 import { Collisions } from "./collisions";
 import { Sources } from "./sources";
 import { Crashers } from "./crashers";
+import { Bullets } from "./bullets";
 
 function now(): number {
     return performance.now() * 0.001;
@@ -27,8 +28,9 @@ export class World {
         this.collisions = new Collisions(this);
 
         const shapes = new Shapes(this, 200);
-        const crashers = new Crashers(this, 100);
-        const player = new Player(this, shapes, crashers);
+        const bullets = new Bullets(this);
+        const crashers = new Crashers(this, bullets, 100);
+        const player = new Player(this, bullets, shapes, crashers);
 
         this._createGround();
 
@@ -51,6 +53,7 @@ export class World {
             this._previousTime = currentTime;
 
             shapes.update(deltaTime);
+            bullets.update(deltaTime);
             player.update(deltaTime);
             crashers.update(deltaTime, player);
 

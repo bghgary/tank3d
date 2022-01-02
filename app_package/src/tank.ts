@@ -1,9 +1,10 @@
 import { MeshBuilder, StandardMaterial, Color3, Scene, Vector3, TransformNode, Mesh } from "@babylonjs/core";
-import { Bullet, PlayerTankBullets } from "./bullets";
+import { Bullet, Bullets } from "./bullets";
 import { CollidableEntity } from "./collisions";
 import { ApplyCollisionForce, ApplyWallClamp } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
+import { Shadow } from "./shadow";
 import { World } from "./world";
 
 const KNOCK_BACK = 5;
@@ -19,14 +20,17 @@ export interface TankProperties {
 export class Tank implements CollidableEntity {
     private readonly _properties: TankProperties;
     private readonly _scene: Scene;
+    private readonly _bullets: Bullets;
+    private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
     private readonly _node: TransformNode;
     private readonly _health: Health;
-    private readonly _bullets: PlayerTankBullets;
     private _reloadTime = 0;
 
-    public constructor(name: string, properties: TankProperties, world: World) {
+    public constructor(name: string, properties: TankProperties, world: World, bullets: Bullets) {
         this._properties = properties;
         this._scene = world.scene;
+        this._bullets = bullets;
+        this._createBulletNode = (parent) => world.sources.createPlayerTankBullet(parent);
 
         // Create parent node.
         this._node = new TransformNode(name, this._scene);
@@ -58,12 +62,10 @@ export class Tank implements CollidableEntity {
         barrelMesh.material = barrelMaterial;
 
         // Create health.
-        const healthMesh = world.sources.createHealth("health", this._node, this.size, 0.4);
-        this._health = new Health(healthMesh, 1, 100);
+        this._health = new Health(world.sources, this._node, this.size, 0.4, 100);
 
-        // Create bullets.
-        const bulletDiameter = this._properties.barrelDiameter * 0.75;
-        this._bullets = new PlayerTankBullets(this, world, bulletDiameter, 100);
+        // Create shadow.
+        new Shadow(world.sources, this._node, this.size);
 
         // Register with collisions.
         world.collisions.register([this]);
@@ -113,16 +115,17 @@ export class Tank implements CollidableEntity {
         ApplyWallClamp(this._node.position, this.size, worldSize);
 
         // Bullets
-        this._bullets.update(deltaTime);
         this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
         if (shoot && this._reloadTime === 0) {
-            const initialSpeed = Vector3.Dot(this.velocity, this._node.forward) + this._properties.bulletSpeed;
+            const bulletInitialSpeed = Vector3.Dot(this.velocity, this._node.forward) + this._properties.bulletSpeed;
             const bulletDiameter = this._properties.barrelDiameter * 0.75;
-            this._bullets.add(this._node.position, this._node.forward, initialSpeed, this._properties.bulletSpeed, this._properties.barrelLength + bulletDiameter * 0.5);
+            const bulletProperties = { size: bulletDiameter, damage: 6, health: 10 };
+            const bulletOffset = this._properties.barrelLength + bulletDiameter * 0.5;
+            this._bullets.add(this, this._createBulletNode, bulletProperties, this._node.position, this._node.forward, bulletInitialSpeed, this._properties.bulletSpeed, bulletOffset);
             this._reloadTime = this._properties.reloadTime;
 
             if (!move) {
-                const knockBackFactor = initialSpeed * deltaTime * KNOCK_BACK;
+                const knockBackFactor = bulletInitialSpeed * deltaTime * KNOCK_BACK;
                 this.velocity.x -= this._node.forward.x * knockBackFactor;
                 this.velocity.z -= this._node.forward.z * knockBackFactor;
             }

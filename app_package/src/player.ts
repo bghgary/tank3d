@@ -1,5 +1,5 @@
 import { ArcRotateCamera, KeyboardEventTypes, PointerEventTypes, Vector3 } from "@babylonjs/core";
-import { Bullet } from "./bullets";
+import { Bullet, Bullets } from "./bullets";
 import { Crashers } from "./crashers";
 import { Entity, EntityType } from "./entity";
 import { Score } from "./score";
@@ -49,8 +49,8 @@ export class Player {
     private _autoShoot = false;
     private _autoRotate = false;
 
-    public constructor(world: World, shapes: Shapes, crashers: Crashers) {
-        this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 }, world);
+    public constructor(world: World, bullets: Bullets, shapes: Shapes, crashers: Crashers) {
+        this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 }, world, bullets);
         this._score = new Score(world);
         this._camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3.5, 15, Vector3.Zero(), world.scene);
         this._worldSize = world.size;

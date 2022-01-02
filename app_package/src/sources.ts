@@ -1,4 +1,5 @@
-import { AbstractMesh, Color3, InstancedMesh, Material, Mesh, MeshBuilder, Scene, StandardMaterial, TransformNode } from "@babylonjs/core";
+import { AbstractMesh, InstancedMesh, Material, Mesh, MeshBuilder, NodeMaterial, Scene, StandardMaterial, TransformNode } from "@babylonjs/core";
+import { ShadowNodeMaterial } from "./shadowNodeMaterial";
 import { World } from "./world";
 
 export class Sources {
@@ -15,6 +16,7 @@ export class Sources {
     private readonly _playerTankBullet: Mesh;
     private readonly _shooterCrasherBullet: Mesh;
     private readonly _health: Mesh;
+    private readonly _shadow: Mesh;
     private readonly _cube: Mesh;
     private readonly _tetrahedron: Mesh;
     private readonly _dodecahedron: Mesh;
@@ -40,6 +42,7 @@ export class Sources {
         this._playerTankBullet = this._createBulletSource(sources, "playerTankBullet", 8, this._blue);
         this._shooterCrasherBullet = this._createBulletSource(sources, "shooterCrasherBullet", 4, this._pink);
         this._health = this._createHealthSource(sources);
+        this._shadow = this._createShadowSource(sources);
         this._cube = this._createCubeSource(sources);
         this._tetrahedron = this._createTetrahedronSource(sources);
         this._dodecahedron = this._createDodecahedronSource(sources);
@@ -49,49 +52,48 @@ export class Sources {
         this._shooterCrasher = this._createShooterCrasherSource(sources);
     }
 
-    public createPlayerTankBullet(name: string, parent: TransformNode): TransformNode {
-        return this._createInstance(this._playerTankBullet, name, parent);
+    public createPlayerTankBullet(parent: TransformNode): TransformNode {
+        return this._createInstance(this._playerTankBullet, "playerTank", parent);
     }
 
-    public createShooterCrasherBullet(name: string, parent: TransformNode): TransformNode {
-        return this._createInstance(this._shooterCrasherBullet, name, parent);
+    public createShooterCrasherBullet(parent: TransformNode): TransformNode {
+        return this._createInstance(this._shooterCrasherBullet, "shooterCrasher", parent);
     }
 
-    public createHealth(name: string, parent: TransformNode, size: number, offset: number): TransformNode {
-        const instance = this._createInstance(this._health, name, parent);
-        instance.position.y = size * 0.5 + offset;
-        instance.scaling.x = size;
-        instance.billboardMode = Mesh.BILLBOARDMODE_Y;
-        instance.setEnabled(false);
-        return instance;
+    public createHealth(parent: TransformNode): TransformNode {
+        return this._createInstance(this._health, "health", parent);
     }
 
-    public createCube(name: string, parent: TransformNode): TransformNode {
-        return this._createInstance(this._cube, name, parent);
+    public createShadow(parent: TransformNode): TransformNode {
+        return this._createInstance(this._shadow, "shadow", parent);
     }
 
-    public createTetrahedron(name: string, parent: TransformNode): TransformNode {
-        return this._createInstance(this._tetrahedron, name, parent);
+    public createCubeShape(parent: TransformNode): TransformNode {
+        return this._createInstance(this._cube, "cube", parent);
     }
 
-    public createDodecahedron(name: string, parent: TransformNode): TransformNode {
-        return this._createInstance(this._dodecahedron, name, parent);
+    public createTetrahedronShape(parent: TransformNode): TransformNode {
+        return this._createInstance(this._tetrahedron, "tetrahedron", parent);
     }
 
-    public createGoldberg11(name: string, parent: TransformNode): TransformNode {
-        return this._createInstance(this._goldberg11, name, parent);
+    public createDodecahedronShape(parent: TransformNode): TransformNode {
+        return this._createInstance(this._dodecahedron, "dodecahedron", parent);
     }
 
-    public createSmallCrasher(name: string, parent: TransformNode): TransformNode {
-        return this._createInstance(this._smallCrasher, name, parent);
+    public createGoldberg11Shape(parent: TransformNode): TransformNode {
+        return this._createInstance(this._goldberg11, "goldberg11", parent);
     }
 
-    public createBigCrasher(name: string, parent: TransformNode): TransformNode {
-        return this._createInstance(this._bigCrasher, name, parent);
+    public createSmallCrasher(parent: TransformNode): TransformNode {
+        return this._createInstance(this._smallCrasher, "small", parent);
     }
 
-    public createShooterCrasher(name: string, parent: TransformNode): TransformNode {
-        return this._instantiateHeirarchy(this._shooterCrasher, name, parent);
+    public createBigCrasher(parent: TransformNode): TransformNode {
+        return this._createInstance(this._bigCrasher, "big", parent);
+    }
+
+    public createShooterCrasher(parent: TransformNode): TransformNode {
+        return this._instantiateHeirarchy(this._shooterCrasher, "shooter", parent);
     }
 
     private _createMaterial(name: string, r: number, g: number, b: number, unlit = false): Material {
@@ -141,8 +143,17 @@ export class Sources {
         return source;
     }
 
+    private _createShadowSource(sources: TransformNode): Mesh {
+        const source = MeshBuilder.CreatePlane("health", { size: 1 }, this._scene);
+        source.rotation.x = Math.PI / 2;
+        source.bakeCurrentTransformIntoVertices();
+        source.material = NodeMaterial.Parse(ShadowNodeMaterial, this._scene);
+        source.parent = sources;
+        return source;
+    }
+
     private _createCubeSource(sources: TransformNode): Mesh {
-        const source = MeshBuilder.CreateBox("cube", { size: 0.4 }, this._scene);
+        const source = MeshBuilder.CreateBox("cubeShape", { size: 0.4 }, this._scene);
         source.rotation.x = Math.atan(1 / Math.sqrt(2));
         source.rotation.z = Math.PI / 4;
         source.bakeCurrentTransformIntoVertices();
@@ -152,7 +163,8 @@ export class Sources {
     }
 
     private _createTetrahedronSource(sources: TransformNode): Mesh {
-        const source = MeshBuilder.CreatePolyhedron("tetrahedron", { type: 0, size: 0.25 }, this._scene);
+        const source = MeshBuilder.CreatePolyhedron("tetrahedronShape", { type: 0, size: 0.25 }, this._scene);
+        source.position.y = -0.1;
         source.rotation.x = -Math.PI / 2;
         source.bakeCurrentTransformIntoVertices();
         source.material = this._orange;
@@ -161,7 +173,7 @@ export class Sources {
     }
 
     private _createDodecahedronSource(sources: TransformNode): Mesh {
-        const source = MeshBuilder.CreatePolyhedron("dodecahedron", { type: 2, size: 0.5 }, this._scene);
+        const source = MeshBuilder.CreatePolyhedron("dodecahedronShape", { type: 2, size: 0.5 }, this._scene);
         source.rotation.x = Math.PI / 2;
         source.bakeCurrentTransformIntoVertices();
         source.material = this._purple;
@@ -170,7 +182,7 @@ export class Sources {
     }
 
     private _createGoldberg11Source(sources: TransformNode): Mesh {
-        const source = MeshBuilder.CreateGoldberg("goldberg11", { m: 1, n: 1, size: 0.9 }, this._scene);
+        const source = MeshBuilder.CreateGoldberg("goldberg11Shape", { m: 1, n: 1, size: 0.9 }, this._scene);
         source.material = this._green;
         source.parent = sources;
         return source;

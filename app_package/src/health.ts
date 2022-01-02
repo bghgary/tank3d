@@ -1,5 +1,6 @@
-import { Nullable, TransformNode } from "@babylonjs/core";
+import { Mesh, Nullable, TransformNode } from "@babylonjs/core";
 import { Entity } from "./entity";
+import { Sources } from "./sources";
 
 const REGEN_TIME = 30;
 const REGEN_SPEED = 0.2;
@@ -15,8 +16,13 @@ export class Health {
     private _regenTime = 0;
     private _lastDamageEntity: Nullable<Entity> = null;
 
-    public constructor(node: TransformNode, size: number, max: number) {
-        this._node = node;
+    public constructor(sources: Sources, parent: TransformNode, size: number, offset: number, max: number) {
+        this._node = sources.createHealth(parent);
+        this._node.position.y = size * 0.5 + offset;
+        this._node.scaling.x = size;
+        this._node.billboardMode = Mesh.BILLBOARDMODE_Y;
+        this._node.setEnabled(false);
+
         this._size = size;
         this._max = this._current = this._target = max;
     }

@@ -25,7 +25,7 @@ export function ApplyMovement(deltaTime: number, position: Vector3, velocity: Ve
     position.z += velocity.z * deltaTime;
 }
 
-export function ApplyGravity(deltaTime: number, position: Vector3, velocity: Vector3): void {
+export function ApplyGravity(deltaTime: number, position: Vector3, velocity: Vector3): boolean {
     if (position.y > 0) {
         velocity.y -= GRAVITY * deltaTime;
         position.y += velocity.y * deltaTime;
@@ -33,7 +33,11 @@ export function ApplyGravity(deltaTime: number, position: Vector3, velocity: Vec
             position.y = 0;
             velocity.y = 0;
         }
+
+        return true;
     }
+
+    return false;
 }
 
 export function ApplyWallBounce(position: Vector3, velocity: Vector3, size: number, worldSize: number): void {
