@@ -96,9 +96,8 @@ export class Tank implements CollidableEntity {
 
     public update(deltaTime: number, x: number, z: number, shoot: boolean, worldSize: number, onDestroyed: (entity: Entity) => void): void {
         // Movement
-        const move = x !== 0 || z !== 0;
         const decayFactor = Math.exp(-deltaTime * 2);
-        if (move) {
+        if (x !== 0 || z !== 0) {
             const movementFactor = this._properties.movementSpeed / Math.sqrt(x * x + z * z);
             x *= movementFactor;
             z *= movementFactor;
@@ -124,11 +123,9 @@ export class Tank implements CollidableEntity {
             this._bullets.add(this, this._createBulletNode, bulletProperties, this._node.position, this._node.forward, bulletInitialSpeed, this._properties.bulletSpeed, bulletOffset);
             this._reloadTime = this._properties.reloadTime;
 
-            if (!move) {
-                const knockBackFactor = bulletInitialSpeed * deltaTime * KNOCK_BACK;
-                this.velocity.x -= this._node.forward.x * knockBackFactor;
-                this.velocity.z -= this._node.forward.z * knockBackFactor;
-            }
+            const knockBackFactor = bulletInitialSpeed * deltaTime * KNOCK_BACK;
+            this.velocity.x -= this._node.forward.x * knockBackFactor;
+            this.velocity.z -= this._node.forward.z * knockBackFactor;
         }
 
         // Health
