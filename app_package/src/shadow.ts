@@ -13,8 +13,8 @@ export class Shadow {
 
     public update(): void {
         const parent = this._node.parent as TransformNode;
-        this._node.position.y = -parent.position.y - 0.999;
-        const scale = parent.position.y * 0.5 + this._size * 2;
+        this._node.position.y = (-parent.position.y - 0.999) / parent.scaling.y;
+        const scale = parent.position.y / parent.scaling.y * 0.5 + this._size * 2;
         this._node.scaling.x = scale / parent.scaling.x;
         this._node.scaling.y = scale / parent.scaling.y;
         this._node.scaling.z = scale / parent.scaling.z;
