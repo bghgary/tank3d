@@ -5,7 +5,7 @@ import { ApplyCollisionForce, ApplyWallClamp } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
 import { Shadow } from "./shadow";
-import { World } from "./world";
+import { RenderingGroupId, World } from "./world";
 
 const KNOCK_BACK = 5;
 
@@ -37,6 +37,7 @@ export class Tank implements CollidableEntity {
 
         // Create tank body.
         const bodyMesh = MeshBuilder.CreateSphere("body", { segments: 16 }, this._scene);
+        bodyMesh.renderingGroupId = RenderingGroupId.Entity;
         bodyMesh.parent = this._node;
         bodyMesh.isPickable = false;
         bodyMesh.doNotSyncBoundingInfo = true;
@@ -49,6 +50,7 @@ export class Tank implements CollidableEntity {
 
         // Create tank barrel.
         const barrelMesh = MeshBuilder.CreateCylinder("barrel", { tessellation: 16, cap: Mesh.CAP_END, diameter: properties.barrelDiameter, height: properties.barrelLength }, this._scene);
+        barrelMesh.renderingGroupId = RenderingGroupId.Entity;
         barrelMesh.parent = this._node;
         barrelMesh.rotation.x = Math.PI * 0.5;
         barrelMesh.position.z = properties.barrelLength * 0.5;

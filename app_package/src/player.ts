@@ -56,6 +56,7 @@ export class Player {
         this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 }, world, bullets);
         this._score = new Score(world);
         this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), world.scene);
+        this._camera.lowerRadiusLimit = 2;
         this._worldSize = world.size;
 
         world.scene.onKeyboardObservable.add((data) => {

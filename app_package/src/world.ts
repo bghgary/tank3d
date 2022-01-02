@@ -1,5 +1,5 @@
 import "@babylonjs/inspector";
-import { Engine, FreeCamera, HemisphericLight, KeyboardEventTypes, MeshBuilder, Observable, Scene, Vector3 } from "@babylonjs/core";
+import { Engine, HemisphericLight, KeyboardEventTypes, MeshBuilder, Observable, Scene, Vector3 } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
 import { GridMaterial } from "@babylonjs/materials";
 import { Player } from "./player";
@@ -8,6 +8,12 @@ import { Collisions } from "./collisions";
 import { Sources } from "./sources";
 import { Crashers } from "./crashers";
 import { Bullets } from "./bullets";
+
+export const enum RenderingGroupId {
+    OuterGrid,
+    InnerGrid,
+    Entity
+}
 
 function now(): number {
     return performance.now() * 0.001;
@@ -35,7 +41,7 @@ export class World {
 
         this._createGround();
 
-        new HemisphericLight("hemisphericLight", new Vector3(0.1, 1, -0.5), this.scene);
+        new HemisphericLight("light", new Vector3(0.1, 1, -0.5), this.scene);
 
         this.scene.onKeyboardObservable.add((data) => {
             if (data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey) {
@@ -101,22 +107,27 @@ export class World {
     public onPausedStateChangedObservable = new Observable<boolean>();
 
     private _createGround(): void {
-        const ground = MeshBuilder.CreateGround("ground", { width: 1000000, height: 1000000 }, this.scene);
+        const ground = MeshBuilder.CreateGround("ground", { width: 1000, height: 1000 }, this.scene);
         ground.visibility = 0;
 
-        const grid = MeshBuilder.CreateGround("grid", { width: this.size, height: this.size }, this.scene);
-        grid.parent = ground;
-        grid.position.y = -1;
-        grid.isPickable = false;
-        grid.doNotSyncBoundingInfo = true;
-        grid.alwaysSelectAsActiveMesh = true;
+        const createGrid = (name: string, size: number, renderingGroupId: number, main: number, line: number): void => {
+            const grid = MeshBuilder.CreateGround(name, { width: size, height: size }, this.scene);
+            grid.renderingGroupId = renderingGroupId;
+            grid.parent = ground;
+            grid.position.y = -1;
+            grid.isPickable = false;
+            grid.doNotSyncBoundingInfo = true;
+            grid.alwaysSelectAsActiveMesh = true;
 
-        const material = new GridMaterial("grid", this.scene);
-        material.majorUnitFrequency = 0;
-        material.mainColor.set(0.3, 0.3, 0.3);
-        material.lineColor.set(0.1, 0.1, 0.1);
-        grid.material = material;
+            const material = new GridMaterial(name, this.scene);
+            material.majorUnitFrequency = 0;
+            material.mainColor.set(main, main, main);
+            material.lineColor.set(line, line, line);
+            material.disableDepthWrite = true;
+            grid.material = material;
+        }
 
-        // TODO: how to draw outer grid in one draw call?
+        createGrid("innerGrid", this.size, RenderingGroupId.InnerGrid, 0.3, 0.15);
+        createGrid("outerGrid", 1000, RenderingGroupId.OuterGrid, 0.2, 0.1);
     }
 }

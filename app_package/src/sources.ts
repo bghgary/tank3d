@@ -1,6 +1,6 @@
 import { AbstractMesh, InstancedMesh, Material, Mesh, MeshBuilder, NodeMaterial, Scene, StandardMaterial, TransformNode } from "@babylonjs/core";
 import { ShadowNodeMaterial } from "./shadowNodeMaterial";
-import { World } from "./world";
+import { RenderingGroupId, World } from "./world";
 
 export class Sources {
     private readonly _scene: Scene;
@@ -39,8 +39,8 @@ export class Sources {
         this._purple = this._createMaterial("purple", 0.5, 0.2, 1);
         this._yellow = this._createMaterial("yellow", 0.9, 0.9, 0);
 
-        this._playerTankBullet = this._createBulletSource(sources, "playerTankBullet", 8, this._blue);
-        this._shooterCrasherBullet = this._createBulletSource(sources, "shooterCrasherBullet", 4, this._pink);
+        this._playerTankBullet = this._createBulletSource(sources, "bulletPlayerTank", 8, this._blue);
+        this._shooterCrasherBullet = this._createBulletSource(sources, "bulletShooterCrasher", 4, this._pink);
         this._health = this._createHealthSource(sources);
         this._shadow = this._createShadowSource(sources);
         this._cube = this._createCubeSource(sources);
@@ -131,6 +131,7 @@ export class Sources {
 
     private _createBulletSource(sources: TransformNode, name: string, segments: number, material: Material): Mesh {
         const source = MeshBuilder.CreateSphere(name, { segments: segments }, this._scene);
+        source.renderingGroupId = RenderingGroupId.Entity;
         source.material = material;
         source.parent = sources;
         return source;
@@ -138,22 +139,27 @@ export class Sources {
 
     private _createHealthSource(sources: TransformNode): Mesh {
         const source = MeshBuilder.CreatePlane("health", { width: 1, height: 0.08 }, this._scene);
+        source.renderingGroupId = RenderingGroupId.Entity;
         source.material = this._createMaterial("health", 0, 0.8, 0, true);
         source.parent = sources;
         return source;
     }
 
     private _createShadowSource(sources: TransformNode): Mesh {
-        const source = MeshBuilder.CreatePlane("health", { size: 1 }, this._scene);
+        const source = MeshBuilder.CreatePlane("shadow", { size: 1 }, this._scene);
+        source.renderingGroupId = RenderingGroupId.Entity;
         source.rotation.x = Math.PI / 2;
         source.bakeCurrentTransformIntoVertices();
         source.material = NodeMaterial.Parse(ShadowNodeMaterial, this._scene);
+        source.material.name = "shadow";
+        source.material.disableDepthWrite = true;
         source.parent = sources;
         return source;
     }
 
     private _createCubeSource(sources: TransformNode): Mesh {
-        const source = MeshBuilder.CreateBox("cubeShape", { size: 0.4 }, this._scene);
+        const source = MeshBuilder.CreateBox("shapeCube", { size: 0.4 }, this._scene);
+        source.renderingGroupId = RenderingGroupId.Entity;
         source.rotation.x = Math.atan(1 / Math.sqrt(2));
         source.rotation.z = Math.PI / 4;
         source.bakeCurrentTransformIntoVertices();
@@ -163,7 +169,8 @@ export class Sources {
     }
 
     private _createTetrahedronSource(sources: TransformNode): Mesh {
-        const source = MeshBuilder.CreatePolyhedron("tetrahedronShape", { type: 0, size: 0.25 }, this._scene);
+        const source = MeshBuilder.CreatePolyhedron("shapeTetrahedron", { type: 0, size: 0.25 }, this._scene);
+        source.renderingGroupId = RenderingGroupId.Entity;
         source.position.y = -0.1;
         source.rotation.x = -Math.PI / 2;
         source.bakeCurrentTransformIntoVertices();
@@ -173,7 +180,8 @@ export class Sources {
     }
 
     private _createDodecahedronSource(sources: TransformNode): Mesh {
-        const source = MeshBuilder.CreatePolyhedron("dodecahedronShape", { type: 2, size: 0.5 }, this._scene);
+        const source = MeshBuilder.CreatePolyhedron("shapeDodecahedron", { type: 2, size: 0.5 }, this._scene);
+        source.renderingGroupId = RenderingGroupId.Entity;
         source.rotation.x = Math.PI / 2;
         source.bakeCurrentTransformIntoVertices();
         source.material = this._purple;
@@ -182,14 +190,16 @@ export class Sources {
     }
 
     private _createGoldberg11Source(sources: TransformNode): Mesh {
-        const source = MeshBuilder.CreateGoldberg("goldberg11Shape", { m: 1, n: 1, size: 0.9 }, this._scene);
+        const source = MeshBuilder.CreateGoldberg("shapeGoldberg11", { m: 1, n: 1, size: 0.9 }, this._scene);
+        source.renderingGroupId = RenderingGroupId.Entity;
         source.material = this._green;
         source.parent = sources;
         return source;
     }
 
     private _createSmallCrasherSource(sources: TransformNode): Mesh {
-        const source = MeshBuilder.CreatePolyhedron("smallCrasher", { type: 0, size: 0.2 }, this._scene);
+        const source = MeshBuilder.CreatePolyhedron("crasherSmall", { type: 0, size: 0.2 }, this._scene);
+        source.renderingGroupId = RenderingGroupId.Entity;
         source.rotation.z = Math.PI / 6;
         source.bakeCurrentTransformIntoVertices();
         source.material = this._pink;
@@ -198,7 +208,8 @@ export class Sources {
     }
 
     private _createBigCrasherSource(sources: TransformNode): Mesh {
-        const source = MeshBuilder.CreatePolyhedron("bigCrasher", { type: 0, size: 0.3 }, this._scene);
+        const source = MeshBuilder.CreatePolyhedron("crasherBig", { type: 0, size: 0.3 }, this._scene);
+        source.renderingGroupId = RenderingGroupId.Entity;
         source.rotation.z = Math.PI / 6;
         source.bakeCurrentTransformIntoVertices();
         source.material = this._pink;
@@ -207,16 +218,18 @@ export class Sources {
     }
 
     private _createShooterCrasherSource(sources: TransformNode): TransformNode {
-        const source = new TransformNode("shooterCrasher", this._scene);
+        const source = new TransformNode("crasherShooter", this._scene);
         source.parent = sources;
 
         const body = MeshBuilder.CreatePolyhedron("body", { type: 0, size: 0.3 }, this._scene);
+        body.renderingGroupId = RenderingGroupId.Entity;
         body.rotation.z = Math.PI / 6;
         body.bakeCurrentTransformIntoVertices();
         body.material = this._pink;
         body.parent = source;
 
         const barrel = MeshBuilder.CreateCylinder("barrel", { tessellation: 16, cap: Mesh.CAP_END, diameter: 0.2, height: 0.4 }, this._scene);
+        barrel.renderingGroupId = RenderingGroupId.Entity;
         barrel.rotation.x = Math.PI / 2;
         barrel.bakeCurrentTransformIntoVertices();
         barrel.position.z = 0.35;
