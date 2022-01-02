@@ -19,15 +19,13 @@ export interface Shape extends Entity {
 export class Shapes {
     private readonly _sources: Sources;
     private readonly _worldSize: number;
-    private readonly _maxCount: number;
     private readonly _root: TransformNode;
     private readonly _shapes = new Set<ShapeImpl>();
-    private _spawnTime = 0;
+    private readonly _spawns = new Set<{ time: number }>();
 
     public constructor(world: World, maxCount: number) {
         this._sources = world.sources;
         this._worldSize = world.size;
-        this._maxCount = maxCount;
 
         this._root = new TransformNode("shapes", world.scene);
 
@@ -47,15 +45,15 @@ export class Shapes {
             shape.update(deltaTime, this._worldSize, (entity) => {
                 this._shapes.delete(shape);
                 this.onShapeDestroyedObservable.notifyObservers({ shape: shape, other: entity });
+                this._spawns.add({ time: SPAWN_TIME });
             });
         }
 
-        if (this._shapes.size < this._maxCount) {
-            this._spawnTime = Math.max(this._spawnTime - deltaTime, 0);
-            if (this._spawnTime === 0) {
-                for (let count = this._shapes.size; count <= this._maxCount; ++count) {
-                    this._shapes.add(this._createShape(SPAWN_DROP_HEIGHT));
-                }
+        for (const spawn of this._spawns) {
+            spawn.time -= deltaTime;
+            if (spawn.time <= 0) {
+                this._shapes.add(this._createShape(SPAWN_DROP_HEIGHT));
+                this._spawns.delete(spawn);
             }
         }
     }
@@ -167,7 +165,7 @@ class ShapeImpl implements Shape, CollidableEntity {
         this._node.rotation.y = (this._node.rotation.y + this.rotationVelocity * deltaTime) % Scalar.TwoPi;
 
         this._health.update(deltaTime, (entity) => {
-            this._node.setEnabled(false);
+            this._node.dispose();
             onDestroyed(entity);
         });
     }
