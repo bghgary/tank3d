@@ -2,6 +2,8 @@ import { Vector3, TransformNode } from "@babylonjs/core";
 import { CollidableEntity } from "./collisions";
 import { ApplyCollisionForce, ApplyMovement } from "./common";
 import { Entity, EntityType } from "./entity";
+import { Shadow } from "./shadow";
+import { Sources } from "./sources";
 import { World } from "./world";
 
 const MAX_DURATION = 3;
@@ -18,17 +20,19 @@ export interface BulletProperties {
 
 export class Bullets {
     private readonly _root: TransformNode;
+    private readonly _sources: Sources;
     private readonly _bullets = new Set<BulletImpl>();
 
     public constructor(world: World) {
         this._root = new TransformNode("bullets", world.scene);
+        this._sources = world.sources;
         world.collisions.register(this._bullets);
     }
 
     public add(owner: Entity, createNode: (parent: TransformNode) => TransformNode, properties: BulletProperties, position: Vector3, direction: Vector3, initialSpeed: number, targetSpeed: number, offset: number): void {
         const node = createNode(this._root);
         node.scaling.setAll(properties.size);
-        const bullet = new BulletImpl(owner, node, properties);
+        const bullet = new BulletImpl(owner, node, this._sources, properties);
         direction.scaleToRef(initialSpeed, bullet.velocity);
         bullet.targetSpeed = targetSpeed;
         bullet.time = 0;
@@ -50,11 +54,13 @@ export class Bullets {
 
 class BulletImpl implements Bullet, CollidableEntity {
     private readonly _node: TransformNode;
+    private readonly _shadow: Shadow;
     private _health: number;
 
-    public constructor(owner: Entity, node: TransformNode, properties: BulletProperties) {
+    public constructor(owner: Entity, node: TransformNode, sources: Sources, properties: BulletProperties) {
         this.owner = owner;
         this._node = node;
+        this._shadow = new Shadow(sources, node, properties.size);
         this.size = properties.size;
         this.mass = this.size * this.size;
         this.damage = properties.damage;
@@ -81,6 +87,8 @@ class BulletImpl implements Bullet, CollidableEntity {
     public time = 0;
 
     public update(deltaTime: number, onDestroyed: () => void): void {
+        this._shadow.update();
+
         ApplyMovement(deltaTime, this._node.position, this.velocity);
 
         const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);

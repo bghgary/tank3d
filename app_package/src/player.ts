@@ -8,6 +8,9 @@ import { Tank } from "./tank";
 import { World } from "./world";
 
 const AUTO_ROTATE_SPEED = 1;
+const CAMERA_ALPHA = -Math.PI / 2;
+const CAMERA_BETA = Math.PI / 3.5;
+const CAMERA_RADIUS = 15;
 
 const enum Command {
     Up,
@@ -52,11 +55,11 @@ export class Player {
     public constructor(world: World, bullets: Bullets, shapes: Shapes, crashers: Crashers) {
         this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 }, world, bullets);
         this._score = new Score(world);
-        this._camera = new ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 3.5, 15, Vector3.Zero(), world.scene);
+        this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), world.scene);
         this._worldSize = world.size;
 
         world.scene.onKeyboardObservable.add((data) => {
-            if ((data.event as any).repeat) {
+            if ((data.event as any).repeat || world.paused) {
                 return;
             }
 
@@ -89,6 +92,10 @@ export class Player {
         });
 
         world.scene.onPointerObservable.add((data) => {
+            if (world.paused) {
+                return;
+            }
+
             if (!this._autoRotate) {
                 const pickedPoint = data.pickInfo?.pickedPoint || world.scene.pick(data.event.offsetX, data.event.offsetY)?.pickedPoint;
                 if (pickedPoint) {
@@ -104,6 +111,18 @@ export class Player {
                     state &= ~State.Pointer;
                 }
                 this._commandState.set(Command.Shoot, state);
+            }
+        });
+
+        world.onPausedStateChangedObservable.add((paused) => {
+            if (paused) {
+                this._camera.attachControl();
+            } else {
+                this._camera.detachControl();
+                this._camera.target.copyFrom(this._tank.position);
+                this._camera.alpha = CAMERA_ALPHA;
+                this._camera.beta = CAMERA_BETA;
+                this._camera.radius = CAMERA_RADIUS;
             }
         });
 

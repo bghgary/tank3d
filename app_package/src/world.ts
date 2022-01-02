@@ -1,5 +1,5 @@
 import "@babylonjs/inspector";
-import { Engine, HemisphericLight, KeyboardEventTypes, MeshBuilder, Observable, Scene, Vector3 } from "@babylonjs/core";
+import { Engine, FreeCamera, HemisphericLight, KeyboardEventTypes, MeshBuilder, Observable, Scene, Vector3 } from "@babylonjs/core";
 import { AdvancedDynamicTexture } from "@babylonjs/gui";
 import { GridMaterial } from "@babylonjs/materials";
 import { Player } from "./player";
@@ -15,8 +15,9 @@ function now(): number {
 
 export class World {
     private readonly _engine: Engine;
-    private readonly _renderLoop: () => void;
-    private _previousTime: number;
+    private _previousTime = 0;
+    private _suspended = false;
+    private _paused = false;
 
     public constructor(engine: Engine, size = 100) {
         this._engine = engine;
@@ -24,7 +25,7 @@ export class World {
         this.size = size;
         this.scene = new Scene(engine);
         this.sources = new Sources(this);
-        this.uiTexture = AdvancedDynamicTexture.CreateFullscreenUI("UI");
+        this.uiTexture = AdvancedDynamicTexture.CreateFullscreenUI("Fullscreen");
         this.collisions = new Collisions(this);
 
         const shapes = new Shapes(this, 200);
@@ -37,32 +38,45 @@ export class World {
         new HemisphericLight("hemisphericLight", new Vector3(0.1, 1, -0.5), this.scene);
 
         this.scene.onKeyboardObservable.add((data) => {
-            if (data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey && data.event.code === "KeyI") {
-                if (this.scene.debugLayer.isVisible()) {
-                    this.scene.debugLayer.hide();
-                } else {
-                    this.scene.debugLayer.show();
+            if (data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey) {
+                switch (data.event.code) {
+                    case "KeyI": {
+                        if (this.scene.debugLayer.isVisible()) {
+                            this.scene.debugLayer.hide();
+                        } else {
+                            this.scene.debugLayer.show();
+                        }
+                        break;
+                    }
+                    case "KeyP": {
+                        this._paused = !this._paused;
+                        this.onPausedStateChangedObservable.notifyObservers(this._paused);
+                        break;
+                    }
                 }
             }
         });
 
         this._previousTime = now();
-        this._renderLoop = () => {
+
+        const renderLoop = () => {
             const currentTime = now();
             const deltaTime = Math.min(currentTime - this._previousTime);
             this._previousTime = currentTime;
 
-            shapes.update(deltaTime);
-            bullets.update(deltaTime);
-            player.update(deltaTime);
-            crashers.update(deltaTime, player);
+            if (!this._suspended && !this._paused) {
+                shapes.update(deltaTime);
+                bullets.update(deltaTime);
+                player.update(deltaTime);
+                crashers.update(deltaTime, player);
 
-            this.collisions.update(deltaTime);
+                this.collisions.update(deltaTime);
+            }
 
-            this.scene.render(false);
+            this.scene.render(this._paused);
         };
 
-        engine.runRenderLoop(this._renderLoop);
+        engine.runRenderLoop(renderLoop);
     }
 
     public readonly size: number;
@@ -72,43 +86,37 @@ export class World {
     public readonly collisions: Collisions;
 
     public suspend(): void {
-        this._engine.stopRenderLoop(this._renderLoop);
+        this._suspended = true;
     }
 
     public resume(): void {
+        this._suspended = false;
         this._previousTime = now();
-        this._engine.runRenderLoop(this._renderLoop);
     }
 
+    public get paused(): boolean {
+        return this._paused;
+    }
+
+    public onPausedStateChangedObservable = new Observable<boolean>();
+
     private _createGround(): void {
-        const bufferedSize = 10000;
-        const ground = MeshBuilder.CreateGround("ground", { width: bufferedSize, height: bufferedSize }, this.scene);
+        const ground = MeshBuilder.CreateGround("ground", { width: 1000000, height: 1000000 }, this.scene);
         ground.visibility = 0;
 
-        const innerGrid = MeshBuilder.CreateGround("innerGrid", { width: this.size, height: this.size }, this.scene);
-        innerGrid.parent = ground;
-        innerGrid.position.y = -1;
-        innerGrid.isPickable = false;
-        innerGrid.doNotSyncBoundingInfo = true;
-        innerGrid.alwaysSelectAsActiveMesh = true;
+        const grid = MeshBuilder.CreateGround("grid", { width: this.size, height: this.size }, this.scene);
+        grid.parent = ground;
+        grid.position.y = -1;
+        grid.isPickable = false;
+        grid.doNotSyncBoundingInfo = true;
+        grid.alwaysSelectAsActiveMesh = true;
 
-        const innerMaterial = new GridMaterial("innerGrid", this.scene);
-        innerMaterial.majorUnitFrequency = 0;
-        innerMaterial.mainColor.set(0.6, 0.6, 0.6);
-        innerMaterial.lineColor.set(0.4, 0.4, 0.4);
-        innerGrid.material = innerMaterial;
+        const material = new GridMaterial("grid", this.scene);
+        material.majorUnitFrequency = 0;
+        material.mainColor.set(0.3, 0.3, 0.3);
+        material.lineColor.set(0.1, 0.1, 0.1);
+        grid.material = material;
 
-        const outerGrid = MeshBuilder.CreateGround("outerGrid", { width: bufferedSize, height: bufferedSize }, this.scene);
-        outerGrid.parent = ground;
-        outerGrid.position.y = -1.01;
-        outerGrid.isPickable = false;
-        outerGrid.doNotSyncBoundingInfo = true;
-        outerGrid.alwaysSelectAsActiveMesh = true;
-
-        const outerMaterial = new GridMaterial("outerGrid", this.scene);
-        outerMaterial.majorUnitFrequency = 0;
-        outerMaterial.mainColor.set(0.3, 0.3, 0.3);
-        outerMaterial.lineColor.set(0.1, 0.1, 0.1);
-        outerGrid.material = outerMaterial;
+        // TODO: how to draw outer grid in one draw call?
     }
 }
