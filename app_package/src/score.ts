@@ -1,4 +1,5 @@
-import { Control, TextBlock } from "@babylonjs/gui";
+import { Control } from "@babylonjs/gui/2D/controls/control";
+import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { World } from "./world";
 
 export class Score {

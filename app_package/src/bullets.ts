@@ -1,4 +1,5 @@
-import { Vector3, TransformNode } from "@babylonjs/core";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { CollidableEntity } from "./collisions";
 import { ApplyCollisionForce, ApplyMovement } from "./common";
 import { Entity, EntityType } from "./entity";

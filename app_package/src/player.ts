@@ -1,4 +1,9 @@
-import { ArcRotateCamera, KeyboardEventTypes, PointerEventTypes, Scalar, Vector3 } from "@babylonjs/core";
+import "@babylonjs/core/Culling/ray";
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
+import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
+import { Scalar } from "@babylonjs/core/Maths/math.scalar";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Bullet, Bullets } from "./bullets";
 import { Crashers } from "./crashers";
 import { Entity, EntityType } from "./entity";

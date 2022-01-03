@@ -1,29 +1,42 @@
-import { AbstractMesh, InstancedMesh, Material, Mesh, MeshBuilder, NodeMaterial, Scene, StandardMaterial, TransformNode } from "@babylonjs/core";
-import { ShadowNodeMaterial } from "./shadowNodeMaterial";
+import { Material } from "@babylonjs/core/Materials/material";
+import { NodeMaterial } from "@babylonjs/core/Materials/Node";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
+import { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Scene } from "@babylonjs/core/scene";
+import { CreateShadowMaterial } from "./shadowMaterial";
 import { RenderingGroupId, World } from "./world";
 
 export class Sources {
     private readonly _scene: Scene;
 
-    private readonly _blue: Material;
-    private readonly _gray: Material;
-    private readonly _green: Material;
-    private readonly _orange: Material;
-    private readonly _pink: Material;
-    private readonly _purple: Material;
-    private readonly _yellow: Material;
+    private readonly _materials: {
+        readonly blue: Material;
+        readonly gray: Material;
+        readonly green: Material;
+        readonly orange: Material;
+        readonly pink: Material;
+        readonly purple: Material;
+        readonly yellow: Material;
+        readonly shadow: Material;
+    }
 
-    private readonly _playerTankBullet: Mesh;
-    private readonly _shooterCrasherBullet: Mesh;
-    private readonly _health: Mesh;
-    private readonly _shadow: Mesh;
-    private readonly _cube: Mesh;
-    private readonly _tetrahedron: Mesh;
-    private readonly _dodecahedron: Mesh;
-    private readonly _goldberg11: Mesh;
-    private readonly _smallCrasher: Mesh;
-    private readonly _bigCrasher: Mesh;
-    private readonly _shooterCrasher: TransformNode;
+    private readonly _meshes: {
+        readonly playerTankBullet: Mesh;
+        readonly shooterCrasherBullet: Mesh;
+        readonly health: Mesh;
+        readonly shadow: Mesh;
+        readonly cube: Mesh;
+        readonly tetrahedron: Mesh;
+        readonly dodecahedron: Mesh;
+        readonly goldberg11: Mesh;
+        readonly smallCrasher: Mesh;
+        readonly bigCrasher: Mesh;
+        readonly shooterCrasher: TransformNode;
+    };
 
     public constructor(world: World) {
         this._scene = world.scene;
@@ -31,69 +44,74 @@ export class Sources {
         const sources = new TransformNode("sources", this._scene);
         sources.setEnabled(false);
 
-        this._blue = this._createMaterial("blue", 0.3, 0.7, 1);
-        this._gray = this._createMaterial("gray", 0.5, 0.5, 0.5);
-        this._green = this._createMaterial("green", 0, 0.8, 0);
-        this._orange = this._createMaterial("orange", 1, 0.5, 0.2);
-        this._pink = this._createMaterial("pink", 1, 0.5, 0.75);
-        this._purple = this._createMaterial("purple", 0.5, 0.2, 1);
-        this._yellow = this._createMaterial("yellow", 0.9, 0.9, 0);
+        this._materials = {
+            blue: this._createMaterial("blue", 0.3, 0.7, 1),
+            gray: this._createMaterial("gray", 0.5, 0.5, 0.5),
+            green: this._createMaterial("green", 0, 0.8, 0),
+            orange: this._createMaterial("orange", 1, 0.5, 0.2),
+            pink: this._createMaterial("pink", 1, 0.5, 0.75),
+            purple: this._createMaterial("purple", 0.5, 0.2, 1),
+            yellow: this._createMaterial("yellow", 0.9, 0.9, 0),
+            shadow: CreateShadowMaterial(this._scene),
+        }
 
-        this._playerTankBullet = this._createBulletSource(sources, "bulletPlayerTank", 8, this._blue);
-        this._shooterCrasherBullet = this._createBulletSource(sources, "bulletShooterCrasher", 4, this._pink);
-        this._health = this._createHealthSource(sources);
-        this._shadow = this._createShadowSource(sources);
-        this._cube = this._createCubeSource(sources);
-        this._tetrahedron = this._createTetrahedronSource(sources);
-        this._dodecahedron = this._createDodecahedronSource(sources);
-        this._goldberg11 = this._createGoldberg11Source(sources);
-        this._smallCrasher = this._createSmallCrasherSource(sources);
-        this._bigCrasher = this._createBigCrasherSource(sources);
-        this._shooterCrasher = this._createShooterCrasherSource(sources);
+        this._meshes = {
+            playerTankBullet: this._createBulletSource(sources, "bulletPlayerTank", 8, this._materials.blue),
+            shooterCrasherBullet: this._createBulletSource(sources, "bulletShooterCrasher", 4, this._materials.pink),
+            health: this._createHealthSource(sources),
+            shadow: this._createShadowSource(sources),
+            cube: this._createCubeSource(sources),
+            tetrahedron: this._createTetrahedronSource(sources),
+            dodecahedron: this._createDodecahedronSource(sources),
+            goldberg11: this._createGoldberg11Source(sources),
+            smallCrasher: this._createSmallCrasherSource(sources),
+            bigCrasher: this._createBigCrasherSource(sources),
+            shooterCrasher: this._createShooterCrasherSource(sources),
+        };
     }
 
     public createPlayerTankBullet(parent: TransformNode): TransformNode {
-        return this._createInstance(this._playerTankBullet, "playerTank", parent);
+        return this._createInstance(this._meshes.playerTankBullet, "playerTank", parent);
     }
 
     public createShooterCrasherBullet(parent: TransformNode): TransformNode {
-        return this._createInstance(this._shooterCrasherBullet, "shooterCrasher", parent);
+        return this._createInstance(this._meshes.shooterCrasherBullet, "shooterCrasher", parent);
     }
 
     public createHealth(parent: TransformNode): TransformNode {
-        return this._createInstance(this._health, "health", parent);
+        return this._createInstance(this._meshes.health, "health", parent);
     }
 
     public createShadow(parent: TransformNode): TransformNode {
-        return this._createInstance(this._shadow, "shadow", parent);
+        return this._createInstance(this._meshes.shadow, "shadow", parent);
     }
 
     public createCubeShape(parent: TransformNode): TransformNode {
-        return this._createInstance(this._cube, "cube", parent);
+        return this._createInstance(this._meshes.cube, "cube", parent);
     }
 
     public createTetrahedronShape(parent: TransformNode): TransformNode {
-        return this._createInstance(this._tetrahedron, "tetrahedron", parent);
+        return this._createInstance(this._meshes.tetrahedron, "tetrahedron", parent);
     }
 
     public createDodecahedronShape(parent: TransformNode): TransformNode {
-        return this._createInstance(this._dodecahedron, "dodecahedron", parent);
+        return this._createInstance(this._meshes.dodecahedron, "dodecahedron", parent);
     }
 
     public createGoldberg11Shape(parent: TransformNode): TransformNode {
-        return this._createInstance(this._goldberg11, "goldberg11", parent);
+        return this._createInstance(this._meshes.goldberg11, "goldberg11", parent);
     }
 
     public createSmallCrasher(parent: TransformNode): TransformNode {
-        return this._createInstance(this._smallCrasher, "small", parent);
+        return this._createInstance(this._meshes.smallCrasher, "small", parent);
     }
 
     public createBigCrasher(parent: TransformNode): TransformNode {
-        return this._createInstance(this._bigCrasher, "big", parent);
+        return this._createInstance(this._meshes.bigCrasher, "big", parent);
     }
 
     public createShooterCrasher(parent: TransformNode): TransformNode {
-        return this._instantiateHeirarchy(this._shooterCrasher, "shooter", parent);
+        return this._instantiateHeirarchy(this._meshes.shooterCrasher, "shooter", parent);
     }
 
     private _createMaterial(name: string, r: number, g: number, b: number, unlit = false): Material {
@@ -150,9 +168,7 @@ export class Sources {
         source.renderingGroupId = RenderingGroupId.Entity;
         source.rotation.x = Math.PI / 2;
         source.bakeCurrentTransformIntoVertices();
-        source.material = NodeMaterial.Parse(ShadowNodeMaterial, this._scene);
-        source.material.name = "shadow";
-        source.material.disableDepthWrite = true;
+        source.material = this._materials.shadow;
         source.parent = sources;
         return source;
     }
@@ -163,7 +179,7 @@ export class Sources {
         source.rotation.x = Math.atan(1 / Math.sqrt(2));
         source.rotation.z = Math.PI / 4;
         source.bakeCurrentTransformIntoVertices();
-        source.material = this._yellow;
+        source.material = this._materials.yellow;
         source.parent = sources;
         return source;
     }
@@ -174,7 +190,7 @@ export class Sources {
         source.position.y = -0.1;
         source.rotation.x = -Math.PI / 2;
         source.bakeCurrentTransformIntoVertices();
-        source.material = this._orange;
+        source.material = this._materials.orange;
         source.parent = sources;
         return source;
     }
@@ -184,7 +200,7 @@ export class Sources {
         source.renderingGroupId = RenderingGroupId.Entity;
         source.rotation.x = Math.PI / 2;
         source.bakeCurrentTransformIntoVertices();
-        source.material = this._purple;
+        source.material = this._materials.purple;
         source.parent = sources;
         return source;
     }
@@ -192,7 +208,7 @@ export class Sources {
     private _createGoldberg11Source(sources: TransformNode): Mesh {
         const source = MeshBuilder.CreateGoldberg("shapeGoldberg11", { m: 1, n: 1, size: 0.9 }, this._scene);
         source.renderingGroupId = RenderingGroupId.Entity;
-        source.material = this._green;
+        source.material = this._materials.green;
         source.parent = sources;
         return source;
     }
@@ -202,7 +218,7 @@ export class Sources {
         source.renderingGroupId = RenderingGroupId.Entity;
         source.rotation.z = Math.PI / 6;
         source.bakeCurrentTransformIntoVertices();
-        source.material = this._pink;
+        source.material = this._materials.pink;
         source.parent = sources;
         return source;
     }
@@ -212,7 +228,7 @@ export class Sources {
         source.renderingGroupId = RenderingGroupId.Entity;
         source.rotation.z = Math.PI / 6;
         source.bakeCurrentTransformIntoVertices();
-        source.material = this._pink;
+        source.material = this._materials.pink;
         source.parent = sources;
         return source;
     }
@@ -225,7 +241,7 @@ export class Sources {
         body.renderingGroupId = RenderingGroupId.Entity;
         body.rotation.z = Math.PI / 6;
         body.bakeCurrentTransformIntoVertices();
-        body.material = this._pink;
+        body.material = this._materials.pink;
         body.parent = source;
 
         const barrel = MeshBuilder.CreateCylinder("barrel", { tessellation: 16, cap: Mesh.CAP_END, diameter: 0.2, height: 0.4 }, this._scene);
@@ -233,7 +249,7 @@ export class Sources {
         barrel.rotation.x = Math.PI / 2;
         barrel.bakeCurrentTransformIntoVertices();
         barrel.position.z = 0.35;
-        barrel.material = this._gray;
+        barrel.material = this._materials.gray;
         barrel.parent = source;
 
         return source;

@@ -1,4 +1,8 @@
-import { Nullable, Observable, Scalar, TmpVectors, TransformNode, Vector3 } from "@babylonjs/core";
+import { Scalar } from "@babylonjs/core/Maths/math.scalar";
+import { TmpVectors, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Observable } from "@babylonjs/core/Misc/observable";
+import { Nullable } from "@babylonjs/core/types";
 import { Bullet, Bullets } from "./bullets";
 import { CollidableEntity } from "./collisions";
 import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallClamp } from "./common";

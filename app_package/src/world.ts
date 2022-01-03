@@ -1,13 +1,19 @@
 import "@babylonjs/inspector";
-import { Engine, HemisphericLight, KeyboardEventTypes, MeshBuilder, Observable, Scene, Vector3 } from "@babylonjs/core";
-import { AdvancedDynamicTexture } from "@babylonjs/gui";
-import { GridMaterial } from "@babylonjs/materials";
 import { Player } from "./player";
 import { Shapes } from "./shapes";
 import { Collisions } from "./collisions";
 import { Sources } from "./sources";
 import { Crashers } from "./crashers";
 import { Bullets } from "./bullets";
+import { Engine } from "@babylonjs/core/Engines/engine";
+import { Scene } from "@babylonjs/core/scene";
+import { AdvancedDynamicTexture } from "@babylonjs/gui/2D/advancedDynamicTexture";
+import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
+import { Observable } from "@babylonjs/core/Misc/observable";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
 
 export const enum RenderingGroupId {
     OuterGrid,

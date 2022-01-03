@@ -1,4 +1,5 @@
-import { Scalar, Vector3 } from "@babylonjs/core";
+import { Scalar } from "@babylonjs/core/Maths/math.scalar";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Entity } from "./entity";
 
 const GRAVITY = 9.8;

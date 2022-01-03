@@ -1,4 +1,6 @@
-import { Mesh, Nullable, TransformNode } from "@babylonjs/core";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Nullable } from "@babylonjs/core/types";
 import { Entity } from "./entity";
 import { Sources } from "./sources";
 

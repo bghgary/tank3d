@@ -1,4 +1,4 @@
-import { TransformNode } from "@babylonjs/core";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "./sources";
 
 export class Shadow {

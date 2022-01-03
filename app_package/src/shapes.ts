@@ -1,4 +1,7 @@
-import { Observable, Scalar, TransformNode, Vector3 } from "@babylonjs/core";
+import { Scalar } from "@babylonjs/core/Maths/math.scalar";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Observable } from "@babylonjs/core/Misc/observable";
 import { CollidableEntity } from "./collisions";
 import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallBounce } from "./common";
 import { Entity, EntityType } from "./entity";

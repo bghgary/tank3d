@@ -1,5 +1,5 @@
-import { KeyboardEventTypes } from "@babylonjs/core";
-import { TextBlock } from "@babylonjs/gui";
+import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
+import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { World } from "./world";
 
 export class Message {
