@@ -17,7 +17,7 @@ module.exports = {
         new DefinePlugin({
             DEV_BUILD: JSON.stringify(true)
         }),
-        new HtmlWebpackPlugin({ title: "tank3d.io" })
+        new HtmlWebpackPlugin({ title: "tank3d" })
     ],
     module: {
         rules: [

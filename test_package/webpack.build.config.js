@@ -9,6 +9,6 @@ module.exports = {
     filename: "bundle.js"
   },
   plugins: [
-    new HtmlWebpackPlugin({ title: "tank3d.io" }),
+    new HtmlWebpackPlugin({ title: "tank3d" }),
   ],
 };
