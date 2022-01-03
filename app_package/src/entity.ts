@@ -8,6 +8,7 @@ export const enum EntityType {
 }
 
 export interface Entity {
+    readonly displayName: string;
     readonly type: EntityType;
     readonly size: number;
     readonly mass: number;

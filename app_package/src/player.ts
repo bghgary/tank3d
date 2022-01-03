@@ -1,7 +1,8 @@
-import { ArcRotateCamera, KeyboardEventTypes, PointerEventTypes, Vector3 } from "@babylonjs/core";
+import { ArcRotateCamera, KeyboardEventTypes, PointerEventTypes, Scalar, Vector3 } from "@babylonjs/core";
 import { Bullet, Bullets } from "./bullets";
 import { Crashers } from "./crashers";
 import { Entity, EntityType } from "./entity";
+import { Message } from "./message";
 import { Score } from "./score";
 import { Shapes } from "./shapes";
 import { Tank } from "./tank";
@@ -43,21 +44,21 @@ const KeyMapping = new Map([
 ]);
 
 export class Player {
+    private readonly _world: World;
     private readonly _tank: Tank;
     private readonly _score: Score;
     private readonly _camera: ArcRotateCamera;
-    private readonly _worldSize: number;
     private readonly _commandState = new Map<Command, State>();
 
     private _autoShoot = false;
     private _autoRotate = false;
 
     public constructor(world: World, bullets: Bullets, shapes: Shapes, crashers: Crashers) {
-        this._tank = new Tank("player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 }, world, bullets);
+        this._world = world;
+        this._tank = new Tank("player", "Player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 }, world, bullets);
         this._score = new Score(world);
         this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), world.scene);
         this._camera.lowerRadiusLimit = 2;
-        this._worldSize = world.size;
 
         world.scene.onKeyboardObservable.add((data) => {
             if ((data.event as any).repeat || world.paused) {
@@ -124,6 +125,8 @@ export class Player {
                 this._camera.alpha = CAMERA_ALPHA;
                 this._camera.beta = CAMERA_BETA;
                 this._camera.radius = CAMERA_RADIUS;
+
+                this._commandState.clear();
             }
         });
 
@@ -161,13 +164,24 @@ export class Player {
         const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
         const z = (this._commandState.get(Command.Up) ? 1 : 0) + (this._commandState.get(Command.Down) ? -1 : 0);
         const shoot = this._autoShoot || !!this._commandState.get(Command.Shoot);
-        this._tank.update(deltaTime, x, z, shoot, this._worldSize + 10, (entity) => {
-            // TODO
-            setTimeout(() => alert("You're dead!"), 0);
-        });
+        this._tank.update(deltaTime, x, z, shoot, this._world.size + 10, this._onTankDestroyed.bind(this));
 
         this._score.update(deltaTime);
 
         this._camera.target.copyFrom(this._tank.position);
+    }
+
+    private _onTankDestroyed(entity: Entity): void {
+        const message = new Message(this._world);
+        message.show(`You were killed by a ${entity.displayName}.`, () => {
+            this._tank.reset();
+            this._score.multiply(0.5);
+
+            const limit = this._world.size * 0.5;
+            const x = Scalar.RandomRange(-limit, limit);
+            const z = Scalar.RandomRange(-limit, limit);
+            this._tank.position.set(x, 0, z);
+            this._tank.velocity.set(0, 0, 0);
+        });
     }
 }

@@ -59,8 +59,8 @@ export class Shapes {
     }
 
     private _createShape(dropHeight: number): ShapeImpl {
-        const create = (node: TransformNode, size: number, health: number, damage: number, points: number): ShapeImpl => {
-            const shape = new ShapeImpl(node, this._sources, size, health, damage, points);
+        const create = (node: TransformNode, displayName: string, size: number, health: number, damage: number, points: number): ShapeImpl => {
+            const shape = new ShapeImpl(this._sources, node, displayName, size, health, damage, points);
 
             const limit = (this._worldSize - size) * 0.5;
             const x = Scalar.RandomRange(-limit, limit);
@@ -81,15 +81,15 @@ export class Shapes {
         };
 
         const entries = [
-            { createNode: () => this._sources.createCubeShape(this._root),         size: 0.60, health: 10,  damage: 10,  points: 10  },
-            { createNode: () => this._sources.createTetrahedronShape(this._root),  size: 0.60, health: 30,  damage: 20,  points: 25  },
-            { createNode: () => this._sources.createDodecahedronShape(this._root), size: 1.00, health: 125, damage: 50,  points: 120 },
-            { createNode: () => this._sources.createGoldberg11Shape(this._root),   size: 1.62, health: 250, damage: 130, points: 200 },
+            { createNode: () => this._sources.createCubeShape(this._root),         displayName: "Cube",                  size: 0.60, health: 10,  damage: 10,  points: 10  },
+            { createNode: () => this._sources.createTetrahedronShape(this._root),  displayName: "Tetrahedron",           size: 0.60, health: 30,  damage: 20,  points: 25  },
+            { createNode: () => this._sources.createDodecahedronShape(this._root), displayName: "Dodecahedron",          size: 1.00, health: 125, damage: 50,  points: 120 },
+            { createNode: () => this._sources.createGoldberg11Shape(this._root),   displayName: "Truncated Isocahedron", size: 1.62, health: 250, damage: 130, points: 200 },
         ];
 
         const n = Math.random();
         const entry = entries[n < 0.6 ? 0 : n < 0.95 ? 1 : n < 0.99 ? 2 : 3];
-        return create(entry.createNode(), entry.size, entry.health, entry.damage, entry.points);
+        return create(entry.createNode(), entry.displayName, entry.size, entry.health, entry.damage, entry.points);
     }
 
     private *_getCollidableEntities(): Iterator<ShapeImpl> {
@@ -106,10 +106,11 @@ class ShapeImpl implements Shape, CollidableEntity {
     private readonly _health: Health;
     private readonly _shadow: Shadow;
 
-    public constructor(node: TransformNode, sources: Sources, size: number, health: number, damage: number, points: number) {
+    public constructor(sources: Sources, node: TransformNode, displayName: string, size: number, health: number, damage: number, points: number) {
         this._node = node;
         this._health = new Health(sources, node, size, 0.2, health);
         this._shadow = new Shadow(sources, node, size);
+        this.displayName = displayName;
         this.size = size;
         this.mass = size * size;
         this.damage = damage;
@@ -121,6 +122,7 @@ class ShapeImpl implements Shape, CollidableEntity {
     }
 
     // Entity
+    public readonly displayName: string;
     public readonly type = EntityType.Shape;
     public readonly size: number;
     public readonly mass: number;

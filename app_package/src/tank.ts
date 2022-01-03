@@ -26,7 +26,9 @@ export class Tank implements CollidableEntity {
     private readonly _health: Health;
     private _reloadTime = 0;
 
-    public constructor(name: string, properties: TankProperties, world: World, bullets: Bullets) {
+    public constructor(name: string, displayName: string, properties: TankProperties, world: World, bullets: Bullets) {
+        this.displayName = displayName;
+
         this._properties = properties;
         this._scene = world.scene;
         this._bullets = bullets;
@@ -74,6 +76,7 @@ export class Tank implements CollidableEntity {
     }
 
     // Entity
+    public readonly displayName: string;
     public readonly type = EntityType.Tank;
     public readonly size = 1;
     public readonly mass = 2;
@@ -87,6 +90,13 @@ export class Tank implements CollidableEntity {
     public get y() { return this._node.position.z - this.size * 0.5; }
     public get width() { return this.size; }
     public get height() { return this.size; }
+
+    public reset(): void {
+        this._health.reset();
+        this.position.setAll(0);
+        this.velocity.setAll(0);
+        this._node.setEnabled(true);
+    }
 
     public lookAt(targetPoint: Vector3): void {
         this._node.lookAt(targetPoint);
@@ -131,7 +141,10 @@ export class Tank implements CollidableEntity {
         }
 
         // Health
-        this._health.update(deltaTime, onDestroyed);
+        this._health.update(deltaTime, (entity) => {
+            this._node.setEnabled(false);
+            onDestroyed(entity);
+        });
     }
 
     public getCollisionRepeatRate(): number {

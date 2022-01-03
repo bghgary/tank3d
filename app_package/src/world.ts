@@ -55,8 +55,7 @@ export class World {
                         break;
                     }
                     case "KeyP": {
-                        this._paused = !this._paused;
-                        this.onPausedStateChangedObservable.notifyObservers(this._paused);
+                        this.paused = !this.paused;
                         break;
                     }
                 }
@@ -102,6 +101,13 @@ export class World {
 
     public get paused(): boolean {
         return this._paused;
+    }
+
+    public set paused(value: boolean) {
+        if (this._paused !== value) {
+            this._paused = value;
+            this.onPausedStateChangedObservable.notifyObservers(this._paused);
+        }
     }
 
     public onPausedStateChangedObservable = new Observable<boolean>();

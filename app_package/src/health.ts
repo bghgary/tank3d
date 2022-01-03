@@ -4,6 +4,7 @@ import { Sources } from "./sources";
 
 const REGEN_TIME = 30;
 const REGEN_SPEED = 0.2;
+const RESET_SPEED = 200;
 const DAMAGE_SPEED = 5;
 
 export class Health {
@@ -61,5 +62,10 @@ export class Health {
         if (this._target <= 0) {
             this._lastDamageEntity = entity;
         }
+    }
+
+    public reset(): void {
+        this._target = this._max;
+        this._speed = RESET_SPEED;
     }
 }

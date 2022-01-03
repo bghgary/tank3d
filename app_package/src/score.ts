@@ -32,6 +32,10 @@ export class Score {
         this._target += value;
     }
 
+    public multiply(value: number): void {
+        this._target = Math.round(this._target * value);
+    }
+
     private get _text(): string {
         return `Score: ${Math.round(this._current)}`;
     }

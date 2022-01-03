@@ -68,6 +68,7 @@ class BulletImpl implements Bullet, CollidableEntity {
     }
 
     // Bullet
+    public get displayName(): string { return this.owner.displayName; }
     public readonly type = EntityType.Bullet;
     public readonly size: number;
     public readonly mass: number;

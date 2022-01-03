@@ -64,8 +64,8 @@ export class Crashers {
     }
 
     private _createClump(): void {
-        const create = (node: TransformNode, x: number, z: number, rotation: number, size: number, health: number, damage: number, points: number, bullets: Nullable<Bullets>): void => {
-            const crasher = new CrasherImpl(node, this._sources, size, health, damage, points, bullets);
+        const create = (node: TransformNode, x: number, z: number, rotation: number, displayName: string, size: number, health: number, damage: number, points: number, bullets: Nullable<Bullets>): void => {
+            const crasher = new CrasherImpl(this._sources, node, displayName, size, health, damage, points, bullets);
             crasher.position.set(x, DROP_HEIGHT, z);
             crasher.rotation = rotation;
             crasher.forward.scaleToRef(CHASE_SPEED, crasher.velocity);
@@ -73,9 +73,9 @@ export class Crashers {
         };
 
         const entries = [
-            { createNode: () => this._sources.createSmallCrasher(this._root),   size: 0.60, health: 10, damage: 20, points: 10, canShoot: false },
-            { createNode: () => this._sources.createBigCrasher(this._root),     size: 0.80, health: 20, damage: 40, points: 25, canShoot: false },
-            { createNode: () => this._sources.createShooterCrasher(this._root), size: 0.80, health: 20, damage: 30, points: 50, canShoot: true  },
+            { createNode: () => this._sources.createSmallCrasher(this._root),   displayName: "Small Crasher",   size: 0.60, health: 10, damage: 20, points: 10, canShoot: false },
+            { createNode: () => this._sources.createBigCrasher(this._root),     displayName: "Big Crasher",     size: 0.80, health: 20, damage: 40, points: 25, canShoot: false },
+            { createNode: () => this._sources.createShooterCrasher(this._root), displayName: "Shooter Crasher", size: 0.80, health: 20, damage: 30, points: 50, canShoot: true  },
         ];
 
         const clumpSize = Math.round(Scalar.RandomRange(4, 7));
@@ -90,7 +90,7 @@ export class Crashers {
             const n = Math.random();
             const entry = entries[n < 0.6 ? 0 : n < 0.9 ? 1 : 2];
             const bullets = entry.canShoot ? this._bullets : null;
-            create(entry.createNode(), x + x1, z + z1, rotation + rotation1, entry.size, entry.health, entry.damage, entry.points, bullets);
+            create(entry.createNode(), x + x1, z + z1, rotation + rotation1, entry.displayName, entry.size, entry.health, entry.damage, entry.points, bullets);
         }
     }
 
@@ -111,10 +111,11 @@ class CrasherImpl implements Crasher, CollidableEntity {
     private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
     private _reloadTime = 0;
 
-    public constructor(node: TransformNode, sources: Sources, size: number, health: number, damage: number, points: number, bullets: Nullable<Bullets>) {
+    public constructor(sources: Sources, node: TransformNode, displayName: string, size: number, health: number, damage: number, points: number, bullets: Nullable<Bullets>) {
         this._node = node;
         this._health = new Health(sources, node, size, 0.2, health);
         this._shadow = new Shadow(sources, node, size);
+        this.displayName = displayName;
         this.size = size;
         this.mass = size * size;
         this.damage = damage;
@@ -124,6 +125,7 @@ class CrasherImpl implements Crasher, CollidableEntity {
     }
 
     // Entity
+    public readonly displayName: string;
     public readonly type = EntityType.Crasher;
     public readonly size: number;
     public readonly mass: number;
