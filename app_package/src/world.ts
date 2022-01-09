@@ -46,7 +46,7 @@ export class World {
 
         this.scene.onKeyboardObservable.add((data) => {
             if (data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey) {
-                if (DEV_BUILD && data.event.code) {
+                if (DEV_BUILD && data.event.code === "KeyI") {
                     import("@babylonjs/inspector").then(() => {
                         if (this.scene.debugLayer.isVisible()) {
                             this.scene.debugLayer.hide();

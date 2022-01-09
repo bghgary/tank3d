@@ -20,13 +20,12 @@ float isPointOnLine(float position, float differentialLength) {
     float fractionPartOfPosition = position - floor(position + 0.5);
     fractionPartOfPosition /= differentialLength;
     fractionPartOfPosition = clamp(fractionPartOfPosition, -1., 1.);
-    float result = 0.5 + 0.5 * cos(fractionPartOfPosition * 3.14159);
-    return result;
+    return (0.5 + 0.5 * cos(fractionPartOfPosition * 3.14159)) * 0.33;
 }
 
 void main() {
-    const vec3 mainColor = vec3(0.6, 0.6, 0.6);
-    const vec3 lineColor = vec3(0.5, 0.5, 0.5);
+    const vec3 mainColor = vec3(0.3, 0.3, 0.3);
+    const vec3 lineColor = vec3(0.15, 0.15, 0.15);
     float differentialLengthX = length(vec2(dFdx(vPosition.x), dFdy(vPosition.x))) * 1.41421;
     float differentialLengthZ = length(vec2(dFdx(vPosition.z), dFdy(vPosition.z))) * 1.41421;
     float x = isPointOnLine(vPosition.x, differentialLengthX);
@@ -35,7 +34,7 @@ void main() {
     vec3 color = mix(mainColor, lineColor, grid);
     float borderX = 1. - smoothstep(halfSize - differentialLengthX, halfSize + differentialLengthX, abs(vPosition.x));
     float borderZ = 1. - smoothstep(halfSize - differentialLengthZ, halfSize + differentialLengthZ, abs(vPosition.z));
-    color *= 0.5 + 0.5 * borderX * borderZ;
+    color *= 0.7 + 0.3 * borderX * borderZ;
     glFragColor = vec4(color.rgb, 1.);
 }`;
 
