@@ -13,13 +13,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
-import { GridMaterial } from "@babylonjs/materials/grid/gridMaterial";
-
-export const enum RenderingGroupId {
-    OuterGrid,
-    InnerGrid,
-    Entity
-}
+import { CreateGridMaterial } from "./materials/gridMaterial";
 
 function now(): number {
     return performance.now() * 0.001;
@@ -122,24 +116,12 @@ export class World {
         const ground = MeshBuilder.CreateGround("ground", { width: 1000, height: 1000 }, this.scene);
         ground.visibility = 0;
 
-        const createGrid = (name: string, size: number, renderingGroupId: number, main: number, line: number): void => {
-            const grid = MeshBuilder.CreateGround(name, { width: size, height: size }, this.scene);
-            grid.renderingGroupId = renderingGroupId;
-            grid.parent = ground;
-            grid.position.y = -1;
-            grid.isPickable = false;
-            grid.doNotSyncBoundingInfo = true;
-            grid.alwaysSelectAsActiveMesh = true;
-
-            const material = new GridMaterial(name, this.scene);
-            material.majorUnitFrequency = 0;
-            material.mainColor.set(main, main, main);
-            material.lineColor.set(line, line, line);
-            material.disableDepthWrite = true;
-            grid.material = material;
-        }
-
-        createGrid("innerGrid", this.size, RenderingGroupId.InnerGrid, 0.3, 0.15);
-        createGrid("outerGrid", 1000, RenderingGroupId.OuterGrid, 0.2, 0.1);
+        const grid = MeshBuilder.CreateGround("grid", { width: 1000, height: 1000 }, this.scene);
+        grid.position.y = -1;
+        grid.isPickable = false;
+        grid.doNotSyncBoundingInfo = true;
+        grid.alwaysSelectAsActiveMesh = true;
+        grid.material = CreateGridMaterial(this.scene, this.size);
+        grid.parent = ground;
     }
 }

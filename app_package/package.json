@@ -21,7 +21,6 @@
   "dependencies": {
     "@babylonjs/core": "^5.0.0-alpha.65",
     "@babylonjs/gui": "^5.0.0-alpha.65",
-    "@babylonjs/materials": "^5.0.0-alpha.65",
     "@timohausmann/quadtree-js": "^1.2.5"
   }
 }
