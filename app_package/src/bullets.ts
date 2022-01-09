@@ -4,7 +4,7 @@ import { CollidableEntity } from "./collisions";
 import { ApplyCollisionForce, ApplyMovement } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Shadow } from "./shadow";
-import { Sources } from "./sources";
+import { BarrelMetadata, Sources } from "./sources";
 import { World } from "./world";
 
 const MAX_DURATION = 3;
@@ -14,7 +14,6 @@ export interface Bullet extends Entity {
 }
 
 export interface BulletProperties {
-    size: number;
     damage: number;
     health: number;
 }
@@ -30,10 +29,14 @@ export class Bullets {
         world.collisions.register(this._bullets);
     }
 
-    public add(owner: Entity, createNode: (parent: TransformNode) => TransformNode, properties: BulletProperties, position: Vector3, direction: Vector3, initialSpeed: number, targetSpeed: number, offset: number): void {
+    public add(owner: Entity, createNode: (parent: TransformNode) => TransformNode, barrelMetadata: BarrelMetadata, properties: BulletProperties, position: Vector3, direction: Vector3, initialSpeed: number, targetSpeed: number): void {
+        const size = barrelMetadata.barrelSize * 0.75;
+        const offset = barrelMetadata.barrelLength + size * 0.5;
+
         const node = createNode(this._root);
-        node.scaling.setAll(properties.size);
-        const bullet = new BulletImpl(owner, node, this._sources, properties);
+        node.scaling.setAll(size);
+
+        const bullet = new BulletImpl(owner, node, this._sources, size, properties);
         direction.scaleToRef(initialSpeed, bullet.velocity);
         bullet.targetSpeed = targetSpeed;
         bullet.time = 0;
@@ -58,23 +61,23 @@ class BulletImpl implements Bullet, CollidableEntity {
     private readonly _shadow: Shadow;
     private _health: number;
 
-    public constructor(owner: Entity, node: TransformNode, sources: Sources, properties: BulletProperties) {
+    public constructor(owner: Entity, node: TransformNode, sources: Sources, size: number, properties: BulletProperties) {
         this.owner = owner;
         this._node = node;
-        this._shadow = new Shadow(sources, node, properties.size);
-        this.size = properties.size;
+        this._shadow = new Shadow(sources, node, size);
+        this.size = size;
         this.mass = this.size * this.size;
         this.damage = properties.damage;
         this._health = properties.health;
     }
 
     // Bullet
-    public get displayName(): string { return this.owner.displayName; }
+    public get displayName() { return this.owner.displayName; }
     public readonly type = EntityType.Bullet;
     public readonly size: number;
     public readonly mass: number;
     public readonly damage: number;
-    public get position(): Vector3 { return this._node.position; }
+    public get position() { return this._node.position; }
     public readonly velocity = new Vector3();
 
     // Quadtree.Rect

@@ -11,82 +11,51 @@ import { ApplyCollisionForce, ApplyWallClamp } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
 import { Shadow } from "./shadow";
+import { TankMetadata } from "./sources";
 import { World } from "./world";
 
 const KNOCK_BACK = 5;
 
 export interface TankProperties {
-    barrelDiameter: number;
-    barrelLength: number;
     reloadTime: number;
     bulletSpeed: number;
     movementSpeed: number;
 }
 
 export class Tank implements CollidableEntity {
+    private readonly _node: TransformNode;
+    private readonly _metadata: TankMetadata;
     private readonly _properties: TankProperties;
-    private readonly _scene: Scene;
     private readonly _bullets: Bullets;
     private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
-    private readonly _node: TransformNode;
     private readonly _health: Health;
     private _reloadTime = 0;
 
-    public constructor(name: string, displayName: string, properties: TankProperties, world: World, bullets: Bullets) {
+    public constructor(displayName: string, node: TransformNode, properties: TankProperties, world: World, bullets: Bullets) {
         this.displayName = displayName;
 
+        this._node = node;
+        this._metadata = node.metadata;
         this._properties = properties;
-        this._scene = world.scene;
+
         this._bullets = bullets;
         this._createBulletNode = (parent) => world.sources.createPlayerTankBullet(parent);
 
-        // Create parent node.
-        this._node = new TransformNode(name, this._scene);
-
-        // Create tank body.
-        const bodyMesh = MeshBuilder.CreateSphere("body", { segments: 16 }, this._scene);
-        bodyMesh.isPickable = false;
-        bodyMesh.doNotSyncBoundingInfo = true;
-        bodyMesh.alwaysSelectAsActiveMesh = true;
-        bodyMesh.parent = this._node;
-
-        // Create tank material.
-        const bodyMaterial = new StandardMaterial("body", this._scene);
-        bodyMaterial.diffuseColor = new Color3(0.3, 0.7, 1);
-        bodyMesh.material = bodyMaterial;
-
-        // Create tank barrel.
-        const barrelMesh = MeshBuilder.CreateCylinder("barrel", { tessellation: 16, cap: Mesh.CAP_END, diameter: properties.barrelDiameter, height: properties.barrelLength }, this._scene);
-        barrelMesh.rotation.x = Math.PI * 0.5;
-        barrelMesh.position.z = properties.barrelLength * 0.5;
-        barrelMesh.isPickable = false;
-        barrelMesh.doNotSyncBoundingInfo = true;
-        barrelMesh.alwaysSelectAsActiveMesh = true;
-        barrelMesh.parent = this._node;
-
-        // Create tank barrel material.
-        const barrelMaterial = new StandardMaterial("barrel", this._scene);
-        barrelMaterial.diffuseColor = new Color3(0.5, 0.5, 0.5);
-        barrelMesh.material = barrelMaterial;
-
-        // Create health.
         this._health = new Health(world.sources, this._node, this.size, 0.4, 100);
 
-        // Create shadow.
         new Shadow(world.sources, this._node, this.size);
 
-        // Register with collisions.
         world.collisions.register([this]);
     }
 
     // Entity
     public readonly displayName: string;
     public readonly type = EntityType.Tank;
-    public readonly size = 1;
+    public get size() { return this._metadata.size; }
     public readonly mass = 2;
     public readonly damage = 30; // TODO
     public readonly collisionRepeatRate = 1;
-    public get position(): Vector3 { return this._node.position; }
+    public get position() { return this._node.position; }
     public readonly velocity = new Vector3();
 
     // Quadtree.Rect
@@ -133,10 +102,8 @@ export class Tank implements CollidableEntity {
         this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
         if (shoot && this._reloadTime === 0) {
             const bulletInitialSpeed = Vector3.Dot(this.velocity, this._node.forward) + this._properties.bulletSpeed;
-            const bulletDiameter = this._properties.barrelDiameter * 0.75;
-            const bulletProperties = { size: bulletDiameter, damage: 6, health: 10 };
-            const bulletOffset = this._properties.barrelLength + bulletDiameter * 0.5;
-            this._bullets.add(this, this._createBulletNode, bulletProperties, this._node.position, this._node.forward, bulletInitialSpeed, this._properties.bulletSpeed, bulletOffset);
+            const bulletProperties = { damage: 6, health: 10 };
+            this._bullets.add(this, this._createBulletNode, this._metadata, bulletProperties, this._node.position, this._node.forward, bulletInitialSpeed, this._properties.bulletSpeed);
             this._reloadTime = this._properties.reloadTime;
 
             const knockBackFactor = bulletInitialSpeed * deltaTime * KNOCK_BACK;

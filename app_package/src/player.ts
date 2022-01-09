@@ -60,8 +60,13 @@ export class Player {
 
     public constructor(world: World, bullets: Bullets, shapes: Shapes, crashers: Crashers) {
         this._world = world;
-        this._tank = new Tank("player", "Player", { barrelDiameter: 0.45, barrelLength: 0.75, reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 }, world, bullets);
+
+        const node = world.sources.createStarterTank(undefined, "player");
+        const properties = { reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 };
+        this._tank = new Tank("Player", node, properties, world, bullets);
+
         this._score = new Score(world);
+
         this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), world.scene);
         this._camera.lowerRadiusLimit = 2;
 
@@ -86,7 +91,7 @@ export class Player {
                         break;
                     }
                     default: {
-                        let state = this._commandState.get(command) ?? State.None;
+                        let state = this._commandState.get(command) || State.None;
                         if (data.type === KeyboardEventTypes.KEYDOWN) {
                             state |= State.Keyboard;
                         } else {
@@ -111,7 +116,7 @@ export class Player {
             }
 
             if (data.event.button === 0) {
-                let state = this._commandState.get(Command.Shoot) ?? State.None;
+                let state = this._commandState.get(Command.Shoot) || State.None;
                 if (data.type === PointerEventTypes.POINTERDOWN) {
                     state |= State.Pointer;
                 } else if (data.type === PointerEventTypes.POINTERUP) {

@@ -7,7 +7,7 @@ import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallBounce } fro
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
 import { Shadow } from "./shadow";
-import { Sources } from "./sources";
+import { ShapeMetadata, Sources } from "./sources";
 import { World } from "./world";
 
 const IDLE_ROTATION_SPEED = 0.15;
@@ -62,10 +62,10 @@ export class Shapes {
     }
 
     private _createShape(dropHeight: number): ShapeImpl {
-        const create = (node: TransformNode, displayName: string, size: number, health: number, damage: number, points: number): ShapeImpl => {
-            const shape = new ShapeImpl(this._sources, node, displayName, size, health, damage, points);
+        const create = (node: TransformNode, displayName: string, health: number, damage: number, points: number): ShapeImpl => {
+            const shape = new ShapeImpl(this._sources, node, displayName, health, damage, points);
 
-            const limit = (this._worldSize - size) * 0.5;
+            const limit = (this._worldSize - shape.size) * 0.5;
             const x = Scalar.RandomRange(-limit, limit);
             const z = Scalar.RandomRange(-limit, limit);
             shape.position.set(x, dropHeight, z);
@@ -84,15 +84,15 @@ export class Shapes {
         };
 
         const entries = [
-            { createNode: () => this._sources.createCubeShape(this._root),         displayName: "Cube",                  size: 0.60, health: 10,  damage: 10,  points: 10  },
-            { createNode: () => this._sources.createTetrahedronShape(this._root),  displayName: "Tetrahedron",           size: 0.60, health: 30,  damage: 20,  points: 25  },
-            { createNode: () => this._sources.createDodecahedronShape(this._root), displayName: "Dodecahedron",          size: 1.00, health: 125, damage: 50,  points: 120 },
-            { createNode: () => this._sources.createGoldberg11Shape(this._root),   displayName: "Truncated Isocahedron", size: 1.62, health: 250, damage: 130, points: 200 },
+            { createNode: () => this._sources.createCubeShape(this._root),         displayName: "Cube",                  health: 10,  damage: 10,  points: 10  },
+            { createNode: () => this._sources.createTetrahedronShape(this._root),  displayName: "Tetrahedron",           health: 30,  damage: 20,  points: 25  },
+            { createNode: () => this._sources.createDodecahedronShape(this._root), displayName: "Dodecahedron",          health: 125, damage: 50,  points: 120 },
+            { createNode: () => this._sources.createGoldberg11Shape(this._root),   displayName: "Truncated Isocahedron", health: 250, damage: 130, points: 200 },
         ];
 
         const n = Math.random();
         const entry = entries[n < 0.6 ? 0 : n < 0.95 ? 1 : n < 0.99 ? 2 : 3];
-        return create(entry.createNode(), entry.displayName, entry.size, entry.health, entry.damage, entry.points);
+        return create(entry.createNode(), entry.displayName, entry.health, entry.damage, entry.points);
     }
 
     private *_getCollidableEntities(): Iterator<ShapeImpl> {
@@ -106,16 +106,17 @@ export class Shapes {
 
 class ShapeImpl implements Shape, CollidableEntity {
     private readonly _node: TransformNode;
+    private readonly _metadata: ShapeMetadata;
     private readonly _health: Health;
     private readonly _shadow: Shadow;
 
-    public constructor(sources: Sources, node: TransformNode, displayName: string, size: number, health: number, damage: number, points: number) {
+    public constructor(sources: Sources, node: TransformNode, displayName: string, health: number, damage: number, points: number) {
         this._node = node;
-        this._health = new Health(sources, node, size, 0.2, health);
-        this._shadow = new Shadow(sources, node, size);
+        this._metadata = node.metadata;
+        this._health = new Health(sources, node, this.size, 0.2, health);
+        this._shadow = new Shadow(sources, node, this.size);
         this.displayName = displayName;
-        this.size = size;
-        this.mass = size * size;
+        this.mass = this.size * this.size;
         this.damage = damage;
         this.points = points;
     }
@@ -127,11 +128,11 @@ class ShapeImpl implements Shape, CollidableEntity {
     // Entity
     public readonly displayName: string;
     public readonly type = EntityType.Shape;
-    public readonly size: number;
+    public get size() { return this._metadata.size; }
     public readonly mass: number;
     public readonly damage: number;
     public readonly points: number;
-    public get position(): Vector3 { return this._node.position; }
+    public get position() { return this._node.position; }
     public readonly velocity = new Vector3();
 
     // Quadtree.Rect
