@@ -1,7 +1,7 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { World } from "./world";
 
-export function initialize(canvas: HTMLCanvasElement) {
+export function initialize(canvas: HTMLCanvasElement): void {
     const engine = new Engine(canvas);
 
     const world = new World(engine);

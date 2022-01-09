@@ -1,4 +1,3 @@
-import "@babylonjs/inspector";
 import { Player } from "./player";
 import { Shapes } from "./shapes";
 import { Collisions } from "./collisions";
@@ -14,6 +13,8 @@ import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { CreateGridMaterial } from "./materials/gridMaterial";
+
+declare var DEV_BUILD: boolean;
 
 function now(): number {
     return performance.now() * 0.001;
@@ -45,15 +46,17 @@ export class World {
 
         this.scene.onKeyboardObservable.add((data) => {
             if (data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey) {
-                switch (data.event.code) {
-                    case "KeyI": {
+                if (DEV_BUILD && data.event.code) {
+                    import("@babylonjs/inspector").then(() => {
                         if (this.scene.debugLayer.isVisible()) {
                             this.scene.debugLayer.hide();
                         } else {
                             this.scene.debugLayer.show();
                         }
-                        break;
-                    }
+                    });
+                }
+
+                switch (data.event.code) {
                     case "KeyP": {
                         this.paused = !this.paused;
                         break;
