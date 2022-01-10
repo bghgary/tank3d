@@ -14,7 +14,7 @@ import { Observable } from "@babylonjs/core/Misc/observable";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { CreateGridMaterial } from "./materials/gridMaterial";
 
-declare var DEV_BUILD: boolean;
+declare const DEV_BUILD: boolean;
 
 function now(): number {
     return performance.now() * 0.001;

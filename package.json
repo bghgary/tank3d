@@ -1,6 +1,6 @@
 {
-  "name": "npm-package-template",
-  "version": "1.0.0",
+  "name": "tank3d",
+  "version": "0.1.0",
   "description": "",
   "private": "true",
   "scripts": {

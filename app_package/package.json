@@ -1,7 +1,7 @@
 {
   "name": "app_package",
-  "version": "1.0.0",
-  "description": "app package description",
+  "version": "0.1.0",
+  "description": "",
   "repository": {},
   "main": "lib/index.js",
   "types": "lib",
