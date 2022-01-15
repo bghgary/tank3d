@@ -10,7 +10,7 @@ module.exports = {
   mode: "development",
   devServer: {
     open: true,
-    watchFiles: ["./src/**/*", "../app_package/lib/**/*"],
+    watchFiles: ["./src/**/*", "../app/lib/**/*"],
   },
   output: {
     filename: "bundle.js",
@@ -21,15 +21,5 @@ module.exports = {
       VERSION: JSON.stringify(version),
     }),
     new HtmlWebpackPlugin({ title: "tank3d" }),
-  ],
-  module: {
-    rules: [
-      {
-        test: /\.m?js/,
-        resolve: {
-          fullySpecified: false
-        }
-      }
-    ],
-  },
+  ]
 };

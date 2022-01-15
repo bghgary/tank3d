@@ -1,4 +1,4 @@
-import { initialize } from "app_package";
+import { initialize } from "app";
 
 document.body.style.position = "fixed";
 document.body.style.width = "100%";

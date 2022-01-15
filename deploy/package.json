@@ -1,5 +1,5 @@
 {
-  "name": "test_package",
+  "name": "deploy",
   "version": "0.1.0",
   "description": "",
   "private": true,
@@ -12,11 +12,12 @@
   "license": "ISC",
   "devDependencies": {
     "html-webpack-plugin": "^5.3.2",
+    "terser-webpack-plugin": "^5.3.0",
     "webpack": "^5.52.1",
     "webpack-cli": "^4.8.0",
     "webpack-dev-server": "^4.2.1"
   },
   "dependencies": {
-    "app_package": "file:../app_package"
+    "app": "file:../app"
   }
 }
