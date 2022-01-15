@@ -12,6 +12,7 @@ import { Score } from "./score";
 import { Shapes } from "./shapes";
 import { Tank } from "./tank";
 import { World } from "./world";
+import { Level } from "./level";
 
 const AUTO_ROTATE_SPEED = 1;
 const CAMERA_ALPHA = -Math.PI / 2;
@@ -52,6 +53,7 @@ export class Player {
     private readonly _world: World;
     private readonly _tank: Tank;
     private readonly _score: Score;
+    private readonly _level: Level;
     private readonly _camera: ArcRotateCamera;
     private readonly _commandState = new Map<Command, State>();
 
@@ -66,6 +68,7 @@ export class Player {
         this._tank = new Tank("Player", node, properties, world, bullets);
 
         this._score = new Score(world);
+        this._level = new Level(world, this._score);
 
         this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), world.scene);
         this._camera.lowerRadiusLimit = 2;
@@ -177,6 +180,7 @@ export class Player {
         this._tank.update(deltaTime, x, z, shoot, this._world.size + 10, this._onTankDestroyed.bind(this));
 
         this._score.update(deltaTime);
+        this._level.update(deltaTime);
 
         this._camera.target.copyFrom(this._tank.position);
     }

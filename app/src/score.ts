@@ -1,3 +1,4 @@
+import { Observable } from "@babylonjs/core/Misc/observable";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { World } from "./world";
@@ -9,13 +10,13 @@ export class Score {
 
     public constructor(world: World) {
         this._textBlock = new TextBlock("score", this._text);
-        this._textBlock.fontSize = 36;
+        this._textBlock.fontSize = "24px";
         this._textBlock.color = "white";
-        this._textBlock.outlineWidth = 4;
+        this._textBlock.outlineWidth = 3;
         this._textBlock.outlineColor = "black";
         this._textBlock.resizeToFit = true;
         this._textBlock.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-        this._textBlock.paddingBottom = 50;
+        this._textBlock.top = -72;
         world.uiTexture.addControl(this._textBlock);
     }
 
@@ -31,11 +32,15 @@ export class Score {
 
     public add(value: number): void {
         this._target += value;
+        this.onChangedObservable.notifyObservers(this._target);
     }
 
     public multiply(value: number): void {
         this._target = Math.round(this._target * value);
+        this.onChangedObservable.notifyObservers(this._target);
     }
+
+    public readonly onChangedObservable = new Observable<number>();
 
     private get _text(): string {
         return `Score: ${Math.round(this._current)}`;
