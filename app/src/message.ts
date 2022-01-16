@@ -13,16 +13,14 @@ export class Message {
         const textBlock = new TextBlock("message", `${text}\nPress enter to respawn.`);
         textBlock.fontSize = 36;
         textBlock.color = "white";
-        textBlock.outlineWidth = 4;
-        textBlock.outlineColor = "black";
-        textBlock.resizeToFit = true;
-        this._world.uiTexture.addControl(textBlock);
+        textBlock.shadowBlur = 5;
+        this._world.uiContainer.addControl(textBlock);
 
         this._world.paused = true;
         const observer = this._world.scene.onKeyboardObservable.add((data) => {
             if (data.type === KeyboardEventTypes.KEYDOWN && data.event.code === "Enter") {
                 this._world.scene.onKeyboardObservable.remove(observer);
-                this._world.uiTexture.removeControl(textBlock);
+                this._world.uiContainer.removeControl(textBlock);
                 this._world.paused = false;
                 onDone();
             }

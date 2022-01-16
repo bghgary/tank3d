@@ -8,11 +8,12 @@ import { Bullet, Bullets } from "./bullets";
 import { Crashers } from "./crashers";
 import { Entity, EntityType } from "./entity";
 import { Message } from "./message";
-import { Score } from "./score";
 import { Shapes } from "./shapes";
 import { Tank } from "./tank";
 import { World } from "./world";
-import { Level } from "./level";
+import { Level } from "./ui/level";
+import { Score } from "./ui/score";
+import { Upgrades } from "./ui/upgrades";
 
 const AUTO_ROTATE_SPEED = 1;
 const CAMERA_ALPHA = -Math.PI / 2;
@@ -54,6 +55,7 @@ export class Player {
     private readonly _tank: Tank;
     private readonly _score: Score;
     private readonly _level: Level;
+    private readonly _upgrades: Upgrades;
     private readonly _camera: ArcRotateCamera;
     private readonly _commandState = new Map<Command, State>();
 
@@ -69,6 +71,7 @@ export class Player {
 
         this._score = new Score(world);
         this._level = new Level(world, this._score);
+        this._upgrades = new Upgrades(world, this._level);
 
         this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), world.scene);
         this._camera.lowerRadiusLimit = 2;
@@ -190,6 +193,7 @@ export class Player {
         message.show(`You were killed by a ${entity.displayName}.`, () => {
             this._tank.reset();
             this._score.multiply(0.5);
+            this._upgrades.reset();
 
             const limit = this._world.size * 0.5;
             const x = Scalar.RandomRange(-limit, limit);

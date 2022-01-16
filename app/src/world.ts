@@ -13,6 +13,7 @@ import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { CreateGridMaterial } from "./materials/gridMaterial";
+import { Container } from "@babylonjs/gui/2D/controls/container";
 
 declare const DEV_BUILD: boolean;
 
@@ -32,7 +33,7 @@ export class World {
         this.size = size;
         this.scene = new Scene(engine);
         this.sources = new Sources(this);
-        this.uiTexture = AdvancedDynamicTexture.CreateFullscreenUI("Fullscreen");
+        this.uiContainer = AdvancedDynamicTexture.CreateFullscreenUI("Fullscreen").rootContainer;
         this.collisions = new Collisions(this);
 
         const shapes = new Shapes(this, 200);
@@ -90,7 +91,7 @@ export class World {
     public readonly size: number;
     public readonly scene: Scene;
     public readonly sources: Sources;
-    public readonly uiTexture: AdvancedDynamicTexture;
+    public readonly uiContainer: Container;
     public readonly collisions: Collisions;
 
     public suspend(): void {

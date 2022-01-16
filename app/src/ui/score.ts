@@ -1,7 +1,7 @@
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
-import { World } from "./world";
+import { World } from "../world";
 
 export class Score {
     private _current = 0;
@@ -10,14 +10,13 @@ export class Score {
 
     public constructor(world: World) {
         this._textBlock = new TextBlock("score", this._text);
-        this._textBlock.fontSize = "24px";
+        this._textBlock.fontSize = 24;
         this._textBlock.color = "white";
-        this._textBlock.outlineWidth = 3;
-        this._textBlock.outlineColor = "black";
+        this._textBlock.shadowBlur = 5;
         this._textBlock.resizeToFit = true;
         this._textBlock.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
         this._textBlock.top = -72;
-        world.uiTexture.addControl(this._textBlock);
+        world.uiContainer.addControl(this._textBlock);
     }
 
     public update(deltaTime: number): void {
