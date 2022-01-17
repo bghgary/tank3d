@@ -12,21 +12,25 @@ import { World } from "./world";
 const KNOCK_BACK = 5;
 
 export interface TankProperties {
-    reloadTime: number;
-    bulletSpeed: number;
-    movementSpeed: number;
+    readonly bulletSpeed: number;
+    readonly bulletDamage: number;
+    readonly bulletHealth: number;
+    readonly reloadTime: number;
+    readonly healthRegen: number;
+    readonly maxHealth: number;
+    readonly moveSpeed: number;
 }
 
 export class Tank implements CollidableEntity {
     private readonly _node: TransformNode;
     private readonly _metadata: TankMetadata;
-    private readonly _properties: TankProperties;
     private readonly _bullets: Bullets;
     private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
     private readonly _health: Health;
+    private _properties: TankProperties;
     private _reloadTime = 0;
 
-    public constructor(displayName: string, node: TransformNode, properties: TankProperties, world: World, bullets: Bullets) {
+    public constructor(displayName: string, node: TransformNode, world: World, bullets: Bullets, properties: TankProperties) {
         this.displayName = displayName;
 
         this._node = node;
@@ -36,7 +40,8 @@ export class Tank implements CollidableEntity {
         this._bullets = bullets;
         this._createBulletNode = (parent) => world.sources.createPlayerTankBullet(parent);
 
-        this._health = new Health(world.sources, this._node, this.size, 0.4, 100);
+        this._health = new Health(world.sources, this._node, this.size, 0.4, this._properties.maxHealth);
+        this._health.regenSpeed = this._properties.healthRegen;
 
         new Shadow(world.sources, this._node, this.size);
 
@@ -59,6 +64,16 @@ export class Tank implements CollidableEntity {
     public get width() { return this.size; }
     public get height() { return this.size; }
 
+    public get properties(): TankProperties {
+        return this._properties;
+    }
+
+    public set properties(value: TankProperties) {
+        this._properties = value;
+        this._health.max = this._properties.maxHealth;
+        this._health.regenSpeed = this._properties.healthRegen;
+    }
+
     public reset(): void {
         this._health.reset();
         this.position.setAll(0);
@@ -78,9 +93,9 @@ export class Tank implements CollidableEntity {
         // Movement
         const decayFactor = Math.exp(-deltaTime * 2);
         if (x !== 0 || z !== 0) {
-            const movementFactor = this._properties.movementSpeed / Math.sqrt(x * x + z * z);
-            x *= movementFactor;
-            z *= movementFactor;
+            const moveFactor = this._properties.moveSpeed / Math.sqrt(x * x + z * z);
+            x *= moveFactor;
+            z *= moveFactor;
             this.velocity.x = x - (x - this.velocity.x) * decayFactor;
             this.velocity.z = z - (z - this.velocity.z) * decayFactor;
         } else {
@@ -96,12 +111,16 @@ export class Tank implements CollidableEntity {
         // Bullets
         this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
         if (shoot && this._reloadTime === 0) {
-            const bulletInitialSpeed = Vector3.Dot(this.velocity, this._node.forward) + this._properties.bulletSpeed;
-            const bulletProperties = { damage: 6, health: 10 };
-            this._bullets.add(this, this._createBulletNode, this._metadata, bulletProperties, this._node.position, this._node.forward, bulletInitialSpeed, this._properties.bulletSpeed);
+            const bulletProperties = {
+                speed: this._properties.bulletSpeed,
+                damage: this._properties.bulletDamage,
+                health: this._properties.bulletHealth,
+            };
+            const initialSpeed = Vector3.Dot(this.velocity, this._node.forward) + this._properties.bulletSpeed;
+            this._bullets.add(this, this._createBulletNode, this._metadata, bulletProperties, initialSpeed, this._node.position, this._node.forward);
             this._reloadTime = this._properties.reloadTime;
 
-            const knockBackFactor = bulletInitialSpeed * deltaTime * KNOCK_BACK;
+            const knockBackFactor = initialSpeed * deltaTime * KNOCK_BACK;
             this.velocity.x -= this._node.forward.x * knockBackFactor;
             this.velocity.z -= this._node.forward.z * knockBackFactor;
         }

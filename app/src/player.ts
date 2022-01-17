@@ -9,11 +9,11 @@ import { Crashers } from "./crashers";
 import { Entity, EntityType } from "./entity";
 import { Message } from "./message";
 import { Shapes } from "./shapes";
-import { Tank } from "./tank";
+import { Tank, TankProperties } from "./tank";
 import { World } from "./world";
 import { Level } from "./ui/level";
 import { Score } from "./ui/score";
-import { Upgrades } from "./ui/upgrades";
+import { Upgrades, UpgradeType } from "./ui/upgrades";
 
 const AUTO_ROTATE_SPEED = 1;
 const CAMERA_ALPHA = -Math.PI / 2;
@@ -50,6 +50,16 @@ const KeyMapping = new Map([
     ["KeyC", Command.AutoRotate],
 ]);
 
+const StarterTankProperties: TankProperties = {
+    bulletSpeed: 5,
+    bulletDamage: 6, 
+    bulletHealth: 10,
+    reloadTime: 0.5,
+    healthRegen: 0,
+    maxHealth: 100,
+    moveSpeed: 5,
+};
+
 export class Player {
     private readonly _world: World;
     private readonly _tank: Tank;
@@ -66,12 +76,12 @@ export class Player {
         this._world = world;
 
         const node = world.sources.createStarterTank(undefined, "player");
-        const properties = { reloadTime: 0.5, bulletSpeed: 5, movementSpeed: 5 };
-        this._tank = new Tank("Player", node, properties, world, bullets);
+        this._tank = new Tank("Player", node, world, bullets, StarterTankProperties);
 
         this._score = new Score(world);
         this._level = new Level(world, this._score);
         this._upgrades = new Upgrades(world, this._level);
+        this._upgrades.onUpgradeObservable.add(() => this._onUpgrade());
 
         this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), world.scene);
         this._camera.lowerRadiusLimit = 2;
@@ -191,6 +201,7 @@ export class Player {
     private _onTankDestroyed(entity: Entity): void {
         const message = new Message(this._world);
         message.show(`You were killed by a ${entity.displayName}.`, () => {
+            this._tank.properties = StarterTankProperties;
             this._tank.reset();
             this._score.multiply(0.5);
             this._upgrades.reset();
@@ -201,5 +212,17 @@ export class Player {
             this._tank.position.set(x, 0, z);
             this._tank.velocity.set(0, 0, 0);
         });
+    }
+
+    private _onUpgrade(): void {
+        this._tank.properties = {
+            bulletSpeed:    StarterTankProperties.bulletSpeed   + this._upgrades.getUpgradeValue(UpgradeType.BulletSpeed)       * 1,
+            bulletDamage:   StarterTankProperties.bulletDamage  + this._upgrades.getUpgradeValue(UpgradeType.BulletDamage)      * 3,
+            bulletHealth:   StarterTankProperties.bulletHealth  + this._upgrades.getUpgradeValue(UpgradeType.BulletPenetration) * 5,
+            reloadTime:     StarterTankProperties.reloadTime    - this._upgrades.getUpgradeValue(UpgradeType.Reload)            * 0.03,
+            healthRegen:    StarterTankProperties.healthRegen   + this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)       * 1.6,
+            maxHealth:      StarterTankProperties.maxHealth     + this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)         * 15,
+            moveSpeed:      StarterTankProperties.moveSpeed     + this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)         * 0.5,
+        };
     }
 }

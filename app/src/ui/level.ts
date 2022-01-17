@@ -4,38 +4,78 @@ import { World } from "../world";
 import { Bar } from "./bar";
 import { Observable } from "@babylonjs/core/Misc/observable";
 
+// Computed using https://jsfiddle.net/z7e1k38s/6/
 const LevelScore = [
     0,
     3,
-    6,
-    10,
-    20,
-    30,
-    45,
-    60,
-    75,
-    95,
-    115,
-    135,
-    160,
-    200,
-    245,
-    295,
-    355,
-    415,
-    480,
-    560,
-    680
+    8,
+    19,
+    35,
+    55,
+    79,
+    107,
+    140,
+    176,
+    216,
+    259,
+    306,
+    357,
+    410,
+    468,
+    528,
+    592,
+    660,
+    731,
+    805,
+    883,
+    964,
+    1048,
+    1136,
+    1228,
+    1323,
+    1423,
+    1526,
+    1633,
+    1744,
+    1859,
+    1979,
+    2103,
+    2232,
+    2366,
+    2506,
+    2651,
+    2801,
+    2958,
+    3121,
+    3291,
+    3469,
+    3654,
+    3849,
+    4052,
+    4266,
+    4492,
+    4731,
+    4984,
+    5254,
+    5543,
+    5856,
+    6195,
+    6569,
+    6987,
+    7467,
+    8039,
+    8776,
+    10000,
 ];
 
 function computeLevel(score: number): number {
     for (let level = 1; level < LevelScore.length; ++level) {
-        if (score <= LevelScore[level]) {
+        if (score < LevelScore[level]) {
             return level;
         }
     }
 
-    return LevelScore.length - 1;
+    return LevelScore.length;
 }
 
 export class Level {
@@ -74,9 +114,13 @@ export class Level {
                 this._updateText();
             }
 
-            const min = LevelScore[this._targetLevel - 1];
-            const max = LevelScore[this._targetLevel];
-            this._targetValue = Math.min((score - min) / (max - min), 1);
+            if (this._targetLevel < LevelScore.length) {
+                const min = LevelScore[this._targetLevel - 1];
+                const max = LevelScore[this._targetLevel];
+                this._targetValue = Math.min((score - min) / (max - min), 1);
+            } else {
+                this._targetValue = 1;
+            }
         });
     }
 

@@ -14,6 +14,7 @@ export interface Bullet extends Entity {
 }
 
 export interface BulletProperties {
+    speed: number;
     damage: number;
     health: number;
 }
@@ -29,7 +30,7 @@ export class Bullets {
         world.collisions.register(this._bullets);
     }
 
-    public add(owner: Entity, createNode: (parent: TransformNode) => TransformNode, barrelMetadata: BarrelMetadata, properties: BulletProperties, position: Vector3, direction: Vector3, initialSpeed: number, targetSpeed: number): void {
+    public add(owner: Entity, createNode: (parent: TransformNode) => TransformNode, barrelMetadata: BarrelMetadata, properties: BulletProperties, initialSpeed: number, position: Vector3, direction: Vector3): void {
         const size = barrelMetadata.barrelSize * 0.75;
         const offset = barrelMetadata.barrelLength + size * 0.5;
 
@@ -37,8 +38,8 @@ export class Bullets {
         node.scaling.setAll(size);
 
         const bullet = new BulletImpl(owner, node, this._sources, size, properties);
-        direction.scaleToRef(initialSpeed, bullet.velocity);
-        bullet.targetSpeed = targetSpeed;
+        direction.scaleToRef(Math.max(initialSpeed, 0.1), bullet.velocity);
+        bullet.targetSpeed = properties.speed;
         bullet.time = 0;
         bullet.position.set(
             position.x + direction.x * offset,

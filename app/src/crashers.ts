@@ -20,6 +20,8 @@ const CHASE_DISTANCE = 15;
 const CHASE_SPEED = 5;
 
 const SHOOTER_BULLET_SPEED = 5;
+const SHOOTER_BULLET_DAMAGE = 5;
+const SHOOTER_BULLET_HEALTH = 8;
 const SHOOTER_BULLET_RELOAD_TIME = 0.5;
 
 export interface Crasher extends Entity {
@@ -175,10 +177,14 @@ class CrasherImpl implements Crasher, CollidableEntity {
                 if (this._bullets && angle < Math.PI * 0.1) {
                     this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
                     if (this._reloadTime === 0) {
+                        const bulletProperties = {
+                            speed: SHOOTER_BULLET_SPEED,
+                            damage: SHOOTER_BULLET_DAMAGE,
+                            health: SHOOTER_BULLET_HEALTH,
+                        };
                         const initialSpeed = Vector3.Dot(this.velocity, this._node.forward) + SHOOTER_BULLET_SPEED;
                         const barrelMetadata = this._metadata as ShooterCrasherMetadata as BarrelMetadata;
-                        const bulletProperties = { damage: 6, health: 10 };
-                        this._bullets.add(this, this._createBulletNode, barrelMetadata, bulletProperties, this._node.position, this._node.forward, initialSpeed, SHOOTER_BULLET_SPEED);
+                        this._bullets.add(this, this._createBulletNode, barrelMetadata, bulletProperties, initialSpeed, this._node.position, this._node.forward);
                         this._reloadTime = SHOOTER_BULLET_RELOAD_TIME;
                     }
                 }

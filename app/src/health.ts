@@ -12,7 +12,7 @@ const DAMAGE_SPEED = 5;
 export class Health {
     private readonly _node: TransformNode;
     private readonly _size: number;
-    private readonly _max: number;
+    private _max: number;
     private _current: number;
     private _target: number;
     private _speed = 0;
@@ -30,10 +30,32 @@ export class Health {
         this._max = this._current = this._target = max;
     }
 
+    public get max(): number {
+        return this._max;
+    }
+
+    public set max(value: number) {
+        if (value === this._max) {
+            return;
+        }
+
+        const delta = value - this._max;
+        this._max += delta;
+        if (delta > 0) {
+            this._target += delta;
+            this._speed = RESET_SPEED;
+        } else {
+            this._current = Math.max(this._current + delta, 0);
+            this._target = Math.max(this._target + delta, 0);
+        }
+    }
+
+    public regenSpeed = 0;
+
     public update(deltaTime: number, onZero: (entity: Entity) => void): void {
         if (this._target < this._current) {
             this._node.setEnabled(true);
-            this._current = Math.max(Math.max(this._current - this._speed * deltaTime, this._target), 0);
+            this._current = Math.max(this._current - this._speed * deltaTime, Math.max(this._target, 0));
             this._node.scaling.x = this._current / this._max * this._size;
             if (this._current === 0) {
                 this._target = this._current;
@@ -41,17 +63,23 @@ export class Health {
             }
         } else if (this._target > this._current) {
             this._node.setEnabled(true);
-            this._current = Math.min(Math.min(this._current + this._speed * deltaTime, this._target), this._max);
+            this._current = Math.min(this._current + this._speed * deltaTime, Math.min(this._target, this._max));
             this._node.scaling.x = this._current / this._max * this._size;
             if (this._current === this._max) {
                 this._target = this._current;
                 this._node.setEnabled(false);
             }
-        } else if (this._regenTime > 0) {
-            this._regenTime = Math.max(this._regenTime - deltaTime, 0);
-            if (this._regenTime === 0) {
-                this._target = this._max;
-                this._speed = this._max * REGEN_SPEED;
+        } else {
+            if (this._regenTime > 0) {
+                this._regenTime = Math.max(this._regenTime - deltaTime, 0);
+                if (this._regenTime === 0) {
+                    this._target = this._max;
+                    this._speed = this._max * REGEN_SPEED;
+                }
+            }
+
+            if (this.regenSpeed > 0) {
+                this._target = Math.min(this._target + this.regenSpeed * deltaTime, this._max);
             }
         }
     }

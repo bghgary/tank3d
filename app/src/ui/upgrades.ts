@@ -1,3 +1,4 @@
+import { Observable } from "@babylonjs/core/Misc/observable";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
@@ -37,16 +38,17 @@ export class Upgrades {
             height: 24,
             cornerRadius: 15,
             border: 3,
+            backgroundColor: "#1111117F",
         };
 
         const entries = new Map([
-            [UpgradeType.BulletSpeed,       { name: "bulletSpeed",       displayName: "Bullet Speed",       backgroundColor: "#1111117F", barColor: "#FF3F3F7F" }],
-            [UpgradeType.BulletDamage,      { name: "bulletDamage",      displayName: "Bullet Damage",      backgroundColor: "#1111117F", barColor: "#3FFF3F7F" }],
-            [UpgradeType.BulletPenetration, { name: "bulletPenetration", displayName: "Bullet Penetration", backgroundColor: "#1111117F", barColor: "#3F3FFF7F" }],
-            [UpgradeType.Reload,            { name: "reload",            displayName: "Reload",             backgroundColor: "#1111117F", barColor: "#3FFFFF7F" }],
-            [UpgradeType.HealthRegen,       { name: "healthRegen",       displayName: "Heath Regen",        backgroundColor: "#1111117F", barColor: "#FF3FFF7F" }],
-            [UpgradeType.MaxHealth,         { name: "maxHealth",         displayName: "Max Health",         backgroundColor: "#1111117F", barColor: "#FFFF3F7F" }],
-            [UpgradeType.MoveSpeed,         { name: "moveSpeed",         displayName: "Move Speed",         backgroundColor: "#1111117F", barColor: "#FF8C007F" }],
+            [UpgradeType.BulletSpeed,       { name: "bulletSpeed",       displayName: "Bullet Speed",       barColor: "#FF3F3F7F" }],
+            [UpgradeType.BulletDamage,      { name: "bulletDamage",      displayName: "Bullet Damage",      barColor: "#3FFF3F7F" }],
+            [UpgradeType.BulletPenetration, { name: "bulletPenetration", displayName: "Bullet Penetration", barColor: "#3F3FFF7F" }],
+            [UpgradeType.Reload,            { name: "reload",            displayName: "Reload",             barColor: "#3FFFFF7F" }],
+            [UpgradeType.HealthRegen,       { name: "healthRegen",       displayName: "Heath Regen",        barColor: "#FF3FFF7F" }],
+            [UpgradeType.MaxHealth,         { name: "maxHealth",         displayName: "Max Health",         barColor: "#FFFF3F7F" }],
+            [UpgradeType.MoveSpeed,         { name: "moveSpeed",         displayName: "Move Speed",         barColor: "#FF8C007F" }],
         ]);
 
         this._available = new TextBlock("available");
@@ -57,14 +59,11 @@ export class Upgrades {
         this._root.addControl(this._available);
 
         for (const [key, value] of entries) {
-            const barButton = new UpgradeBarButton(value.name, this._root, {
-                ...properties,
-                backgroundColor: value.backgroundColor,
-                barColor: value.barColor
-            });
+            const barButton = new UpgradeBarButton(value.name, this._root, { ...properties, barColor: value.barColor });
             barButton.text = value.displayName;
             barButton.onPointerClickObservable.add(() => {
                 this._barButtons.get(key)!.value++;
+                this.onUpgradeObservable.notifyObservers(key);
                 this._update();
             });
             this._barButtons.set(key, barButton);
@@ -84,6 +83,12 @@ export class Upgrades {
 
         this._update();
     }
+
+    public getUpgradeValue(type: UpgradeType): number {
+        return this._barButtons.get(type)!.value;
+    }
+
+    public onUpgradeObservable = new Observable<UpgradeType>();
 
     private _update(): void {
         let used = 0;
