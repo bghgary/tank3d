@@ -11,7 +11,7 @@ export class Message {
 
     public show(text: string, onDone: () => void): void {
         const textBlock = new TextBlock("message", `${text}\nPress enter to respawn.`);
-        textBlock.fontSize = 36;
+        textBlock.fontSizeInPixels = 36;
         textBlock.color = "white";
         textBlock.shadowBlur = 5;
         this._world.uiContainer.addControl(textBlock);

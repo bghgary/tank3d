@@ -10,7 +10,7 @@ export class Score {
 
     public constructor(world: World) {
         this._textBlock = new TextBlock("score", this._text);
-        this._textBlock.fontSize = 24;
+        this._textBlock.fontSizeInPixels = 24;
         this._textBlock.color = "white";
         this._textBlock.shadowBlur = 5;
         this._textBlock.resizeToFit = true;

@@ -20,7 +20,7 @@ export class Upgrades {
     private readonly _root: StackPanel;
     private readonly _barButtons = new Map<UpgradeType, UpgradeBarButton>();
     private readonly _available: TextBlock;
-    private _level = 0;
+    private _count = 0;
 
     public constructor(world: World, level: Level) {
         this._root = new StackPanel("upgrades");
@@ -38,30 +38,37 @@ export class Upgrades {
             height: 24,
             cornerRadius: 15,
             border: 3,
-            backgroundColor: "#1111117F",
+            backgroundColor: "#0F0F0F7F",
+            hoverColor: "#AFAFAF7F",
+            pressColor: "#7F7F7F7F",
         };
 
         const entries = new Map([
-            [UpgradeType.BulletSpeed,       { name: "bulletSpeed",       displayName: "Bullet Speed",       barColor: "#FF3F3F7F" }],
-            [UpgradeType.BulletDamage,      { name: "bulletDamage",      displayName: "Bullet Damage",      barColor: "#3FFF3F7F" }],
-            [UpgradeType.BulletPenetration, { name: "bulletPenetration", displayName: "Bullet Penetration", barColor: "#3F3FFF7F" }],
-            [UpgradeType.Reload,            { name: "reload",            displayName: "Reload",             barColor: "#3FFFFF7F" }],
-            [UpgradeType.HealthRegen,       { name: "healthRegen",       displayName: "Heath Regen",        barColor: "#FF3FFF7F" }],
-            [UpgradeType.MaxHealth,         { name: "maxHealth",         displayName: "Max Health",         barColor: "#FFFF3F7F" }],
-            [UpgradeType.MoveSpeed,         { name: "moveSpeed",         displayName: "Move Speed",         barColor: "#FF8C007F" }],
+            [UpgradeType.BulletSpeed,       { name: "bulletSpeed",       displayName: "Bullet Speed",       barColor: "#FF3F3F7F", key: "1" }],
+            [UpgradeType.BulletDamage,      { name: "bulletDamage",      displayName: "Bullet Damage",      barColor: "#3FFF3F7F", key: "2" }],
+            [UpgradeType.BulletPenetration, { name: "bulletPenetration", displayName: "Bullet Penetration", barColor: "#3F3FFF7F", key: "3" }],
+            [UpgradeType.Reload,            { name: "reload",            displayName: "Reload",             barColor: "#3FFFFF7F", key: "4" }],
+            [UpgradeType.HealthRegen,       { name: "healthRegen",       displayName: "Heath Regen",        barColor: "#FF3FFF7F", key: "5" }],
+            [UpgradeType.MaxHealth,         { name: "maxHealth",         displayName: "Max Health",         barColor: "#FFFF3F7F", key: "6" }],
+            [UpgradeType.MoveSpeed,         { name: "moveSpeed",         displayName: "Move Speed",         barColor: "#FF8C007F", key: "7" }],
         ]);
 
         this._available = new TextBlock("available");
-        this._available.fontSize = properties.height * 0.7;
+        this._available.fontSizeInPixels = properties.height * 0.7;
         this._available.color = "white";
         this._available.shadowBlur = 5;
         this._available.resizeToFit = true;
         this._root.addControl(this._available);
 
         for (const [key, value] of entries) {
-            const barButton = new UpgradeBarButton(value.name, this._root, { ...properties, barColor: value.barColor });
+            const barButton = new UpgradeBarButton(value.name, this._root, {
+                ...properties,
+                barColor: value.barColor,
+                keyCode: `Digit${value.key}`,
+                keyText: value.key,
+            }, world);
             barButton.text = value.displayName;
-            barButton.onPointerClickObservable.add(() => {
+            barButton.onPressObservable.add(() => {
                 this._barButtons.get(key)!.value++;
                 this.onUpgradeObservable.notifyObservers(key);
                 this._update();
@@ -71,7 +78,14 @@ export class Upgrades {
 
         this._update();
         level.onChangedObservable.add((level) => {
-            this._level = level;
+            if (level < 20) {
+                this._count = level - 1;
+            } else if (level < 40) {
+                this._count = 20 + Math.floor((level - 20) * 0.5);
+            } else {
+                this._count = 30 + Math.floor((level - 40) * 0.25);
+            }
+
             this._update();
         });
     }
@@ -96,15 +110,15 @@ export class Upgrades {
             used += barButton.value;
         }
 
-        const available = this._level - used;
+        const available = this._count - used;
         if (available > 0) {
-            this._root.alpha = 1;
-            this._root.isEnabled = true;
             this._available.text = `x${available}`;
+            this._root.isEnabled = true;
+            this._root.alpha = 1;
         } else {
-            this._root.alpha = 0.5;
-            this._root.isEnabled = false;
             this._available.text = "";
+            this._root.isEnabled = false;
+            this._root.alpha = 0.5;
         }
     }
 }

@@ -1,17 +1,28 @@
+import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
+import { Observable } from "@babylonjs/core/Misc/observable";
 import { Button } from "@babylonjs/gui/2D/controls/button";
 import { Container } from "@babylonjs/gui/2D/controls/container";
+import { Control } from "@babylonjs/gui/2D/controls/control";
 import { Rectangle } from "@babylonjs/gui/2D/controls/rectangle";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
+import { World } from "../world";
 
 export interface BarProperties {
-    readonly maxValue?: number;
+    readonly maxValue: number;
     readonly width: number;
     readonly height: number;
     readonly cornerRadius: number;
     readonly border: number;
     readonly backgroundColor: string;
     readonly barColor: string;
+}
+
+export interface BarButtonProperties extends BarProperties {
+    readonly pressColor: string;
+    readonly hoverColor: string;
+    readonly keyCode: string;
+    readonly keyText: string;
 }
 
 class BarBase<T extends Rectangle> {
@@ -39,21 +50,19 @@ class BarBase<T extends Rectangle> {
         this._root.addControl(this._bar);
 
         this._text = new TextBlock("text");
-        this._text.fontSize = (properties.height - properties.border) * 0.7;
+        this._text.fontSizeInPixels = (properties.height - properties.border) * 0.7;
         this._text.color = "white";
         this._text.shadowBlur = 5;
         this._root.addControl(this._text);
 
-        const maxValue = properties.maxValue || 1;
-
         this._setBarWidth = (value) => {
             const barWidth = properties.width - 2 * properties.border;
-            const width = barWidth * value / maxValue;
+            const width = barWidth * value / properties.maxValue;
             this._bar.left = (width - barWidth) * 0.5;
             this._bar.widthInPixels = width;
         };
 
-        this.maxValue = maxValue;
+        this.maxValue = properties.maxValue;
     }
 
     public get top() { return this._root.top; }
@@ -99,21 +108,52 @@ export class Bar extends BarBase<Rectangle> {
 }
 
 export class BarButton extends BarBase<Button> {
-    public constructor(name: string, parent: Container, properties: BarProperties) {
+    public constructor(name: string, parent: Container, properties: BarButtonProperties, world: World) {
         super(new Button(name), parent, properties);
-        this._root.pointerEnterAnimation = () => {};
-        this._root.pointerOutAnimation = () => {};
+
+        this._root.onPointerClickObservable.add(() => {
+            this.onPressObservable.notifyObservers(this);
+        });
+
+        this._root.pointerEnterAnimation = () => this._root.background = properties.hoverColor;
+        this._root.pointerOutAnimation = () => this._root.background = properties.backgroundColor;
+        this._root.pointerDownAnimation = () => this._root.background = properties.pressColor;
+        this._root.pointerUpAnimation = () => this._root.background = properties.backgroundColor;
+
+        // HACK: bug in button code
+        parent.onDirtyObservable.add(() => {
+            if (!parent.isEnabled) {
+                this._root.pointerOutAnimation();
+            }
+        });
+
+        this._text.paddingRightInPixels = 25;
+
+        const key = new TextBlock("key", `[${properties.keyText}]`);
+        key.resizeToFit = true;
+        key.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        key.paddingRightInPixels = 10;
+        key.fontSizeInPixels = this._text.fontSizeInPixels * 0.8;
+        key.fontFamily = "monospace";
+        key.color = "lightgray";
+        key.shadowBlur = 4;
+        this._root.addControl(key);
+
+        world.scene.onKeyboardObservable.add((data) => {
+            if ((data.event as any).repeat || world.paused) {
+                return;
+            }
+
+            if (data.event.code === properties.keyCode && parent.isEnabled) {
+                if (data.type === KeyboardEventTypes.KEYDOWN) {
+                    this._root.pointerDownAnimation();
+                } else {
+                    this._root.pointerUpAnimation();
+                    this.onPressObservable.notifyObservers(this);
+                }
+            }
+        });
     }
 
-    public get onPointerClickObservable() {
-        return this._root.onPointerClickObservable;
-    }
-
-    public get isEnabled() {
-        return this._root.isEnabled;
-    }
-
-    public set isEnabled(value) {
-        this._root.isEnabled = value;
-    }
+    public readonly onPressObservable = new Observable<BarButton>();
 }

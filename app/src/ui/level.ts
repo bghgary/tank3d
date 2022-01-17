@@ -1,8 +1,8 @@
+import { Observable } from "@babylonjs/core/Misc/observable";
 import { Control } from "@babylonjs/gui/2D/controls/control";
+import { Bar } from "./bar";
 import { Score } from "./score";
 import { World } from "../world";
-import { Bar } from "./bar";
-import { Observable } from "@babylonjs/core/Misc/observable";
 
 // Computed using https://jsfiddle.net/z7e1k38s/6/
 const LevelScore = [
@@ -87,11 +87,12 @@ export class Level {
 
     public constructor(world: World, score: Score) {
         this._bar = new Bar("level", world.uiContainer, {
+            maxValue: 1,
             width: 400,
             height: 28,
             cornerRadius: 15,
             border: 3,
-            backgroundColor: "#1111117F",
+            backgroundColor: "#0F0F0F7F",
             barColor: "#FFFF007F",
         });
 
