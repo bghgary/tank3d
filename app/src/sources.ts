@@ -38,6 +38,7 @@ export class Sources {
     }
 
     private readonly _meshes: {
+        readonly shield: Mesh;
         readonly health: Mesh;
         readonly shadow: Mesh;
         readonly playerTankBullet: Mesh;
@@ -70,10 +71,11 @@ export class Sources {
         }
 
         this._meshes = {
-            playerTankBullet: this._createBulletSource(sources, "bulletPlayerTank", 8, this._materials.blue),
-            shooterCrasherBullet: this._createBulletSource(sources, "bulletShooterCrasher", 4, this._materials.pink),
+            shield: this._createShieldSource(sources),
             health: this._createHealthSource(sources),
             shadow: this._createShadowSource(sources),
+            playerTankBullet: this._createBulletSource(sources, "bulletPlayerTank", 8, this._materials.blue),
+            shooterCrasherBullet: this._createBulletSource(sources, "bulletShooterCrasher", 4, this._materials.pink),
             cube: this._createCubeSource(sources),
             tetrahedron: this._createTetrahedronSource(sources),
             dodecahedron: this._createDodecahedronSource(sources),
@@ -83,6 +85,10 @@ export class Sources {
             shooterCrasher: this._createShooterCrasherSource(sources),
             starterTank: this._createStarterTankSource(sources),
         };
+    }
+
+    public createShield(parent?: TransformNode, name?: string): Mesh {
+        return this._createClone(this._meshes.shield, name || "shield", parent);
     }
 
     public createHealth(parent?: TransformNode, name?: string): TransformNode {
@@ -144,6 +150,12 @@ export class Sources {
         return material;
     }
 
+    private _createClone(source: Mesh, name: string, parent?: TransformNode): Mesh {
+        const clone = source.clone(name, parent);
+        this._initMesh(clone);
+        return clone;
+    }
+
     private _createInstance(source: Mesh, name: string, parent?: TransformNode): InstancedMesh {
         const instance = source.createInstance(name);
         this._initMesh(instance);
@@ -168,9 +180,15 @@ export class Sources {
         mesh.alwaysSelectAsActiveMesh = true;
     }
 
+    private _createShieldSource(sources: TransformNode): Mesh {
+        const source = MeshBuilder.CreateSphere("shield", { segments: 16 }, this._scene);
+        source.parent = sources;
+        return source;
+    }
+
     private _createHealthSource(sources: TransformNode): Mesh {
         const source = MeshBuilder.CreatePlane("health", { width: 1, height: 0.08 }, this._scene);
-        source.material = this._createMaterial("health", 0, 0.8, 0, true);
+        source.material = this._materials.green;
         source.parent = sources;
         return source;
     }

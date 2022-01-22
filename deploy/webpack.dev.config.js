@@ -3,7 +3,7 @@ const ChildProcess = require("child_process");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
 const package = require('./package.json');
-const version = `${package.version}.${ChildProcess.execSync('git rev-list HEAD --count')}`;
+const version = `${package.version}.${ChildProcess.execSync('git rev-list HEAD --count')}`.trim();
 
 module.exports = {
   entry: "./src/index.js",

@@ -5,7 +5,7 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 
 const package = require('./package.json');
-const version = `${package.version}.${ChildProcess.execSync('git rev-list HEAD --count')}`;
+const version = `${package.version}.${ChildProcess.execSync('git rev-list HEAD --count')}`.trim();
 
 module.exports = {
   entry: "./src/index.js",

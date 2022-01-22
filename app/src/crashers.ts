@@ -162,33 +162,37 @@ class CrasherImpl implements Crasher, CollidableEntity {
             ApplyWallClamp(this._node.position, this.size, worldSize);
 
             let speed = 0;
-            const direction = TmpVectors.Vector3[0];
-            player.position.subtractToRef(this.position, direction);
-            if (direction.lengthSquared() < CHASE_DISTANCE * CHASE_DISTANCE) {
-                direction.normalize();
-                const angle = Math.acos(Vector3.Dot(this._node.forward, direction));
+            if (!player.shielded && player.inBounds) {
+                const direction = TmpVectors.Vector3[0];
+                player.position.subtractToRef(this.position, direction);
+                if (direction.lengthSquared() < CHASE_DISTANCE * CHASE_DISTANCE) {
+                    direction.normalize();
+                    const angle = Math.acos(Vector3.Dot(this._node.forward, direction));
 
-                const directionDecayFactor = Math.exp(-deltaTime * 10);
-                direction.x = direction.x - (direction.x - this._node.forward.x) * directionDecayFactor;
-                direction.z = direction.z - (direction.z - this._node.forward.z) * directionDecayFactor;
-                this._node.setDirection(direction);
-                speed = CHASE_SPEED;
+                    const directionDecayFactor = Math.exp(-deltaTime * 10);
+                    direction.x = direction.x - (direction.x - this._node.forward.x) * directionDecayFactor;
+                    direction.z = direction.z - (direction.z - this._node.forward.z) * directionDecayFactor;
+                    this._node.setDirection(direction);
+                    speed = CHASE_SPEED;
 
-                if (this._bullets && angle < Math.PI * 0.1) {
-                    this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
-                    if (this._reloadTime === 0) {
-                        const bulletProperties = {
-                            speed: SHOOTER_BULLET_SPEED,
-                            damage: SHOOTER_BULLET_DAMAGE,
-                            health: SHOOTER_BULLET_HEALTH,
-                        };
-                        const initialSpeed = Vector3.Dot(this.velocity, this._node.forward) + SHOOTER_BULLET_SPEED;
-                        const barrelMetadata = this._metadata as ShooterCrasherMetadata as BarrelMetadata;
-                        this._bullets.add(this, this._createBulletNode, barrelMetadata, bulletProperties, initialSpeed, this._node.position, this._node.forward);
-                        this._reloadTime = SHOOTER_BULLET_RELOAD_TIME;
+                    if (this._bullets && angle < Math.PI * 0.1) {
+                        this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
+                        if (this._reloadTime === 0) {
+                            const bulletProperties = {
+                                speed: SHOOTER_BULLET_SPEED,
+                                damage: SHOOTER_BULLET_DAMAGE,
+                                health: SHOOTER_BULLET_HEALTH,
+                            };
+                            const initialSpeed = Vector3.Dot(this.velocity, this._node.forward) + SHOOTER_BULLET_SPEED;
+                            const barrelMetadata = this._metadata as ShooterCrasherMetadata as BarrelMetadata;
+                            this._bullets.add(this, this._createBulletNode, barrelMetadata, bulletProperties, initialSpeed, this._node.position, this._node.forward);
+                            this._reloadTime = SHOOTER_BULLET_RELOAD_TIME;
+                        }
                     }
                 }
-            } else {
+            }
+
+            if (speed === 0) {
                 this._node.rotation.y += IDLE_ROTATION_SPEED * deltaTime;
                 speed = IDLE_MOVEMENT_SPEED;
             }

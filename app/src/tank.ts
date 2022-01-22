@@ -22,11 +22,12 @@ export interface TankProperties {
 }
 
 export class Tank implements CollidableEntity {
-    private readonly _node: TransformNode;
-    private readonly _metadata: TankMetadata;
+    protected readonly _node: TransformNode;
+    protected readonly _metadata: TankMetadata;
+    protected readonly _health: Health;
+
     private readonly _bullets: Bullets;
     private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
-    private readonly _health: Health;
     private _properties: TankProperties;
     private _reloadTime = 0;
 
@@ -40,10 +41,10 @@ export class Tank implements CollidableEntity {
         this._bullets = bullets;
         this._createBulletNode = (parent) => world.sources.createPlayerTankBullet(parent);
 
-        this._health = new Health(world.sources, this._node, this.size, 0.4, this._properties.maxHealth);
+        this._health = new Health(world.sources, this._node, this._metadata.size, 0.4, this._properties.maxHealth);
         this._health.regenSpeed = this._properties.healthRegen;
 
-        new Shadow(world.sources, this._node, this.size);
+        new Shadow(world.sources, this._node, this._metadata.size);
 
         world.collisions.register([this]);
     }
@@ -53,8 +54,7 @@ export class Tank implements CollidableEntity {
     public readonly type = EntityType.Tank;
     public get size() { return this._metadata.size; }
     public readonly mass = 2;
-    public readonly damage = 30; // TODO
-    public readonly collisionRepeatRate = 1;
+    public get damage() { return 30; } // TODO
     public get position() { return this._node.position; }
     public readonly velocity = new Vector3();
 
@@ -72,13 +72,6 @@ export class Tank implements CollidableEntity {
         this._properties = value;
         this._health.max = this._properties.maxHealth;
         this._health.regenSpeed = this._properties.healthRegen;
-    }
-
-    public reset(): void {
-        this._health.reset();
-        this.position.setAll(0);
-        this.velocity.setAll(0);
-        this._node.setEnabled(true);
     }
 
     public lookAt(targetPoint: Vector3): void {

@@ -14,7 +14,9 @@ import { Observable } from "@babylonjs/core/Misc/observable";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { CreateGridMaterial } from "./materials/gridMaterial";
 import { Container } from "@babylonjs/gui/2D/controls/container";
+import { Control, TextBlock } from "@babylonjs/gui";
 
+declare const VERSION: number;
 declare const DEV_BUILD: boolean;
 
 function now(): number {
@@ -44,6 +46,15 @@ export class World {
         this._createGround();
 
         new HemisphericLight("light", new Vector3(0.1, 1, -0.5), this.scene);
+
+        const versionTextBlock = new TextBlock("version", `v${VERSION}`);
+        versionTextBlock.resizeToFit = true;
+        versionTextBlock.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
+        versionTextBlock.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        versionTextBlock.fontSizeInPixels = 12;
+        versionTextBlock.color = "gray";
+        versionTextBlock.shadowBlur = 4;
+        this.uiContainer.addControl(versionTextBlock);
 
         this.scene.onKeyboardObservable.add((data) => {
             if (data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey) {

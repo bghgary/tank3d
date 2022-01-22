@@ -127,12 +127,10 @@ export class BarButton extends BarBase<Button> {
             }
         });
 
-        this._text.paddingRightInPixels = 25;
-
         const key = new TextBlock("key", `[${properties.keyText}]`);
         key.resizeToFit = true;
         key.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
-        key.paddingRightInPixels = 10;
+        key.paddingRightInPixels = 5;
         key.fontSizeInPixels = this._text.fontSizeInPixels * 0.8;
         key.fontFamily = "monospace";
         key.color = "lightgray";

@@ -14,6 +14,9 @@ import { World } from "./world";
 import { Level } from "./ui/level";
 import { Score } from "./ui/score";
 import { Upgrades, UpgradeType } from "./ui/upgrades";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Shield } from "./shield";
+import { ApplyCollisionForce } from "./common";
 
 const AUTO_ROTATE_SPEED = 1;
 const CAMERA_ALPHA = -Math.PI / 2;
@@ -60,9 +63,58 @@ const StarterTankProperties: TankProperties = {
     moveSpeed: 5,
 };
 
+class PlayerTank extends Tank {
+    private readonly _shield: Shield;
+
+    public constructor(displayName: string, node: TransformNode, world: World, bullets: Bullets, properties: TankProperties) {
+        super(displayName, node, world, bullets, properties);
+
+        this._shield = new Shield(world.sources, node, this._metadata.size * 1.75);
+    }
+
+    public get size() {
+        return this._shield.enabled ? this._shield.size : super.size;
+    }
+
+    public get damage() {
+        return this._shield.enabled ? 0 : super.damage;
+    }
+
+    public update(deltaTime: number, x: number, z: number, shoot: boolean, worldSize: number, onDestroyed: (entity: Entity) => void): void {
+        super.update(deltaTime, x, z, shoot, worldSize, onDestroyed);
+
+        if (x !== 0 || z !== 0 || shoot) {
+            this._shield.enabled = false;
+        }
+
+        this._shield.update(deltaTime);
+    }
+
+    public get shielded(): boolean {
+        return this._shield.enabled;
+    }
+
+    public reset(): void {
+        this._health.reset();
+        this.position.setAll(0);
+        this.velocity.setAll(0);
+        this._node.setEnabled(true);
+        this._shield.enabled = true;
+    }
+
+    public onCollide(other: Entity): void {
+        if (this._shield.enabled) {
+            ApplyCollisionForce(this, other);
+            return;
+        }
+
+        super.onCollide(other);
+    }
+}
+
 export class Player {
     private readonly _world: World;
-    private readonly _tank: Tank;
+    private readonly _tank: PlayerTank;
     private readonly _score: Score;
     private readonly _level: Level;
     private readonly _upgrades: Upgrades;
@@ -76,7 +128,7 @@ export class Player {
         this._world = world;
 
         const node = world.sources.createStarterTank(undefined, "player");
-        this._tank = new Tank("Player", node, world, bullets, StarterTankProperties);
+        this._tank = new PlayerTank("Player", node, world, bullets, StarterTankProperties);
 
         this._score = new Score(world);
         this._level = new Level(world, this._score);
@@ -166,7 +218,7 @@ export class Player {
                     break;
                 }
                 case EntityType.Tank: {
-                    if (other === this._tank) {
+                    if (other === this._tank && !this.shielded) {
                         this._score.add(target.points);
                     }
                     break;
@@ -182,6 +234,20 @@ export class Player {
         return this._tank.position;
     }
 
+    public get velocity(): Vector3 {
+        return this._tank.velocity;
+    }
+
+    public get shielded(): boolean {
+        return this._tank.shielded;
+    }
+
+    public get inBounds(): boolean {
+        const limit = this._world.size * 0.5;
+        const position = this._tank.position;
+        return -limit <= position.x && position.x <= limit && -limit <= position.z && position.z < limit;
+    }
+
     public update(deltaTime: number): void {
         if (this._autoRotate) {
             this._tank.rotate(AUTO_ROTATE_SPEED * deltaTime);
@@ -189,13 +255,21 @@ export class Player {
 
         const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
         const z = (this._commandState.get(Command.Up) ? 1 : 0) + (this._commandState.get(Command.Down) ? -1 : 0);
-        const shoot = this._autoShoot || !!this._commandState.get(Command.Shoot);
+        const shoot = (this._autoShoot || !!this._commandState.get(Command.Shoot)) && this.inBounds;
         this._tank.update(deltaTime, x, z, shoot, this._world.size + 10, this._onTankDestroyed.bind(this));
 
         this._score.update(deltaTime);
         this._level.update(deltaTime);
 
-        this._camera.target.copyFrom(this._tank.position);
+        this._updateCamera(deltaTime);
+    }
+
+    private _updateCamera(deltaTime: number): void {
+        const decayFactor = Math.exp(-deltaTime * 4);
+        const position = this._tank.position;
+        const target = this._camera.target;
+        target.x = position.x - (position.x - target.x) * decayFactor;
+        target.z = position.z - (position.z - target.z) * decayFactor;
     }
 
     private _onTankDestroyed(entity: Entity): void {
