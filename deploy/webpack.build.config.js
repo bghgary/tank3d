@@ -6,6 +6,7 @@ const TerserPlugin = require("terser-webpack-plugin");
 
 const package = require('./package.json');
 const version = `${package.version}.${ChildProcess.execSync('git rev-list HEAD --count')}`.trim();
+console.log(`Building v${version}`);
 
 module.exports = {
   entry: "./src/index.js",
