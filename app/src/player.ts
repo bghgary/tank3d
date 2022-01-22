@@ -243,7 +243,7 @@ export class Player {
     }
 
     public get inBounds(): boolean {
-        const limit = this._world.size * 0.5;
+        const limit = (this._world.size + this._tank.size) * 0.5;
         const position = this._tank.position;
         return -limit <= position.x && position.x <= limit && -limit <= position.z && position.z < limit;
     }
