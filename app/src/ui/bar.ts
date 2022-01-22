@@ -120,13 +120,6 @@ export class BarButton extends BarBase<Button> {
         this._root.pointerDownAnimation = () => this._root.background = properties.pressColor;
         this._root.pointerUpAnimation = () => this._root.background = properties.backgroundColor;
 
-        // HACK: bug in button code
-        parent.onDirtyObservable.add(() => {
-            if (!parent.isEnabled) {
-                this._root.pointerOutAnimation();
-            }
-        });
-
         const key = new TextBlock("key", `[${properties.keyText}]`);
         key.resizeToFit = true;
         key.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
