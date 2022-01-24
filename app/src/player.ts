@@ -53,9 +53,9 @@ const KeyMapping = new Map([
     ["KeyC", Command.AutoRotate],
 ]);
 
-const StarterTankProperties: TankProperties = {
+const BaseTankProperties: TankProperties = {
     bulletSpeed: 5,
-    bulletDamage: 6, 
+    bulletDamage: 6,
     bulletHealth: 10,
     reloadTime: 0.5,
     healthRegen: 0,
@@ -69,7 +69,7 @@ class PlayerTank extends Tank {
     public constructor(displayName: string, node: TransformNode, world: World, bullets: Bullets, properties: TankProperties) {
         super(displayName, node, world, bullets, properties);
 
-        this._shield = new Shield(world.sources, node, this._metadata.size * 1.75);
+        this._shield = new Shield(world.sources, node, this._metadata.shieldSize);
     }
 
     public get size() {
@@ -127,8 +127,8 @@ export class Player {
     public constructor(world: World, bullets: Bullets, shapes: Shapes, crashers: Crashers) {
         this._world = world;
 
-        const node = world.sources.createStarterTank(undefined, "player");
-        this._tank = new PlayerTank("Player", node, world, bullets, StarterTankProperties);
+        const node = world.sources.createTank(undefined, "player");
+        this._tank = new PlayerTank("Player", node, world, bullets, BaseTankProperties);
 
         this._score = new Score(world);
         this._level = new Level(world, this._score);
@@ -275,7 +275,7 @@ export class Player {
     private _onTankDestroyed(entity: Entity): void {
         const message = new Message(this._world);
         message.show(`You were killed by a ${entity.displayName}.`, () => {
-            this._tank.properties = StarterTankProperties;
+            this._tank.properties = BaseTankProperties;
             this._tank.reset();
             this._score.multiply(0.5);
             this._upgrades.reset();
@@ -290,13 +290,13 @@ export class Player {
 
     private _onUpgrade(): void {
         this._tank.properties = {
-            bulletSpeed:    StarterTankProperties.bulletSpeed   + this._upgrades.getUpgradeValue(UpgradeType.BulletSpeed)       * 1,
-            bulletDamage:   StarterTankProperties.bulletDamage  + this._upgrades.getUpgradeValue(UpgradeType.BulletDamage)      * 3,
-            bulletHealth:   StarterTankProperties.bulletHealth  + this._upgrades.getUpgradeValue(UpgradeType.BulletPenetration) * 5,
-            reloadTime:     StarterTankProperties.reloadTime    - this._upgrades.getUpgradeValue(UpgradeType.Reload)            * 0.03,
-            healthRegen:    StarterTankProperties.healthRegen   + this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)       * 1.6,
-            maxHealth:      StarterTankProperties.maxHealth     + this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)         * 15,
-            moveSpeed:      StarterTankProperties.moveSpeed     + this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)         * 0.5,
+            bulletSpeed:    BaseTankProperties.bulletSpeed   + this._upgrades.getUpgradeValue(UpgradeType.BulletSpeed)       * 1,
+            bulletDamage:   BaseTankProperties.bulletDamage  + this._upgrades.getUpgradeValue(UpgradeType.BulletDamage)      * 3,
+            bulletHealth:   BaseTankProperties.bulletHealth  + this._upgrades.getUpgradeValue(UpgradeType.BulletPenetration) * 5,
+            reloadTime:     BaseTankProperties.reloadTime    - this._upgrades.getUpgradeValue(UpgradeType.Reload)            * 0.03,
+            healthRegen:    BaseTankProperties.healthRegen   + this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)       * 1.6,
+            maxHealth:      BaseTankProperties.maxHealth     + this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)         * 15,
+            moveSpeed:      BaseTankProperties.moveSpeed     + this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)         * 0.5,
         };
     }
 }

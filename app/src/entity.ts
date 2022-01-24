@@ -1,4 +1,4 @@
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 export const enum EntityType {
     Bullet,
@@ -14,5 +14,6 @@ export interface Entity {
     readonly mass: number;
     readonly damage: number;
     readonly position: Vector3;
+    readonly rotation: Quaternion;
     readonly velocity: Vector3;
 }

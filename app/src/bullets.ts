@@ -1,4 +1,4 @@
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { TmpVectors, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { CollidableEntity } from "./collisions";
 import { ApplyCollisionForce, ApplyMovement } from "./common";
@@ -30,22 +30,29 @@ export class Bullets {
         world.collisions.register(this._bullets);
     }
 
-    public add(owner: Entity, createNode: (parent: TransformNode) => TransformNode, barrelMetadata: BarrelMetadata, properties: BulletProperties, initialSpeed: number, position: Vector3, direction: Vector3): void {
-        const size = barrelMetadata.barrelSize * 0.75;
-        const offset = barrelMetadata.barrelLength + size * 0.5;
+    public add(owner: Entity, barrelMetadata: BarrelMetadata, createNode: (parent: TransformNode) => TransformNode, properties: BulletProperties): Bullet {
+        const size = barrelMetadata.size * 0.75;
+
+        const forward = TmpVectors.Vector3[0];
+        barrelMetadata.forward.rotateByQuaternionToRef(owner.rotation, forward);
+
+        const position = TmpVectors.Vector3[1];
+        barrelMetadata.forward.scaleToRef(barrelMetadata.length + size * 0.5, position).addInPlace(barrelMetadata.offset);
+        position.rotateByQuaternionToRef(owner.rotation, position).addInPlace(owner.position);
+
+        const initialSpeed = Math.max(Vector3.Dot(owner.velocity, forward) + properties.speed, 0.1);
 
         const node = createNode(this._root);
         node.scaling.setAll(size);
 
         const bullet = new BulletImpl(owner, node, this._sources, size, properties);
-        direction.scaleToRef(Math.max(initialSpeed, 0.1), bullet.velocity);
+        bullet.position.copyFrom(position);
+        bullet.velocity.copyFrom(forward).scaleInPlace(initialSpeed);
         bullet.targetSpeed = properties.speed;
         bullet.time = 0;
-        bullet.position.set(
-            position.x + direction.x * offset,
-            position.y + direction.y * offset,
-            position.z + direction.z * offset);
         this._bullets.add(bullet);
+
+        return bullet;
     }
 
     public update(deltaTime: number): void {
@@ -79,6 +86,7 @@ class BulletImpl implements Bullet, CollidableEntity {
     public readonly mass: number;
     public readonly damage: number;
     public get position() { return this._node.position; }
+    public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
 
     // Quadtree.Rect

@@ -1,5 +1,5 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
-import { TmpVectors, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Quaternion, TmpVectors, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { Nullable } from "@babylonjs/core/types";
@@ -10,7 +10,7 @@ import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
 import { Player } from "./player";
 import { Shadow } from "./shadow";
-import { BarrelMetadata, CrasherMetadata, ShooterCrasherMetadata, Sources } from "./sources";
+import { CrasherMetadata, ShooterCrasherMetadata, Sources } from "./sources";
 import { World } from "./world";
 
 const DROP_HEIGHT = 5;
@@ -73,8 +73,7 @@ export class Crashers {
         const create = (node: TransformNode, x: number, z: number, rotation: number, displayName: string, health: number, damage: number, points: number, bullets: Nullable<Bullets>): void => {
             const crasher = new CrasherImpl(this._sources, node, displayName, health, damage, points, bullets);
             crasher.position.set(x, DROP_HEIGHT, z);
-            crasher.rotation = rotation;
-            crasher.forward.scaleToRef(CHASE_SPEED, crasher.velocity);
+            Quaternion.RotationYawPitchRollToRef(rotation, 0, 0, crasher.rotation);
             this._crashers.add(crasher);
         };
 
@@ -139,6 +138,7 @@ class CrasherImpl implements Crasher, CollidableEntity {
     public readonly damage: number;
     public readonly points: number;
     public get position() { return this._node.position; }
+    public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
 
     // Quadtree.Rect
@@ -146,11 +146,6 @@ class CrasherImpl implements Crasher, CollidableEntity {
     public get y() { return this._node.position.z - this.size * 0.5; }
     public get width() { return this.size; }
     public get height() { return this.size; }
-
-    public get rotation(): number { return this._node.rotation.y; }
-    public set rotation(value: number) { this._node.rotation.y = value; }
-
-    public get forward(): Vector3 { return this._node.forward; }
 
     public update(deltaTime: number, worldSize: number, player: Player, onDestroyed: (entity: Entity) => void): void {
         if (ApplyGravity(deltaTime, this._node.position, this.velocity)) {
@@ -183,9 +178,11 @@ class CrasherImpl implements Crasher, CollidableEntity {
                                 damage: SHOOTER_BULLET_DAMAGE,
                                 health: SHOOTER_BULLET_HEALTH,
                             };
-                            const initialSpeed = Vector3.Dot(this.velocity, this._node.forward) + SHOOTER_BULLET_SPEED;
-                            const barrelMetadata = this._metadata as ShooterCrasherMetadata as BarrelMetadata;
-                            this._bullets.add(this, this._createBulletNode, barrelMetadata, bulletProperties, initialSpeed, this._node.position, this._node.forward);
+
+                            for (const barrelMetadata of (this._metadata as ShooterCrasherMetadata).barrels) {
+                                this._bullets.add(this, barrelMetadata, this._createBulletNode, bulletProperties);
+                            }
+
                             this._reloadTime = SHOOTER_BULLET_RELOAD_TIME;
                         }
                     }
@@ -193,7 +190,7 @@ class CrasherImpl implements Crasher, CollidableEntity {
             }
 
             if (speed === 0) {
-                this._node.rotation.y += IDLE_ROTATION_SPEED * deltaTime;
+                this._node.addRotation(0, IDLE_ROTATION_SPEED * deltaTime, 0);
                 speed = IDLE_MOVEMENT_SPEED;
             }
 

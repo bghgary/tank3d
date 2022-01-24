@@ -1,5 +1,5 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { CollidableEntity } from "./collisions";
@@ -75,7 +75,7 @@ export class Shapes {
             shape.velocity.x = Math.cos(randomAngle) * speed;
             shape.velocity.y = Math.sin(randomAngle) * speed;
 
-            shape.rotation = Scalar.RandomRange(0, Scalar.TwoPi);
+            Quaternion.RotationYawPitchRollToRef(Scalar.RandomRange(0, Scalar.TwoPi), 0, 0, shape.rotation);
 
             const rotationSpeed = IDLE_ROTATION_SPEED / shape.mass;
             shape.rotationVelocity = Math.sign(Math.random() - 0.5) * rotationSpeed;
@@ -133,6 +133,7 @@ class ShapeImpl implements Shape, CollidableEntity {
     public readonly damage: number;
     public readonly points: number;
     public get position() { return this._node.position; }
+    public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
 
     // Quadtree.Rect
@@ -141,8 +142,6 @@ class ShapeImpl implements Shape, CollidableEntity {
     public get width() { return this.size; }
     public get height() { return this.size; }
 
-    public get rotation(): number { return this._node.rotation.y; }
-    public set rotation(value: number) { this._node.rotation.y = value; }
     public rotationVelocity = 0;
 
     public get name(): string { return this._node.name; }
@@ -168,7 +167,7 @@ class ShapeImpl implements Shape, CollidableEntity {
             }
         }
 
-        this._node.rotation.y = (this._node.rotation.y + this.rotationVelocity * deltaTime) % Scalar.TwoPi;
+        this._node.addRotation(0, this.rotationVelocity * deltaTime, 0);
 
         this._health.update(deltaTime, (entity) => {
             this._node.dispose();

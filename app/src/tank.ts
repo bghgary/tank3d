@@ -56,6 +56,7 @@ export class Tank implements CollidableEntity {
     public readonly mass = 2;
     public get damage() { return 30; } // TODO
     public get position() { return this._node.position; }
+    public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
 
     // Quadtree.Rect
@@ -109,13 +110,20 @@ export class Tank implements CollidableEntity {
                 damage: this._properties.bulletDamage,
                 health: this._properties.bulletHealth,
             };
-            const initialSpeed = Vector3.Dot(this.velocity, this._node.forward) + this._properties.bulletSpeed;
-            this._bullets.add(this, this._createBulletNode, this._metadata, bulletProperties, initialSpeed, this._node.position, this._node.forward);
-            this._reloadTime = this._properties.reloadTime;
 
-            const knockBackFactor = initialSpeed * deltaTime * KNOCK_BACK;
-            this.velocity.x -= this._node.forward.x * knockBackFactor;
-            this.velocity.z -= this._node.forward.z * knockBackFactor;
+            let knockBackX = 0, knockBackZ = 0;
+            for (const barrelMetadata of this._metadata.barrels) {
+                const bullet = this._bullets.add(this, barrelMetadata, this._createBulletNode, bulletProperties);
+
+                const knockBackFactor = deltaTime * KNOCK_BACK;
+                knockBackX += bullet.velocity.x * knockBackFactor;
+                knockBackZ += bullet.velocity.z * knockBackFactor;
+            }
+
+            this.velocity.x -= knockBackX;
+            this.velocity.z -= knockBackZ;
+
+            this._reloadTime = this._properties.reloadTime;
         }
 
         // Health
