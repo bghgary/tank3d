@@ -23,28 +23,29 @@ export interface TankProperties {
 
 export class Tank implements CollidableEntity {
     protected _node: TransformNode;
-    protected _metadata: TankMetadata;
     protected _properties: TankProperties;
-    protected readonly _health: Health;
+    protected _health: Health;
+    protected _shadow: Shadow;
 
     private readonly _bullets: Bullets;
     private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
     private _reloadTime = 0;
 
+    protected get _metadata(): TankMetadata {
+        return this._node.metadata;
+    }
+
     public constructor(displayName: string, node: TransformNode, world: World, bullets: Bullets, properties: TankProperties) {
         this.displayName = displayName;
 
         this._node = node;
-        this._metadata = node.metadata;
         this._properties = properties;
 
         this._bullets = bullets;
         this._createBulletNode = (parent) => world.sources.createPlayerTankBullet(parent);
 
-        this._health = new Health(world.sources, this._node, this._metadata.size, 0.4, this._properties.maxHealth);
-        this._health.regenSpeed = this._properties.healthRegen;
-
-        new Shadow(world.sources, this._node, this._metadata.size);
+        this._health = new Health(world.sources, this._node, this._properties.maxHealth, this._properties.healthRegen);
+        this._shadow = new Shadow(world.sources, this._node);
 
         world.collisions.register([this]);
     }

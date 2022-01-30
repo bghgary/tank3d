@@ -72,7 +72,7 @@ class BulletImpl implements Bullet, CollidableEntity {
     public constructor(owner: Entity, node: TransformNode, sources: Sources, size: number, properties: BulletProperties) {
         this.owner = owner;
         this._node = node;
-        this._shadow = new Shadow(sources, node, size);
+        this._shadow = new Shadow(sources, node);
         this.size = size;
         this.mass = this.size * this.size;
         this.damage = properties.damage;

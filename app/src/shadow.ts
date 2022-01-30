@@ -1,22 +1,24 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Sources } from "./sources";
+import { SizeMetadata, Sources } from "./sources";
 
 export class Shadow {
     private readonly _node: TransformNode;
-    private readonly _size: number;
+    private _size: number;
 
-    public constructor(sources: Sources, parent: TransformNode, size: number) {
+    public constructor(sources: Sources, parent: TransformNode) {
         this._node = sources.createShadow(parent);
-        this._size = size;
+        this._size = (parent.metadata as SizeMetadata).size;
         this.update();
+    }
+
+    public setParent(parent: TransformNode): void {
+        this._node.parent = parent;
+        this._size = (parent.metadata as SizeMetadata).size;
     }
 
     public update(): void {
         const parent = this._node.parent as TransformNode;
         this._node.position.y = (-parent.position.y - 1) / parent.scaling.y;
-        const scale = parent.position.y / parent.scaling.y * 0.5 + this._size * 2;
-        this._node.scaling.x = scale / parent.scaling.x;
-        this._node.scaling.y = scale / parent.scaling.y;
-        this._node.scaling.z = scale / parent.scaling.z;
+        this._node.scaling.setAll(parent.position.y / parent.scaling.y * 0.5 + this._size * 2);
     }
 }

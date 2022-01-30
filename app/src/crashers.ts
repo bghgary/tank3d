@@ -110,18 +110,20 @@ export class Crashers {
 
 class CrasherImpl implements Crasher, CollidableEntity {
     private readonly _node: TransformNode;
-    private readonly _metadata: CrasherMetadata;
     private readonly _health: Health;
     private readonly _shadow: Shadow;
     private readonly _bullets: Nullable<Bullets>;
     private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
     private _reloadTime = 0;
 
+    private get _metadata(): CrasherMetadata {
+        return this._node.metadata;
+    }
+
     public constructor(sources: Sources, node: TransformNode, displayName: string, health: number, damage: number, points: number, bullets: Nullable<Bullets>) {
         this._node = node;
-        this._metadata = node.metadata;
-        this._health = new Health(sources, node, this.size, 0.2, health);
-        this._shadow = new Shadow(sources, node, this.size);
+        this._health = new Health(sources, node, health);
+        this._shadow = new Shadow(sources, node);
         this.displayName = displayName;
         this.mass = this.size * this.size;
         this.damage = damage;

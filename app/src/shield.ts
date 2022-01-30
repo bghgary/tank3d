@@ -1,6 +1,6 @@
 import { TransformNode } from "@babylonjs/core";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
-import { Sources } from "./sources";
+import { Sources, TankMetadata } from "./sources";
 
 const MAX_VISIBLITY = 0.2;
 const DECAY_RATE = 5;
@@ -9,14 +9,21 @@ export class Shield {
     private _mesh: Mesh;
     private _targetVisibility = 0;
 
-    public constructor(sources: Sources, parent: TransformNode, size: number, enabled: boolean) {
+    public constructor(sources: Sources, parent: TransformNode) {
         this._mesh = sources.createShield(parent);
-        this._mesh.scaling.setAll(size);
-        this._mesh.visibility = enabled ? MAX_VISIBLITY : 0;
-        this.enabled = enabled;
+        this._mesh.scaling.setAll((parent.metadata as TankMetadata).shieldSize);
+        this._mesh.visibility = MAX_VISIBLITY;
+        this.enabled = true;
     }
 
-    public get size() { return this._mesh.scaling.x; }
+    public setParent(parent: TransformNode): void {
+        this._mesh.parent = parent;
+        this._mesh.scaling.setAll((parent.metadata as TankMetadata).shieldSize);
+    }
+
+    public get size(): number {
+        return this._mesh.scaling.x;
+    }
 
     public get enabled(): boolean {
         return this._mesh.isEnabled();

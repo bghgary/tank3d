@@ -2,7 +2,7 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Nullable } from "@babylonjs/core/types";
 import { Entity } from "./entity";
-import { Sources } from "./sources";
+import { SizeMetadata, Sources } from "./sources";
 
 const REGEN_TIME = 30;
 const REGEN_SPEED = 0.2;
@@ -10,36 +10,43 @@ const RESET_SPEED = 200;
 const DAMAGE_SPEED = 5;
 
 export class Health {
-    private readonly _node: TransformNode;
-    private readonly _size: number;
+    private _node: TransformNode;
+    private _size!: number;
     private _max: number;
+    private _regenSpeed: number;
     private _current: number;
     private _target: number;
     private _speed = 0;
     private _regenTime = 0;
     private _lastDamageEntity: Nullable<Entity> = null;
 
-    public constructor(sources: Sources, parent: TransformNode, size: number, offset: number, max: number) {
-        this._node = sources.createHealth(parent);
-        this._node.position.y = size * 0.5 + offset;
-        this._node.scaling.x = size;
+    public constructor(sources: Sources, parent: TransformNode, max: number, regenSpeed = 0) {
+        this._node = sources.createHealth();
         this._node.billboardMode = Mesh.BILLBOARDMODE_Y;
         this._node.setEnabled(false);
 
-        this._size = size;
+        this.setParent(parent);
+
         this._max = this._current = this._target = max;
+        this._regenSpeed = regenSpeed;
     }
 
-    public get max(): number {
-        return this._max;
+    public setParent(parent: TransformNode): void {
+        const size = (parent.metadata as SizeMetadata).size;
+
+        this._node.parent = parent;
+        this._node.position.y = size * 0.9;
+        this._node.scaling.x = size;
+
+        this._size = size;
     }
 
-    public set max(value: number) {
-        if (value === this._max) {
+    public setMax(max: number): void {
+        if (max === this._max) {
             return;
         }
 
-        const delta = value - this._max;
+        const delta = max - this._max;
         this._max += delta;
         if (delta > 0) {
             this._target += delta;
@@ -50,7 +57,9 @@ export class Health {
         }
     }
 
-    public regenSpeed = 0;
+    public setRegenSpeed(regenSpeed: number): void {
+        this._regenSpeed = regenSpeed;
+    }
 
     public update(deltaTime: number, onZero: (entity: Entity) => void): void {
         if (this._target < this._current) {
@@ -78,8 +87,8 @@ export class Health {
                 }
             }
 
-            if (this.regenSpeed > 0) {
-                this._target = Math.min(this._target + this.regenSpeed * deltaTime, this._max);
+            if (this._regenSpeed > 0) {
+                this._target = Math.min(this._target + this._regenSpeed * deltaTime, this._max);
             }
         }
     }

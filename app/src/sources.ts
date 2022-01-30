@@ -18,7 +18,7 @@ function createBarrel(name: string, size: number, length: number, scene: Scene):
     return barrel;
 }
 
-interface SizeMetadata {
+export interface SizeMetadata {
     readonly size: number;
 }
 
@@ -35,6 +35,7 @@ interface BarrelsMetadata {
 
 export interface ShapeMetadata extends SizeMetadata { }
 export interface CrasherMetadata extends SizeMetadata { }
+export interface BulletMetadata extends SizeMetadata { }
 export interface ShooterCrasherMetadata extends SizeMetadata, BarrelsMetadata { }
 export interface TankMetadata extends SizeMetadata, BarrelsMetadata {
     readonly shieldSize: number;
@@ -247,7 +248,12 @@ export class Sources {
     }
 
     private _createBulletSource(sources: TransformNode, name: string, segments: number, material: Material): Mesh {
+        const metadata: BulletMetadata = {
+            size: 1,
+        };
+
         const source = MeshBuilder.CreateSphere(name, { segments: segments }, this._scene);
+        source.metadata = metadata;
         source.material = material;
         source.parent = sources;
         return source;

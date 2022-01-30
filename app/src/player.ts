@@ -63,7 +63,7 @@ class PlayerTank extends Tank {
     public constructor(displayName: string, node: TransformNode, world: World, bullets: Bullets, properties: TankProperties) {
         super(displayName, node, world, bullets, properties);
 
-        this._shield = new Shield(world.sources, node, this._metadata.shieldSize, true);
+        this._shield = new Shield(world.sources, node);
     }
 
     public get size() {
@@ -90,20 +90,20 @@ class PlayerTank extends Tank {
 
     public setProperties(properties: TankProperties): void {
         this._properties = properties;
-        this._health.max = this._properties.maxHealth;
-        this._health.regenSpeed = this._properties.healthRegen;
+        this._health.setMax(this._properties.maxHealth);
+        this._health.setRegenSpeed(this._properties.healthRegen);
     }
 
     public setNode(node: TransformNode, world: World): void {
-        const shieldEnabled = this._shield.enabled;
         node.position.copyFrom(this._node.position);
         node.rotationQuaternion!.copyFrom(this._node.rotationQuaternion!);
 
-        this._node.dispose();
+        this._health.setParent(node);
+        this._shadow.setParent(node);
+        this._shield.setParent(node);
 
+        this._node.dispose();
         this._node = node;
-        this._metadata = this._node.metadata;
-        this._shield = new Shield(world.sources, node, this._metadata.shieldSize, shieldEnabled);
     }
 
     public reset(): void {

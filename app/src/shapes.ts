@@ -106,15 +106,17 @@ export class Shapes {
 
 class ShapeImpl implements Shape, CollidableEntity {
     private readonly _node: TransformNode;
-    private readonly _metadata: ShapeMetadata;
     private readonly _health: Health;
     private readonly _shadow: Shadow;
 
+    private get _metadata(): ShapeMetadata {
+        return this._node.metadata;
+    }
+
     public constructor(sources: Sources, node: TransformNode, displayName: string, health: number, damage: number, points: number) {
         this._node = node;
-        this._metadata = node.metadata;
-        this._health = new Health(sources, node, this.size, 0.2, health);
-        this._shadow = new Shadow(sources, node, this.size);
+        this._health = new Health(sources, node, health);
+        this._shadow = new Shadow(sources, node);
         this.displayName = displayName;
         this.mass = this.size * this.size;
         this.damage = damage;
