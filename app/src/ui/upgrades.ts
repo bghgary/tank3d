@@ -74,11 +74,11 @@ export class Upgrades {
             const barButton = new UpgradeBarButton(value.name, this._root, {
                 ...properties,
                 barColor: value.barColor,
-                keyCode: `Digit${value.key}`,
+                keyInfo: { code: `Digit${value.key}` },
                 keyText: value.key,
             }, world);
             barButton.text = value.displayName;
-            barButton.onPressObservable.add(() => {
+            barButton.onClickObservable.add(() => {
                 this._barButtons.get(key)!.value++;
                 this.onUpgradeObservable.notifyObservers(key);
                 this._update();

@@ -314,15 +314,15 @@ export class Player {
     }
 
     private _updateTankProperties(): void {
-        const tankProperties = this._evolutionNode.tankProperties;
+        const properties = this._evolutionNode.tankProperties;
         this._tank.setProperties({
-            bulletSpeed:    tankProperties.bulletSpeed   + this._upgrades.getUpgradeValue(UpgradeType.BulletSpeed)  * 1,
-            bulletDamage:   tankProperties.bulletDamage  + this._upgrades.getUpgradeValue(UpgradeType.BulletDamage) * 3,
-            bulletHealth:   tankProperties.bulletHealth  + this._upgrades.getUpgradeValue(UpgradeType.BulletHealth) * 5,
-            reloadTime:     tankProperties.reloadTime    - this._upgrades.getUpgradeValue(UpgradeType.Reload)       * 0.03,
-            healthRegen:    tankProperties.healthRegen   + this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)  * 1.6,
-            maxHealth:      tankProperties.maxHealth     + this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)    * 15,
-            moveSpeed:      tankProperties.moveSpeed     + this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)    * 0.5,
+            bulletSpeed:  properties.bulletSpeed  + this._upgrades.getUpgradeValue(UpgradeType.BulletSpeed)  * 1,
+            bulletDamage: properties.bulletDamage + this._upgrades.getUpgradeValue(UpgradeType.BulletDamage) * 3,
+            bulletHealth: properties.bulletHealth + this._upgrades.getUpgradeValue(UpgradeType.BulletHealth) * 5,
+            reloadTime:   properties.reloadTime   - this._upgrades.getUpgradeValue(UpgradeType.Reload)       * 0.03,
+            healthRegen:  properties.healthRegen  + this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)  * 1.6,
+            maxHealth:    properties.maxHealth    + this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)    * 15,
+            moveSpeed:    properties.moveSpeed    + this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)    * 0.5,
         });
     }
 

@@ -25,7 +25,7 @@ export class Evolutions {
         let row: Nullable<StackPanel> = null;
         let count = 0;
         for (const evolutionNode of EvolutionTree[0].children) {
-            if (!row) {
+            if (!row || row.children.length === MAX_BUTTONS_PER_ROW) {
                 row = new StackPanel("row");
                 row.isVertical = false;
                 row.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -37,22 +37,20 @@ export class Evolutions {
             ++count;
 
             const tank = evolutionNode.createTank(world.sources);
+
             const screenshotButton = new ScreenshotButton(`button`, row, tank, {
                 width: 100,
                 height: 100,
                 backgroundColor: Theme.BackgroundColor,
                 pressColor: Theme.PressColor,
                 hoverColor: Theme.HoverColor,
-                keyCode: `Digit${count}`,
+                keyInfo: { shift: true, code: `Digit${count}` },
                 keyText: `${count}`,
             }, world);
-            screenshotButton.onPressObservable.add(() => {
+
+            screenshotButton.onClickObservable.add(() => {
                 this.onEvolveObservable.notifyObservers(evolutionNode);
             });
-
-            if (row.children.length === MAX_BUTTONS_PER_ROW) {
-                row = null;
-            }
         }
     }
 

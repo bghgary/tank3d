@@ -11,8 +11,7 @@ import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { Control } from "@babylonjs/gui/2D/controls/control";
-import { isHierarchyEnabled } from "./common";
-import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
+import { registerKeyboard, isHierarchyEnabled, KeyInfo } from "./common";
 
 const CORNER_RADIUS = 15;
 
@@ -22,7 +21,7 @@ export interface ScreenshotButtonProperties {
     readonly backgroundColor: string;
     readonly pressColor: string;
     readonly hoverColor: string;
-    readonly keyCode: string;
+    readonly keyInfo: KeyInfo;
     readonly keyText: string;
 }
 
@@ -41,7 +40,7 @@ export class ScreenshotButton {
         this._root.pointerDownAnimation = () => this._root.background = properties.pressColor;
         this._root.pointerUpAnimation = () => this._root.background = properties.backgroundColor;
         this._root.onPointerClickObservable.add(() => {
-            this.onPressObservable.notifyObservers(this);
+            this.onClickObservable.notifyObservers(this);
         });
         parent.addControl(this._root);
 
@@ -61,23 +60,19 @@ export class ScreenshotButton {
             this._root.addControl(image);
         });
 
-        world.scene.onKeyboardObservable.add((data) => {
-            if ((data.event as any).repeat || world.paused) {
-                return;
+        registerKeyboard(world, properties.keyInfo, () => {
+            if (isHierarchyEnabled(this._root)) {
+                this._root.pointerDownAnimation();
             }
-
-            if (!data.event.ctrlKey && data.event.shiftKey && !data.event.altKey && data.event.code === properties.keyCode && isHierarchyEnabled(this._root)) {
-                if (data.type === KeyboardEventTypes.KEYDOWN) {
-                    this._root.pointerDownAnimation();
-                } else {
-                    this._root.pointerUpAnimation();
-                    this.onPressObservable.notifyObservers(this);
-                }
+        }, () => {
+            if (isHierarchyEnabled(this._root)) {
+                this._root.pointerUpAnimation();
+                this.onClickObservable.notifyObservers(this);
             }
         });
     }
 
-    public readonly onPressObservable = new Observable<ScreenshotButton>();
+    public readonly onClickObservable = new Observable<ScreenshotButton>();
 
     private async _captureImageAsync(node: TransformNode, width: number, height: number): Promise<string> {
         Quaternion.RotationYawPitchRollToRef(Math.PI * 0.6, 0, 0, node.rotationQuaternion!);

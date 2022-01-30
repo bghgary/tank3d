@@ -1,4 +1,3 @@
-import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { Button } from "@babylonjs/gui/2D/controls/button";
@@ -7,7 +6,7 @@ import { Control } from "@babylonjs/gui/2D/controls/control";
 import { Rectangle } from "@babylonjs/gui/2D/controls/rectangle";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { World } from "../world";
-import { isHierarchyEnabled } from "./common";
+import { isHierarchyEnabled, KeyInfo, registerKeyboard } from "./common";
 
 const CORNER_RADIUS = 15;
 const BORDER = 3;
@@ -23,7 +22,7 @@ export interface BarProperties {
 export interface BarButtonProperties extends BarProperties {
     readonly pressColor: string;
     readonly hoverColor: string;
-    readonly keyCode: string;
+    readonly keyInfo: KeyInfo;
     readonly keyText: string;
 }
 
@@ -99,7 +98,7 @@ export class BarButton extends BarBase<Button> {
         this._root.pointerDownAnimation = () => this._root.background = properties.pressColor;
         this._root.pointerUpAnimation = () => this._root.background = properties.backgroundColor;
         this._root.onPointerClickObservable.add(() => {
-            this.onPressObservable.notifyObservers(this);
+            this.onClickObservable.notifyObservers(this);
         });
 
         const key = new TextBlock("key", `[${properties.keyText}]`);
@@ -117,16 +116,18 @@ export class BarButton extends BarBase<Button> {
                 return;
             }
 
-            if (!data.event.ctrlKey && !data.event.shiftKey && !data.event.altKey && data.event.code === properties.keyCode && isHierarchyEnabled(this._root)) {
-                if (data.type === KeyboardEventTypes.KEYDOWN) {
+            registerKeyboard(world, properties.keyInfo, () => {
+                if (isHierarchyEnabled(this._root)) {
                     this._root.pointerDownAnimation();
-                } else {
-                    this._root.pointerUpAnimation();
-                    this.onPressObservable.notifyObservers(this);
                 }
-            }
+            }, () => {
+                if (isHierarchyEnabled(this._root)) {
+                    this._root.pointerUpAnimation();
+                    this.onClickObservable.notifyObservers(this);
+                }
+            });
         });
     }
 
-    public readonly onPressObservable = new Observable<BarButton>();
+    public readonly onClickObservable = new Observable<BarButton>();
 }
