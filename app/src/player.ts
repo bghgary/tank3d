@@ -17,6 +17,10 @@ import { Upgrades, UpgradeType } from "./ui/upgrades";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Shield } from "./shield";
 import { ApplyCollisionForce } from "./common";
+import { Evolutions } from "./ui/evolutions";
+import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
+import { Control } from "@babylonjs/gui/2D/controls/control";
+import { EvolutionNode, EvolutionTree } from "./evolutions";
 
 const AUTO_ROTATE_SPEED = 1;
 const CAMERA_ALPHA = -Math.PI / 2;
@@ -53,23 +57,13 @@ const KeyMapping = new Map([
     ["KeyC", Command.AutoRotate],
 ]);
 
-const BaseTankProperties: TankProperties = {
-    bulletSpeed: 5,
-    bulletDamage: 6,
-    bulletHealth: 10,
-    reloadTime: 0.5,
-    healthRegen: 0,
-    maxHealth: 100,
-    moveSpeed: 5,
-};
-
 class PlayerTank extends Tank {
-    private readonly _shield: Shield;
+    private _shield: Shield;
 
     public constructor(displayName: string, node: TransformNode, world: World, bullets: Bullets, properties: TankProperties) {
         super(displayName, node, world, bullets, properties);
 
-        this._shield = new Shield(world.sources, node, this._metadata.shieldSize);
+        this._shield = new Shield(world.sources, node, this._metadata.shieldSize, true);
     }
 
     public get size() {
@@ -78,6 +72,10 @@ class PlayerTank extends Tank {
 
     public get damage() {
         return this._shield.enabled ? 0 : super.damage;
+    }
+
+    public get shielded(): boolean {
+        return this._shield.enabled;
     }
 
     public update(deltaTime: number, x: number, z: number, shoot: boolean, worldSize: number, onDestroyed: (entity: Entity) => void): void {
@@ -90,8 +88,22 @@ class PlayerTank extends Tank {
         this._shield.update(deltaTime);
     }
 
-    public get shielded(): boolean {
-        return this._shield.enabled;
+    public setProperties(properties: TankProperties): void {
+        this._properties = properties;
+        this._health.max = this._properties.maxHealth;
+        this._health.regenSpeed = this._properties.healthRegen;
+    }
+
+    public setNode(node: TransformNode, world: World): void {
+        const shieldEnabled = this._shield.enabled;
+        node.position.copyFrom(this._node.position);
+        node.rotationQuaternion!.copyFrom(this._node.rotationQuaternion!);
+
+        this._node.dispose();
+
+        this._node = node;
+        this._metadata = this._node.metadata;
+        this._shield = new Shield(world.sources, node, this._metadata.shieldSize, shieldEnabled);
     }
 
     public reset(): void {
@@ -118,22 +130,35 @@ export class Player {
     private readonly _score: Score;
     private readonly _level: Level;
     private readonly _upgrades: Upgrades;
+    private readonly _evolutions: Evolutions;
     private readonly _camera: ArcRotateCamera;
     private readonly _commandState = new Map<Command, State>();
 
     private _autoShoot = false;
     private _autoRotate = false;
+    private _evolutionNode = EvolutionTree[0];
 
     public constructor(world: World, bullets: Bullets, shapes: Shapes, crashers: Crashers) {
         this._world = world;
 
-        const node = world.sources.createTank(undefined, "player");
-        this._tank = new PlayerTank("Player", node, world, bullets, BaseTankProperties);
+        const node = EvolutionTree[0].createTank(world.sources, "player");
+        this._tank = new PlayerTank("Player", node, world, bullets, this._evolutionNode.tankProperties);
 
-        this._score = new Score(world);
-        this._level = new Level(world, this._score);
+        const bottomPanel = new StackPanel("bottomPanel");
+        bottomPanel.adaptWidthToChildren = true;
+        bottomPanel.spacing = 10;
+        bottomPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        bottomPanel.topInPixels = -36;
+        world.uiContainer.addControl(bottomPanel);
+
+        this._score = new Score(bottomPanel);
+        this._level = new Level(bottomPanel, this._score);
+
         this._upgrades = new Upgrades(world, this._level);
-        this._upgrades.onUpgradeObservable.add(() => this._onUpgrade());
+        this._upgrades.onUpgradeObservable.add(() => this._updateTankProperties());
+
+        this._evolutions = new Evolutions(world);
+        this._evolutions.onEvolveObservable.add((evolutionNode) => this._updateTankNode(evolutionNode));
 
         this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), world.scene);
         this._camera.lowerRadiusLimit = 2;
@@ -275,7 +300,7 @@ export class Player {
     private _onTankDestroyed(entity: Entity): void {
         const message = new Message(this._world);
         message.show(`You were killed by a ${entity.displayName}.`, () => {
-            this._tank.properties = BaseTankProperties;
+            this._tank.setProperties(EvolutionTree[0].tankProperties);
             this._tank.reset();
             this._score.multiply(0.5);
             this._upgrades.reset();
@@ -288,15 +313,22 @@ export class Player {
         });
     }
 
-    private _onUpgrade(): void {
-        this._tank.properties = {
-            bulletSpeed:    BaseTankProperties.bulletSpeed   + this._upgrades.getUpgradeValue(UpgradeType.BulletSpeed)       * 1,
-            bulletDamage:   BaseTankProperties.bulletDamage  + this._upgrades.getUpgradeValue(UpgradeType.BulletDamage)      * 3,
-            bulletHealth:   BaseTankProperties.bulletHealth  + this._upgrades.getUpgradeValue(UpgradeType.BulletPenetration) * 5,
-            reloadTime:     BaseTankProperties.reloadTime    - this._upgrades.getUpgradeValue(UpgradeType.Reload)            * 0.03,
-            healthRegen:    BaseTankProperties.healthRegen   + this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)       * 1.6,
-            maxHealth:      BaseTankProperties.maxHealth     + this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)         * 15,
-            moveSpeed:      BaseTankProperties.moveSpeed     + this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)         * 0.5,
-        };
+    private _updateTankProperties(): void {
+        const tankProperties = this._evolutionNode.tankProperties;
+        this._tank.setProperties({
+            bulletSpeed:    tankProperties.bulletSpeed   + this._upgrades.getUpgradeValue(UpgradeType.BulletSpeed)  * 1,
+            bulletDamage:   tankProperties.bulletDamage  + this._upgrades.getUpgradeValue(UpgradeType.BulletDamage) * 3,
+            bulletHealth:   tankProperties.bulletHealth  + this._upgrades.getUpgradeValue(UpgradeType.BulletHealth) * 5,
+            reloadTime:     tankProperties.reloadTime    - this._upgrades.getUpgradeValue(UpgradeType.Reload)       * 0.03,
+            healthRegen:    tankProperties.healthRegen   + this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)  * 1.6,
+            maxHealth:      tankProperties.maxHealth     + this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)    * 15,
+            moveSpeed:      tankProperties.moveSpeed     + this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)    * 0.5,
+        });
+    }
+
+    private _updateTankNode(evolutionNode: EvolutionNode): void {
+        this._evolutionNode = evolutionNode;
+        this._tank.setNode(this._evolutionNode.createTank(this._world.sources, "player"), this._world);
+        this._updateTankProperties();
     }
 }

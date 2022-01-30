@@ -1,8 +1,10 @@
 import { Observable } from "@babylonjs/core/Misc/observable";
-import { Control } from "@babylonjs/gui/2D/controls/control";
 import { Bar } from "./bar";
 import { Score } from "./score";
-import { World } from "../world";
+import { Theme } from "./theme";
+import { Container } from "@babylonjs/gui/2D/controls/container";
+
+const MIN_BAR_VALUE = 0.07;
 
 // Computed using https://jsfiddle.net/z7e1k38s/6/
 const LevelScore = [
@@ -80,24 +82,19 @@ function computeLevel(score: number): number {
 
 export class Level {
     private readonly _bar: Bar;
-    private _currentValue = 0;
-    private _targetValue = 0;
+    private _currentValue = MIN_BAR_VALUE;
+    private _targetValue = MIN_BAR_VALUE;
     private _currentLevel = 1;
     private _targetLevel = 1;
 
-    public constructor(world: World, score: Score) {
-        this._bar = new Bar("level", world.uiContainer, {
+    public constructor(parent: Container, score: Score) {
+        this._bar = new Bar("level", parent, {
             maxValue: 1,
             width: 400,
             height: 28,
-            cornerRadius: 15,
-            border: 3,
-            backgroundColor: "#0F0F0F7F",
+            backgroundColor: Theme.BackgroundColor,
             barColor: "#FFFF007F",
         });
-
-        this._bar.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-        this._bar.top = -36;
 
         this._updateValue();
         this._updateText();
@@ -110,7 +107,7 @@ export class Level {
             }
 
             if (this._targetLevel < this._currentLevel) {
-                this._currentValue = 0;
+                this._currentValue = MIN_BAR_VALUE;
                 this._currentLevel = this._targetLevel;
                 this._updateText();
             }
@@ -118,7 +115,7 @@ export class Level {
             if (this._targetLevel < LevelScore.length) {
                 const min = LevelScore[this._targetLevel - 1];
                 const max = LevelScore[this._targetLevel];
-                this._targetValue = Math.min((score - min) / (max - min), 1);
+                this._targetValue = Math.min((score - min) / (max - min), 1) * (1 - MIN_BAR_VALUE) + MIN_BAR_VALUE;
             } else {
                 this._targetValue = 1;
             }
@@ -133,7 +130,7 @@ export class Level {
         if (targetBar - this._currentValue < 0.001) {
             this._currentValue = targetBar;
             if (this._currentValue === 1 && this._currentLevel < this._targetLevel) {
-                this._currentValue = 0;
+                this._currentValue = MIN_BAR_VALUE;
                 this._currentLevel = this._targetLevel;
                 this._updateText();
             }

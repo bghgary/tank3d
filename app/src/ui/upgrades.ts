@@ -5,11 +5,23 @@ import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { World } from "../world";
 import { BarButton } from "./bar";
 import { Level } from "./level";
+import { Theme } from "./theme";
+
+class UpgradeBarButton extends BarButton {
+    public get value() {
+        return super.value;
+    }
+
+    public set value(value) {
+        super.value = value;
+        this._text.color = (value < this.maxValue ? "white" : "lime");
+    }
+}
 
 export const enum UpgradeType {
     BulletSpeed,
     BulletDamage,
-    BulletPenetration,
+    BulletHealth,
     Reload,
     HealthRegen,
     MaxHealth,
@@ -36,21 +48,19 @@ export class Upgrades {
             maxValue: 9,
             width: 200,
             height: 24,
-            cornerRadius: 15,
-            border: 3,
-            backgroundColor: "#0F0F0F7F",
-            hoverColor: "#AFAFAF7F",
-            pressColor: "#7F7F7F7F",
+            backgroundColor: Theme.BackgroundColor,
+            hoverColor: Theme.HoverColor,
+            pressColor: Theme.PressColor,
         };
 
         const entries = new Map([
-            [UpgradeType.BulletSpeed,       { name: "bulletSpeed",       displayName: "Bullet Speed",       barColor: "#FF3F3F7F", key: "1" }],
-            [UpgradeType.BulletDamage,      { name: "bulletDamage",      displayName: "Bullet Damage",      barColor: "#3FFF3F7F", key: "2" }],
-            [UpgradeType.BulletPenetration, { name: "bulletPenetration", displayName: "Bullet Penetration", barColor: "#3F3FFF7F", key: "3" }],
-            [UpgradeType.Reload,            { name: "reload",            displayName: "Reload",             barColor: "#3FFFFF7F", key: "4" }],
-            [UpgradeType.HealthRegen,       { name: "healthRegen",       displayName: "Heath Regen",        barColor: "#FF3FFF7F", key: "5" }],
-            [UpgradeType.MaxHealth,         { name: "maxHealth",         displayName: "Max Health",         barColor: "#FFFF3F7F", key: "6" }],
-            [UpgradeType.MoveSpeed,         { name: "moveSpeed",         displayName: "Move Speed",         barColor: "#FF8C007F", key: "7" }],
+            [UpgradeType.BulletSpeed,  { name: "bulletSpeed",  displayName: "Bullet Speed",  barColor: "#FF3F3F7F", key: "1" }],
+            [UpgradeType.BulletDamage, { name: "bulletDamage", displayName: "Bullet Damage", barColor: "#3FFF3F7F", key: "2" }],
+            [UpgradeType.BulletHealth, { name: "bulletHealth", displayName: "Bullet Health", barColor: "#3F3FFF7F", key: "3" }],
+            [UpgradeType.Reload,       { name: "reload",       displayName: "Reload",        barColor: "#3FFFFF7F", key: "4" }],
+            [UpgradeType.HealthRegen,  { name: "healthRegen",  displayName: "Heath Regen",   barColor: "#FF3FFF7F", key: "5" }],
+            [UpgradeType.MaxHealth,    { name: "maxHealth",    displayName: "Max Health",    barColor: "#FFFF3F7F", key: "6" }],
+            [UpgradeType.MoveSpeed,    { name: "moveSpeed",    displayName: "Move Speed",    barColor: "#FF8C007F", key: "7" }],
         ]);
 
         this._available = new TextBlock("available");
@@ -120,16 +130,5 @@ export class Upgrades {
             this._root.isEnabled = false;
             this._root.alpha = 0.5;
         }
-    }
-}
-
-class UpgradeBarButton extends BarButton {
-    public get value() {
-        return super.value;
-    }
-
-    public set value(value) {
-        super.value = value;
-        this._text.color = (value < this.maxValue ? "white" : "lime");
     }
 }

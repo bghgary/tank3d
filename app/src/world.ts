@@ -35,8 +35,8 @@ export class World {
         this.size = size;
         this.scene = new Scene(engine);
         this.sources = new Sources(this);
-        this.uiContainer = AdvancedDynamicTexture.CreateFullscreenUI("Fullscreen").rootContainer;
         this.collisions = new Collisions(this);
+        this.uiContainer = AdvancedDynamicTexture.CreateFullscreenUI("Fullscreen").rootContainer;
 
         const shapes = new Shapes(this, 200);
         const bullets = new Bullets(this);
@@ -102,8 +102,8 @@ export class World {
     public readonly size: number;
     public readonly scene: Scene;
     public readonly sources: Sources;
-    public readonly uiContainer: Container;
     public readonly collisions: Collisions;
+    public readonly uiContainer: Container;
 
     public suspend(): void {
         this._suspended = true;

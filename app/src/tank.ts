@@ -22,13 +22,13 @@ export interface TankProperties {
 }
 
 export class Tank implements CollidableEntity {
-    protected readonly _node: TransformNode;
-    protected readonly _metadata: TankMetadata;
+    protected _node: TransformNode;
+    protected _metadata: TankMetadata;
+    protected _properties: TankProperties;
     protected readonly _health: Health;
 
     private readonly _bullets: Bullets;
     private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
-    private _properties: TankProperties;
     private _reloadTime = 0;
 
     public constructor(displayName: string, node: TransformNode, world: World, bullets: Bullets, properties: TankProperties) {
@@ -64,16 +64,6 @@ export class Tank implements CollidableEntity {
     public get y() { return this._node.position.z - this.size * 0.5; }
     public get width() { return this.size; }
     public get height() { return this.size; }
-
-    public get properties(): TankProperties {
-        return this._properties;
-    }
-
-    public set properties(value: TankProperties) {
-        this._properties = value;
-        this._health.max = this._properties.maxHealth;
-        this._health.regenSpeed = this._properties.healthRegen;
-    }
 
     public lookAt(targetPoint: Vector3): void {
         this._node.lookAt(targetPoint);
