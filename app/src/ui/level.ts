@@ -140,6 +140,10 @@ export class Level {
         }
     }
 
+    public get value(): number {
+        return this._targetLevel;
+    }
+
     public onChangedObservable = new Observable<number>();
 
     private _updateValue(): void {

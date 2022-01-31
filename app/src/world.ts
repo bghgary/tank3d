@@ -51,6 +51,8 @@ export class World {
         versionTextBlock.resizeToFit = true;
         versionTextBlock.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
         versionTextBlock.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        versionTextBlock.topInPixels = 4;
+        versionTextBlock.leftInPixels = -4;
         versionTextBlock.fontSizeInPixels = 12;
         versionTextBlock.color = "gray";
         versionTextBlock.shadowBlur = 4;

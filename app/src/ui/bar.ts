@@ -111,21 +111,10 @@ export class BarButton extends BarBase<Button> {
         key.shadowBlur = 4;
         this._root.addControl(key);
 
-        world.scene.onKeyboardObservable.add((data) => {
-            if ((data.event as any).repeat || world.paused) {
-                return;
+        registerKeyboard(world, properties.keyInfo, undefined, () => {
+            if (isHierarchyEnabled(this._root)) {
+                this.onClickObservable.notifyObservers(this);
             }
-
-            registerKeyboard(world, properties.keyInfo, () => {
-                if (isHierarchyEnabled(this._root)) {
-                    this._root.pointerDownAnimation();
-                }
-            }, () => {
-                if (isHierarchyEnabled(this._root)) {
-                    this._root.pointerUpAnimation();
-                    this.onClickObservable.notifyObservers(this);
-                }
-            });
         });
     }
 

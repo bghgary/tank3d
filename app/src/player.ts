@@ -94,7 +94,7 @@ class PlayerTank extends Tank {
         this._health.setRegenSpeed(this._properties.healthRegen);
     }
 
-    public setNode(node: TransformNode, world: World): void {
+    public setNode(node: TransformNode): void {
         node.position.copyFrom(this._node.position);
         node.rotationQuaternion!.copyFrom(this._node.rotationQuaternion!);
 
@@ -136,13 +136,13 @@ export class Player {
 
     private _autoShoot = false;
     private _autoRotate = false;
-    private _evolutionNode = EvolutionTree[0];
+    private _tankProperties = EvolutionTree[0].tankProperties;
 
     public constructor(world: World, bullets: Bullets, shapes: Shapes, crashers: Crashers) {
         this._world = world;
 
         const node = EvolutionTree[0].createTank(world.sources, "player");
-        this._tank = new PlayerTank("Player", node, world, bullets, this._evolutionNode.tankProperties);
+        this._tank = new PlayerTank("Player", node, world, bullets, this._tankProperties);
 
         const bottomPanel = new StackPanel("bottomPanel");
         bottomPanel.adaptWidthToChildren = true;
@@ -157,7 +157,7 @@ export class Player {
         this._upgrades = new Upgrades(world, this._level);
         this._upgrades.onUpgradeObservable.add(() => this._updateTankProperties());
 
-        this._evolutions = new Evolutions(world);
+        this._evolutions = new Evolutions(world, this._level);
         this._evolutions.onEvolveObservable.add((evolutionNode) => this._updateTankNode(evolutionNode));
 
         this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), world.scene);
@@ -300,10 +300,11 @@ export class Player {
     private _onTankDestroyed(entity: Entity): void {
         const message = new Message(this._world);
         message.show(`You were killed by a ${entity.displayName}.`, () => {
-            this._tank.setProperties(EvolutionTree[0].tankProperties);
-            this._tank.reset();
             this._score.multiply(0.5);
             this._upgrades.reset();
+            this._evolutions.reset();
+            this._updateTankNode(EvolutionTree[0]);
+            this._tank.reset();
 
             const limit = this._world.size * 0.5;
             const x = Scalar.RandomRange(-limit, limit);
@@ -314,7 +315,7 @@ export class Player {
     }
 
     private _updateTankProperties(): void {
-        const properties = this._evolutionNode.tankProperties;
+        const properties = this._tankProperties;
         this._tank.setProperties({
             bulletSpeed:  properties.bulletSpeed  + this._upgrades.getUpgradeValue(UpgradeType.BulletSpeed)  * 1,
             bulletDamage: properties.bulletDamage + this._upgrades.getUpgradeValue(UpgradeType.BulletDamage) * 3,
@@ -327,8 +328,8 @@ export class Player {
     }
 
     private _updateTankNode(evolutionNode: EvolutionNode): void {
-        this._evolutionNode = evolutionNode;
-        this._tank.setNode(this._evolutionNode.createTank(this._world.sources, "player"), this._world);
+        this._tank.setNode(evolutionNode.createTank(this._world.sources, "player"));
+        this._tankProperties = evolutionNode.tankProperties;
         this._updateTankProperties();
     }
 }

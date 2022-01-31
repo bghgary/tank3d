@@ -21,7 +21,7 @@ export interface KeyInfo {
     alt?: boolean;
 }
 
-export function registerKeyboard(world: World, keyInfo: KeyInfo, onDown: () => void, onUp: () => void): Nullable<Observer<KeyboardInfo>> {
+export function registerKeyboard(world: World, keyInfo: KeyInfo, onDown?: () => void, onUp?: () => void): Nullable<Observer<KeyboardInfo>> {
     return world.scene.onKeyboardObservable.add((data) => {
         if ((data.event as any).repeat || world.paused) {
             return;
@@ -32,9 +32,13 @@ export function registerKeyboard(world: World, keyInfo: KeyInfo, onDown: () => v
             data.event.altKey === !!keyInfo.alt &&
             data.event.code === keyInfo.code) {
             if (data.type === KeyboardEventTypes.KEYDOWN) {
-                onDown();
+                if (onDown) {
+                    onDown();
+                }
             } else {
-                onUp();
+                if (onUp) {
+                    onUp();
+                }
             }
         }
     });

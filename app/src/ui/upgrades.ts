@@ -29,12 +29,14 @@ export const enum UpgradeType {
 }
 
 export class Upgrades {
+    private readonly _level: Level;
     private readonly _root: StackPanel;
     private readonly _barButtons = new Map<UpgradeType, UpgradeBarButton>();
     private readonly _available: TextBlock;
-    private _count = 0;
 
     public constructor(world: World, level: Level) {
+        this._level = level;
+
         this._root = new StackPanel("upgrades");
         this._root.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
         this._root.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
@@ -87,17 +89,7 @@ export class Upgrades {
         }
 
         this._update();
-        level.onChangedObservable.add((level) => {
-            if (level < 20) {
-                this._count = level - 1;
-            } else if (level < 40) {
-                this._count = 20 + Math.floor((level - 20) * 0.5);
-            } else {
-                this._count = 30 + Math.floor((level - 40) * 0.25);
-            }
-
-            this._update();
-        });
+        this._level.onChangedObservable.add(() => this._update());
     }
 
     public reset(): void {
@@ -115,12 +107,18 @@ export class Upgrades {
     public onUpgradeObservable = new Observable<UpgradeType>();
 
     private _update(): void {
+        const level = this._level.value;
+        const total =
+            (level < 20) ? level - 1 :
+            (level < 40) ? 20 + Math.floor((level - 20) * 0.5) :
+            30 + Math.floor((level - 40) * 0.25);
+
         let used = 0;
         for (const barButton of this._barButtons.values()) {
             used += barButton.value;
         }
 
-        const available = this._count - used;
+        const available = total - used;
         if (available > 0) {
             this._available.text = `x${available}`;
             this._root.isEnabled = true;
