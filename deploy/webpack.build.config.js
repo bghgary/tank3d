@@ -4,7 +4,7 @@ const ChildProcess = require("child_process");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 
-const package = require('./package.json');
+const package = require('../package.json');
 const version = `${package.version}.${ChildProcess.execSync('git rev-list HEAD --count')}`.trim();
 console.log(`Building v${version}`);
 

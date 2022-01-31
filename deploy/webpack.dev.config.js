@@ -2,7 +2,7 @@ const { DefinePlugin } = require("webpack");
 const ChildProcess = require("child_process");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
-const package = require('./package.json');
+const package = require('../package.json');
 const version = `${package.version}.${ChildProcess.execSync('git rev-list HEAD --count')}`.trim();
 
 module.exports = {
