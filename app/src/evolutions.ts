@@ -2,67 +2,45 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "./sources";
 import { TankProperties } from "./tank";
 
-function multiply(properties: TankProperties, multiplier: Partial<TankProperties>): TankProperties {
-    return {
-        bulletSpeed: properties.bulletSpeed * (multiplier.bulletSpeed || 1),
-        bulletDamage: properties.bulletDamage * (multiplier.bulletDamage || 1),
-        bulletHealth: properties.bulletHealth * (multiplier.bulletHealth || 1),
-        reloadTime: properties.reloadTime * (multiplier.reloadTime || 1),
-        healthRegen: properties.healthRegen * (multiplier.healthRegen || 1),
-        maxHealth: properties.maxHealth * (multiplier.maxHealth || 1),
-        moveSpeed: properties.moveSpeed * (multiplier.moveSpeed || 1),
-    };
-}
-
-const BaseTankProperties = {
-    bulletSpeed: 5,
-    bulletDamage: 6,
-    bulletHealth: 10,
-    reloadTime: 0.5,
-    healthRegen: 0,
-    maxHealth: 100,
-    moveSpeed: 5,
-};
-
-const SniperTankProperties = multiply(BaseTankProperties, {
+const SniperTankMultiplier: Partial<TankProperties> = {
     bulletSpeed: 2,
     reloadTime: 2,
-});
+};
 
-const TwinTankProperties = BaseTankProperties;
+const TwinTankMultiplier: Partial<TankProperties> = {};
 
-const FlankGuardTankProperties = BaseTankProperties;
+const FlankGuardTankMultiplier: Partial<TankProperties> = {};
 
-const PounderTankProperties = multiply(BaseTankProperties, {
+const PounderTankMultiplier: Partial<TankProperties> = {
     bulletDamage: 2,
     bulletHealth: 2,
     reloadTime: 2,
-});
+};
 
 export interface EvolutionNode {
     readonly createTank: (sources: Sources, name?: string) => TransformNode;
-    readonly tankProperties: TankProperties;
+    readonly tankMultiplier: Partial<TankProperties>;
     readonly children: Array<EvolutionNode>;
 }
 
 export const EvolutionTree: Array<EvolutionNode> = [{
     createTank: (sources, name) => sources.createTank(undefined, name),
-    tankProperties: BaseTankProperties,
+    tankMultiplier: {},
     children: [{
         createTank: (sources, name) => sources.createSniperTank(undefined, name),
-        tankProperties: SniperTankProperties,
+        tankMultiplier: SniperTankMultiplier,
         children: []
     }, {
         createTank: (sources, name) => sources.createTwinTank(undefined, name),
-        tankProperties: TwinTankProperties,
+        tankMultiplier: TwinTankMultiplier,
         children: []
     }, {
         createTank: (sources, name) => sources.createFlankGuardTank(undefined, name),
-        tankProperties: FlankGuardTankProperties,
+        tankMultiplier: FlankGuardTankMultiplier,
         children: []
     }, {
         createTank: (sources, name) => sources.createPounderTank(undefined, name),
-        tankProperties: PounderTankProperties,
+        tankMultiplier: PounderTankMultiplier,
         children: []
     }],
 }];

@@ -57,6 +57,16 @@ const KeyMapping = new Map([
     ["KeyC", Command.AutoRotate],
 ]);
 
+const BaseTankProperties: TankProperties = {
+    bulletSpeed: 5,
+    bulletDamage: 6,
+    bulletHealth: 10,
+    reloadTime: 0.5,
+    healthRegen: 0,
+    maxHealth: 100,
+    moveSpeed: 5,
+};
+
 class PlayerTank extends Tank {
     private _shield: Shield;
 
@@ -136,13 +146,13 @@ export class Player {
 
     private _autoShoot = false;
     private _autoRotate = false;
-    private _tankProperties = EvolutionTree[0].tankProperties;
+    private _tankMultiplier = EvolutionTree[0].tankMultiplier;
 
     public constructor(world: World, bullets: Bullets, shapes: Shapes, crashers: Crashers) {
         this._world = world;
 
         const node = EvolutionTree[0].createTank(world.sources, "player");
-        this._tank = new PlayerTank("Player", node, world, bullets, this._tankProperties);
+        this._tank = new PlayerTank("Player", node, world, bullets, BaseTankProperties);
 
         const bottomPanel = new StackPanel("bottomPanel");
         bottomPanel.adaptWidthToChildren = true;
@@ -314,22 +324,25 @@ export class Player {
         });
     }
 
+    private _computeTankProperties(): TankProperties {
+        return {
+            bulletSpeed:  (BaseTankProperties.bulletSpeed  + this._upgrades.getUpgradeValue(UpgradeType.BulletSpeed)  * 1    ) * (this._tankMultiplier.bulletSpeed  || 1),
+            bulletDamage: (BaseTankProperties.bulletDamage + this._upgrades.getUpgradeValue(UpgradeType.BulletDamage) * 3    ) * (this._tankMultiplier.bulletDamage || 1),
+            bulletHealth: (BaseTankProperties.bulletHealth + this._upgrades.getUpgradeValue(UpgradeType.BulletHealth) * 5    ) * (this._tankMultiplier.bulletHealth || 1),
+            reloadTime:   (BaseTankProperties.reloadTime   - this._upgrades.getUpgradeValue(UpgradeType.ReloadTime)   * 0.03 ) * (this._tankMultiplier.reloadTime   || 1),
+            healthRegen:  (BaseTankProperties.healthRegen  + this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)  * 1.6  ) * (this._tankMultiplier.healthRegen  || 1),
+            maxHealth:    (BaseTankProperties.maxHealth    + this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)    * 15   ) * (this._tankMultiplier.maxHealth    || 1),
+            moveSpeed:    (BaseTankProperties.moveSpeed    + this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)    * 0.5  ) * (this._tankMultiplier.moveSpeed    || 1),
+        };
+    }
+
     private _updateTankProperties(): void {
-        const properties = this._tankProperties;
-        this._tank.setProperties({
-            bulletSpeed:  properties.bulletSpeed  + this._upgrades.getUpgradeValue(UpgradeType.BulletSpeed)  * 1,
-            bulletDamage: properties.bulletDamage + this._upgrades.getUpgradeValue(UpgradeType.BulletDamage) * 3,
-            bulletHealth: properties.bulletHealth + this._upgrades.getUpgradeValue(UpgradeType.BulletHealth) * 5,
-            reloadTime:   properties.reloadTime   - this._upgrades.getUpgradeValue(UpgradeType.Reload)       * 0.03,
-            healthRegen:  properties.healthRegen  + this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)  * 1.6,
-            maxHealth:    properties.maxHealth    + this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)    * 15,
-            moveSpeed:    properties.moveSpeed    + this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)    * 0.5,
-        });
+        this._tank.setProperties(this._computeTankProperties());
     }
 
     private _updateTankNode(evolutionNode: EvolutionNode): void {
         this._tank.setNode(evolutionNode.createTank(this._world.sources, "player"));
-        this._tankProperties = evolutionNode.tankProperties;
+        this._tankMultiplier = evolutionNode.tankMultiplier;
         this._updateTankProperties();
     }
 }
