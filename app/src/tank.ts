@@ -19,6 +19,7 @@ export interface TankProperties {
     readonly healthRegen: number;
     readonly maxHealth: number;
     readonly moveSpeed: number;
+    readonly bodyDamage: number;
 }
 
 export class Tank implements CollidableEntity {
@@ -55,7 +56,7 @@ export class Tank implements CollidableEntity {
     public readonly type = EntityType.Tank;
     public get size() { return this._metadata.size; }
     public readonly mass = 2;
-    public get damage() { return 30; } // TODO
+    public get damage() { return this._properties.bodyDamage; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();

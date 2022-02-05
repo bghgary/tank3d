@@ -65,6 +65,7 @@ const BaseTankProperties: TankProperties = {
     healthRegen: 0,
     maxHealth: 100,
     moveSpeed: 5,
+    bodyDamage: 30,
 };
 
 class PlayerTank extends Tank {
@@ -333,6 +334,7 @@ export class Player {
             healthRegen:  (BaseTankProperties.healthRegen  + this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)  * 1.6  ) * (this._tankMultiplier.healthRegen  || 1),
             maxHealth:    (BaseTankProperties.maxHealth    + this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)    * 15   ) * (this._tankMultiplier.maxHealth    || 1),
             moveSpeed:    (BaseTankProperties.moveSpeed    + this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)    * 0.5  ) * (this._tankMultiplier.moveSpeed    || 1),
+            bodyDamage:   (BaseTankProperties.bodyDamage   + this._upgrades.getUpgradeValue(UpgradeType.BodyDamage)   * 5    ) * (this._tankMultiplier.bodyDamage   || 1),
         };
     }
 

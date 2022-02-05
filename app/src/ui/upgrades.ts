@@ -26,6 +26,7 @@ export const enum UpgradeType {
     HealthRegen,
     MaxHealth,
     MoveSpeed,
+    BodyDamage,
 }
 
 export class Upgrades {
@@ -63,6 +64,7 @@ export class Upgrades {
             [UpgradeType.HealthRegen,  { name: "healthRegen",  displayName: "Heath Regen",   barColor: "#FF3FFF7F", key: "5" }],
             [UpgradeType.MaxHealth,    { name: "maxHealth",    displayName: "Max Health",    barColor: "#FFFF3F7F", key: "6" }],
             [UpgradeType.MoveSpeed,    { name: "moveSpeed",    displayName: "Move Speed",    barColor: "#FF8C007F", key: "7" }],
+            [UpgradeType.BodyDamage,   { name: "bodyDamage",   displayName: "Body Damage",   barColor: "#8C008C7F", key: "8" }],
         ]);
 
         this._available = new TextBlock("available");
