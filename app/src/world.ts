@@ -16,7 +16,7 @@ import { CreateGridMaterial } from "./materials/gridMaterial";
 import { Container } from "@babylonjs/gui/2D/controls/container";
 import { Control, TextBlock } from "@babylonjs/gui";
 
-declare const VERSION: number;
+declare const VERSION: string;
 declare const DEV_BUILD: boolean;
 
 function now(): number {
@@ -47,7 +47,7 @@ export class World {
 
         new HemisphericLight("light", new Vector3(0.1, 1, -0.5), this.scene);
 
-        const versionTextBlock = new TextBlock("version", `v${VERSION}`);
+        const versionTextBlock = new TextBlock("version", VERSION);
         versionTextBlock.resizeToFit = true;
         versionTextBlock.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
         versionTextBlock.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
