@@ -1,10 +1,7 @@
+import { IDisposable } from "@babylonjs/core/scene";
 import Quadtree from "@timohausmann/quadtree-js";
 import { Entity } from "./entity";
 import { World } from "./world";
-
-export interface CollisionRegisterToken {
-    dispose(): void;
-}
 
 export interface CollidableEntity extends Entity, Quadtree.Rect {
     getCollisionRepeatRate(other: Entity): number;
@@ -23,7 +20,7 @@ export class Collisions {
         this._quadtree = new Quadtree({ x: -halfSize, y: -halfSize, width: size, height: size });
     }
 
-    public register(entities: Iterable<CollidableEntity>): CollisionRegisterToken {
+    public register(entities: Iterable<CollidableEntity>): IDisposable {
         const registerToken = this._registerToken++;
         this._entries.set(registerToken, { entities: entities });
         return {

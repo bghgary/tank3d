@@ -10,7 +10,7 @@ const RESET_SPEED = 200;
 const DAMAGE_SPEED = 5;
 
 export class Health {
-    private _node: TransformNode;
+    private readonly _node: TransformNode;
     private _size!: number;
     private _max: number;
     private _regenSpeed: number;

@@ -68,7 +68,7 @@ export class Sources {
         readonly smallCrasher: Mesh;
         readonly bigCrasher: Mesh;
         readonly shooterCrasher: TransformNode;
-        readonly tank: TransformNode;
+        readonly baseTank: TransformNode;
         readonly sniperTank: TransformNode;
         readonly twinTank: TransformNode;
         readonly flankGuardTank: TransformNode;
@@ -105,7 +105,7 @@ export class Sources {
             smallCrasher: this._createSmallCrasherSource(sources),
             bigCrasher: this._createBigCrasherSource(sources),
             shooterCrasher: this._createShooterCrasherSource(sources),
-            tank: this._createTankSource(sources),
+            baseTank: this._createTankSource(sources),
             sniperTank: this._createSniperTankSource(sources),
             twinTank: this._createTwinTankSource(sources),
             flankGuardTank: this._createFlankGuardTankSource(sources),
@@ -161,8 +161,8 @@ export class Sources {
         return this._instantiateHeirarchy(this._meshes.shooterCrasher, name || "shooter", parent);
     }
 
-    public createTank(parent?: TransformNode, name?: string): TransformNode {
-        return this._instantiateHeirarchy(this._meshes.tank, name || "tank", parent);
+    public createBaseTank(parent?: TransformNode, name?: string): TransformNode {
+        return this._instantiateHeirarchy(this._meshes.baseTank, name || "base", parent);
     }
 
     public createSniperTank(parent?: TransformNode, name?: string): TransformNode {

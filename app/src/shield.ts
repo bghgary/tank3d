@@ -6,7 +6,7 @@ const MAX_VISIBLITY = 0.2;
 const DECAY_RATE = 5;
 
 export class Shield {
-    private _mesh: Mesh;
+    private readonly _mesh: Mesh;
     private _targetVisibility = 0;
 
     public constructor(sources: Sources, parent: TransformNode) {
@@ -39,10 +39,12 @@ export class Shield {
     }
 
     public update(deltaTime: number): void {
+        if (this._mesh.isEnabled()) {
         const decayFactor = Math.exp(-deltaTime * DECAY_RATE);
         this._mesh.visibility = this._targetVisibility - (this._targetVisibility - this._mesh.visibility) * decayFactor;
         if (this._targetVisibility === 0 && this._mesh.visibility < 0.001) {
             this._mesh.setEnabled(false);
+            }
         }
     }
 }

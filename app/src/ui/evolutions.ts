@@ -8,8 +8,7 @@ import { Level } from "./level";
 import { ImageButton } from "./image";
 import { Theme } from "./theme";
 import { captureScreenshotAsync } from "../screenshot";
-import { Sources } from "../sources";
-import { CreateTorusKnotVertexData } from "@babylonjs/core";
+import { Quaternion } from "@babylonjs/core/Maths/math.vector";
 
 const BUTTON_SIZE = 100;
 const MAX_BUTTONS_PER_ROW = 3;
@@ -117,7 +116,9 @@ export class Evolutions {
     }
 
     private _initScreenshotCache(evolutionNode: EvolutionNode): void {
-        const tank = evolutionNode.createTank(this._world.sources);
+        const tank = evolutionNode.Tank.CreateNode(this._world.sources);
+        Quaternion.RotationYawPitchRollToRef(Math.PI * 0.6, 0, 0, tank.rotationQuaternion!);
+
         const size = BUTTON_SIZE * 2;
         this._screenshotCache.set(evolutionNode, captureScreenshotAsync(tank, size, size).then((url) => {
             tank.dispose();
