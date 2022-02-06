@@ -248,6 +248,8 @@ export class Player {
             this._evolutions.reset();
             this._updateTank(EvolutionRootNode);
             this._tank.reset();
+            this._autoRotate = false;
+            this._autoShoot = false;
 
             const limit = this._world.size * 0.5;
             const x = Scalar.RandomRange(-limit, limit);
