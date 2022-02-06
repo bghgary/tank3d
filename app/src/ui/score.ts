@@ -1,6 +1,5 @@
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { Container } from "@babylonjs/gui/2D/controls/container";
-import { Control } from "@babylonjs/gui/2D/controls/control";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 
 export class Score {

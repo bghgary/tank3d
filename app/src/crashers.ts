@@ -93,7 +93,7 @@ export class Crashers {
             const z1 = Math.random() * clumpSize;
             const rotation1 = Math.random() * Math.PI * 0.5;
             const n = Math.random();
-            const entry = entries[n < 0.6 ? 0 : n < 0.9 ? 1 : 2];
+            const entry = entries[n < 0.6 ? 0 : n < 0.9 ? 1 : 2]!;
             const bullets = entry.canShoot ? this._bullets : null;
             create(entry.createNode(), x + x1, z + z1, rotation + rotation1, entry.displayName, entry.health, entry.damage, entry.points, bullets);
         }

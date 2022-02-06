@@ -2,7 +2,7 @@ import { Observable } from "@babylonjs/core/Misc/observable";
 import { Nullable } from "@babylonjs/core/types";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
-import { EvolutionNode, EvolutionTree } from "../evolutions";
+import { EvolutionNode, EvolutionRootNode } from "../evolutions";
 import { World } from "../world";
 import { Level } from "./level";
 import { ImageButton } from "./image";
@@ -25,9 +25,9 @@ export class Evolutions {
         this._world = world;
         this._level = level;
 
-        this._initScreenshotCache(EvolutionTree[0]);
+        this._initScreenshotCache(EvolutionRootNode);
 
-        this._evolutionNode = EvolutionTree[0];
+        this._evolutionNode = EvolutionRootNode;
         this._evolutionDepth = 0;
 
         this._level.onChangedObservable.add(() => {
@@ -41,7 +41,7 @@ export class Evolutions {
             this._root = null;
         }
 
-        this._evolutionNode = EvolutionTree[0];
+        this._evolutionNode = EvolutionRootNode;
         this._evolutionDepth = 0;
         this._update();
     }
@@ -74,7 +74,7 @@ export class Evolutions {
 
             let row: Nullable<StackPanel> = null;
             for (let index = 0; index < this._evolutionNode.children.length; ++index) {
-                const evolutionNode = this._evolutionNode.children[index];
+                const evolutionNode = this._evolutionNode.children[index]!;
 
                 if (!row || row.children.length === MAX_BUTTONS_PER_ROW) {
                     row = new StackPanel("row");
@@ -85,7 +85,7 @@ export class Evolutions {
                     this._root.addControl(row);
                 }
 
-                const screenshotButton = new ImageButton(`button`, row, urls[index], {
+                const screenshotButton = new ImageButton(`button`, row, urls[index]!, {
                     width: BUTTON_SIZE,
                     height: BUTTON_SIZE,
                     backgroundColor: Theme.BackgroundColor,

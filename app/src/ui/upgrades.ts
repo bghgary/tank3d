@@ -8,11 +8,11 @@ import { Level } from "./level";
 import { Theme } from "./theme";
 
 class UpgradeBarButton extends BarButton {
-    public get value() {
+    public override get value() {
         return super.value;
     }
 
-    public set value(value) {
+    public override set value(value) {
         super.value = value;
         this._text.color = (value < this.maxValue ? "white" : "lime");
     }

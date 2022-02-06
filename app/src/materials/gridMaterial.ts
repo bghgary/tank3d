@@ -2,7 +2,7 @@ import { Effect } from "@babylonjs/core/Materials/effect";
 import { ShaderMaterial } from "@babylonjs/core/Materials/shaderMaterial";
 import { Scene } from "@babylonjs/core/scene";
 
-Effect.ShadersStore.gridVertexShader = `precision highp float;
+Effect.ShadersStore["gridVertexShader"] = `precision highp float;
 attribute vec3 position;
 uniform mat4 worldViewProjection;
 varying vec3 vPosition;
@@ -12,7 +12,7 @@ void main() {
     gl_Position = worldViewProjection * vec4(position, 1.);
 }`;
 
-Effect.ShadersStore.gridPixelShader = `precision highp float;
+Effect.ShadersStore["gridPixelShader"] = `precision highp float;
 uniform float halfSize;
 varying vec3 vPosition;
 

@@ -72,7 +72,7 @@ const LevelScore = [
 
 function computeLevel(score: number): number {
     for (let level = 1; level < LevelScore.length; ++level) {
-        if (score < LevelScore[level]) {
+        if (score < LevelScore[level]!) {
             return level;
         }
     }
@@ -113,8 +113,8 @@ export class Level {
             }
 
             if (this._targetLevel < LevelScore.length) {
-                const min = LevelScore[this._targetLevel - 1];
-                const max = LevelScore[this._targetLevel];
+                const min = LevelScore[this._targetLevel - 1]!;
+                const max = LevelScore[this._targetLevel]!;
                 this._targetValue = Math.min((score - min) / (max - min), 1) * (1 - MIN_BAR_VALUE) + MIN_BAR_VALUE;
             } else {
                 this._targetValue = 1;

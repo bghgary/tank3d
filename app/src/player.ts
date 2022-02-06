@@ -9,16 +9,15 @@ import { Crashers } from "./crashers";
 import { Entity, EntityType } from "./entity";
 import { Message } from "./message";
 import { Shapes } from "./shapes";
-import { Tank, TankProperties } from "./tank";
+import { Tank } from "./tank";
 import { World } from "./world";
 import { Level } from "./ui/level";
 import { Score } from "./ui/score";
 import { Upgrades, UpgradeType } from "./ui/upgrades";
-import { ApplyCollisionForce } from "./common";
 import { Evolutions } from "./ui/evolutions";
 import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
 import { Control } from "@babylonjs/gui/2D/controls/control";
-import { EvolutionNode, EvolutionTree } from "./evolutions";
+import { EvolutionNode, EvolutionRootNode } from "./evolutions";
 
 const AUTO_ROTATE_SPEED = 1;
 const CAMERA_ALPHA = -Math.PI / 2;
@@ -73,7 +72,7 @@ export class Player {
         this._world = world;
         this._bullets = bullets;
 
-        this._tank = new EvolutionTree[0].Tank(world, bullets);
+        this._tank = new EvolutionRootNode.Tank(world, bullets);
 
         const bottomPanel = new StackPanel("bottomPanel");
         bottomPanel.adaptWidthToChildren = true;
@@ -93,8 +92,6 @@ export class Player {
 
         this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), world.scene);
         this._camera.lowerRadiusLimit = 2;
-
-        this._score.add(10000);
 
         world.scene.onKeyboardObservable.add((data) => {
             if ((data.event as any).repeat || world.paused) {
@@ -236,7 +233,7 @@ export class Player {
             this._score.multiply(0.5);
             this._upgrades.reset();
             this._evolutions.reset();
-            this._updateTank(EvolutionTree[0]);
+            this._updateTank(EvolutionRootNode);
             this._tank.reset();
 
             const limit = this._world.size * 0.5;

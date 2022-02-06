@@ -24,14 +24,11 @@ function now(): number {
 }
 
 export class World {
-    private readonly _engine: Engine;
     private _previousTime = 0;
     private _suspended = false;
     private _paused = false;
 
     public constructor(engine: Engine, size = 100) {
-        this._engine = engine;
-
         this.size = size;
         this.scene = new Scene(engine);
         this.sources = new Sources(this);

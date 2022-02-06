@@ -20,7 +20,7 @@ export interface EvolutionNode {
     readonly children: Array<EvolutionNode>;
 }
 
-export const EvolutionTree: Array<EvolutionNode> = [{
+export const EvolutionRootNode: EvolutionNode = {
     Tank: BaseTank,
     children: [{
         Tank: SniperTank,
@@ -35,4 +35,4 @@ export const EvolutionTree: Array<EvolutionNode> = [{
         Tank: PounderTank,
         children: []
     }],
-}];
+};

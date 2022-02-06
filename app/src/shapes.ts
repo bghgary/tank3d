@@ -91,7 +91,7 @@ export class Shapes {
         ];
 
         const n = Math.random();
-        const entry = entries[n < 0.6 ? 0 : n < 0.95 ? 1 : n < 0.99 ? 2 : 3];
+        const entry = entries[n < 0.6 ? 0 : n < 0.95 ? 1 : n < 0.99 ? 2 : 3]!;
         return create(entry.createNode(), entry.displayName, entry.health, entry.damage, entry.points);
     }
 
