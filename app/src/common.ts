@@ -41,8 +41,8 @@ export function ApplyGravity(deltaTime: number, position: Vector3, velocity: Vec
     return false;
 }
 
-export function ApplyWallBounce(position: Vector3, velocity: Vector3, size: number, worldSize: number): void {
-    const limit = (worldSize - size) * 0.5;
+export function ApplyWallBounce(position: Vector3, velocity: Vector3, size: number, wallLimit: number): void {
+    const limit = (wallLimit - size) * 0.5;
 
     if (position.x > limit) {
         position.x = limit;
@@ -61,8 +61,8 @@ export function ApplyWallBounce(position: Vector3, velocity: Vector3, size: numb
     }
 }
 
-export function ApplyWallClamp(position: Vector3, size: number, worldSize: number): void {
-    const limit = (worldSize - size) * 0.5;
+export function ApplyWallClamp(position: Vector3, size: number, wallLimit: number): void {
+    const limit = (wallLimit - size) * 0.5;
 
     if (position.x > limit) {
         position.x = limit;

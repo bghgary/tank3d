@@ -1,9 +1,8 @@
-import { TransformNode } from "@babylonjs/core";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources, TankMetadata } from "./sources";
 
 const MAX_VISIBLITY = 0.2;
-const DECAY_RATE = 5;
 
 export class Shield {
     private readonly _mesh: Mesh;
@@ -40,7 +39,7 @@ export class Shield {
 
     public update(deltaTime: number): void {
         if (this._mesh.isEnabled()) {
-        const decayFactor = Math.exp(-deltaTime * DECAY_RATE);
+        const decayFactor = Math.exp(-deltaTime * 5);
         this._mesh.visibility = this._targetVisibility - (this._targetVisibility - this._mesh.visibility) * decayFactor;
         if (this._targetVisibility === 0 && this._mesh.visibility < 0.001) {
             this._mesh.setEnabled(false);

@@ -14,9 +14,9 @@ export interface Bullet extends Entity {
 }
 
 export interface BulletProperties {
-    speed: number;
-    damage: number;
-    health: number;
+    readonly speed: number;
+    readonly damage: number;
+    readonly health: number;
 }
 
 export class Bullets {

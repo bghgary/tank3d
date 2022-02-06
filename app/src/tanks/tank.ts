@@ -1,17 +1,15 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
-import { Bullet, Bullets } from "./bullets";
-import { CollidableEntity } from "./collisions";
-import { ApplyCollisionForce, ApplyWallClamp } from "./common";
-import { Entity, EntityType } from "./entity";
-import { Health } from "./health";
-import { Shadow } from "./shadow";
-import { Shield } from "./shield";
-import { TankMetadata } from "./sources";
-import { World } from "./world";
-
-const KNOCK_BACK = 5;
+import { Bullet } from "../bullets";
+import { CollidableEntity } from "../collisions";
+import { ApplyCollisionForce, ApplyWallClamp } from "../common";
+import { Entity, EntityType } from "../entity";
+import { Health } from "../health";
+import { Shadow } from "../shadow";
+import { Shield } from "../shield";
+import { TankMetadata } from "../sources";
+import { World } from "../world";
 
 export interface TankProperties {
     readonly bulletSpeed: number;
@@ -63,8 +61,6 @@ function multiply(properties: TankProperties, value: Partial<TankProperties>): T
 
 export class Tank implements CollidableEntity {
     private readonly _multiplier: Partial<TankProperties>;
-    private readonly _bullets: Bullets;
-    private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
     private readonly _collisionToken: IDisposable;
 
     protected readonly _node: TransformNode;
@@ -74,21 +70,16 @@ export class Tank implements CollidableEntity {
 
     protected _properties: TankProperties;
 
-    private _reloadTime = 0;
-
     protected get _metadata(): TankMetadata {
         return this._node.metadata;
     }
 
-    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<TankProperties>, world: World, bullets: Bullets, previousTank?: Tank) {
+    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<TankProperties>, world: World, previousTank?: Tank) {
         this.displayName = displayName;
 
         this._node = node;
         this._multiplier = multiplier;
         this._properties = multiply(BaseProperties, multiplier);
-
-        this._bullets = bullets;
-        this._createBulletNode = (parent) => world.sources.createPlayerTankBullet(parent);
 
         if (previousTank) {
             this._node.position.copyFrom(previousTank._node.position);
@@ -146,56 +137,35 @@ export class Tank implements CollidableEntity {
         this._node.addRotation(0, value, 0);
     }
 
-    public update(deltaTime: number, x: number, z: number, shoot: boolean, worldSize: number, onDestroyed: (entity: Entity) => void): void {
-        // Movement
+    public move(deltaTime: number, x: number, z: number, limit: number): void {
         const decayFactor = Math.exp(-deltaTime * 2);
+
         if (x !== 0 || z !== 0) {
             const moveFactor = this._properties.moveSpeed / Math.sqrt(x * x + z * z);
             x *= moveFactor;
             z *= moveFactor;
+
             this.velocity.x = x - (x - this.velocity.x) * decayFactor;
             this.velocity.z = z - (z - this.velocity.z) * decayFactor;
+
+            this._shield.enabled = false;
         } else {
             this.velocity.x *= decayFactor;
             this.velocity.z *= decayFactor;
         }
 
-        // Position
         this._node.position.x += this.velocity.x * deltaTime;
         this._node.position.z += this.velocity.z * deltaTime;
-        ApplyWallClamp(this._node.position, this.size, worldSize);
+        ApplyWallClamp(this._node.position, this.size, limit);
+    }
 
-        // Shield
-        if (x !== 0 || z !== 0 || shoot) {
-            this._shield.enabled = false;
-        }
+    public shoot(): void {
+        this._shield.enabled = false;
+    }
+
+    public update(deltaTime: number, onDestroyed: (entity: Entity) => void): void {
         this._shield.update(deltaTime);
 
-        // Bullets
-        this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
-        if (shoot && this._reloadTime === 0) {
-            const bulletProperties = {
-                speed: this._properties.bulletSpeed,
-                damage: this._properties.bulletDamage,
-                health: this._properties.bulletHealth,
-            };
-
-            let knockBackX = 0, knockBackZ = 0;
-            for (const barrelMetadata of this._metadata.barrels) {
-                const bullet = this._bullets.add(this, barrelMetadata, this._createBulletNode, bulletProperties);
-
-                const knockBackFactor = deltaTime * KNOCK_BACK;
-                knockBackX += bullet.velocity.x * knockBackFactor;
-                knockBackZ += bullet.velocity.z * knockBackFactor;
-            }
-
-            this.velocity.x -= knockBackX;
-            this.velocity.z -= knockBackZ;
-
-            this._reloadTime = this._properties.reloadTime;
-        }
-
-        // Health
         this._health.update(deltaTime, (entity) => {
             this._node.setEnabled(false);
             onDestroyed(entity);

@@ -9,7 +9,7 @@ import { Crashers } from "./crashers";
 import { Entity, EntityType } from "./entity";
 import { Message } from "./message";
 import { Shapes } from "./shapes";
-import { Tank } from "./tank";
+import { Tank } from "./tanks/tank";
 import { World } from "./world";
 import { Level } from "./ui/level";
 import { Score } from "./ui/score";
@@ -18,6 +18,8 @@ import { Evolutions } from "./ui/evolutions";
 import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { EvolutionNode, EvolutionRootNode } from "./evolutions";
+
+declare const DEV_BUILD: boolean;
 
 const AUTO_ROTATE_SPEED = 1;
 const CAMERA_ALPHA = -Math.PI / 2;
@@ -96,6 +98,10 @@ export class Player {
         world.scene.onKeyboardObservable.add((data) => {
             if ((data.event as any).repeat || world.paused) {
                 return;
+            }
+
+            if (DEV_BUILD && data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey && data.event.code === "KeyG") {
+                this._score.add(10000);
             }
 
             const command = KeyMapping.get(data.event.code);
@@ -210,8 +216,15 @@ export class Player {
 
         const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
         const z = (this._commandState.get(Command.Up) ? 1 : 0) + (this._commandState.get(Command.Down) ? -1 : 0);
-        const shoot = (this._autoShoot || !!this._commandState.get(Command.Shoot)) && this.inBounds;
-        this._tank.update(deltaTime, x, z, shoot, this._world.size + 10, this._onTankDestroyed.bind(this));
+        this._tank.move(deltaTime, x, z, this._world.size + 10);
+
+        if ((this._autoShoot || !!this._commandState.get(Command.Shoot)) && this.inBounds) {
+            this._tank.shoot();
+        }
+
+        this._tank.update(deltaTime, (entity) => {
+            this._onTankDestroyed(entity);
+        });
 
         this._score.update(deltaTime);
         this._level.update(deltaTime);

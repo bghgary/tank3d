@@ -27,6 +27,7 @@ export interface BarrelMetadata {
     readonly length: number;
     readonly offset: Vector3;
     readonly forward: Vector3;
+    readonly mesh: string;
 }
 
 interface BarrelsMetadata {
@@ -59,7 +60,7 @@ export class Sources {
         readonly shield: Mesh;
         readonly health: Mesh;
         readonly shadow: Mesh;
-        readonly playerTankBullet: Mesh;
+        readonly tankBullet: Mesh;
         readonly shooterCrasherBullet: Mesh;
         readonly cube: Mesh;
         readonly tetrahedron: Mesh;
@@ -96,7 +97,7 @@ export class Sources {
             shield: this._createShieldSource(sources),
             health: this._createHealthSource(sources),
             shadow: this._createShadowSource(sources),
-            playerTankBullet: this._createBulletSource(sources, "bulletPlayerTank", 8, this._materials.blue),
+            tankBullet: this._createBulletSource(sources, "bulletTank", 8, this._materials.blue),
             shooterCrasherBullet: this._createBulletSource(sources, "bulletShooterCrasher", 4, this._materials.pink),
             cube: this._createCubeSource(sources),
             tetrahedron: this._createTetrahedronSource(sources),
@@ -125,8 +126,8 @@ export class Sources {
         return this._createInstance(this._meshes.shadow, name || "shadow", parent);
     }
 
-    public createPlayerTankBullet(parent?: TransformNode, name?: string): TransformNode {
-        return this._createInstance(this._meshes.playerTankBullet, name || "playerTank", parent);
+    public createTankBullet(parent?: TransformNode, name?: string): TransformNode {
+        return this._createInstance(this._meshes.tankBullet, name || "tank", parent);
     }
 
     public createShooterCrasherBullet(parent?: TransformNode, name?: string): TransformNode {
@@ -354,6 +355,7 @@ export class Sources {
                 length: barrelLength,
                 offset: new Vector3(0, 0, 0),
                 forward: new Vector3(0, 0, 1),
+                mesh: "barrel",
             }],
         };
 
@@ -386,6 +388,7 @@ export class Sources {
                 length: barrelLength,
                 offset: new Vector3(0, 0, 0),
                 forward: new Vector3(0, 0, 1),
+                mesh: "barrel",
             }],
         };
 
@@ -416,6 +419,7 @@ export class Sources {
                 length: barrelLength,
                 offset: new Vector3(0, 0, 0),
                 forward: new Vector3(0, 0, 1),
+                mesh: "barrel",
             }],
         };
 
@@ -447,11 +451,13 @@ export class Sources {
                 length: barrelLength,
                 offset: new Vector3(-barrelOffset, 0, 0),
                 forward: new Vector3(0, 0, 1),
+                mesh: "barrelL",
             }, {
                 size: barrelSize,
                 length: barrelLength,
                 offset: new Vector3(barrelOffset, 0, 0),
                 forward: new Vector3(0, 0, 1),
+                mesh: "barrelR",
             }],
         };
 
@@ -489,11 +495,13 @@ export class Sources {
                 length: barrelLengthF,
                 offset: new Vector3(0, 0, 0),
                 forward: new Vector3(0, 0, 1),
+                mesh: "barrelF",
             }, {
                 size: barrelSize,
                 length: barrelLengthB,
                 offset: new Vector3(0, 0, 0),
                 forward: new Vector3(0, 0, -1),
+                mesh: "barrelR",
             }],
         };
 
@@ -529,6 +537,7 @@ export class Sources {
                 length: barrelLength,
                 offset: new Vector3(0, 0, 0),
                 forward: new Vector3(0, 0, 1),
+                mesh: "barrel",
             }],
         };
 

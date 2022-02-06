@@ -3,11 +3,11 @@ import { BaseTank } from "./tanks/baseTank";
 import { FlankGuardTank } from "./tanks/flankGuardTank";
 import { PounderTank } from "./tanks/pounderTank";
 import { SniperTank } from "./tanks/sniperTank";
-import { Tank } from "./tank";
+import { Tank } from "./tanks/tank";
 import { TwinTank } from "./tanks/twinTank";
 import { World } from "./world";
-import { TransformNode } from "@babylonjs/core";
 import { Sources } from "./sources";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 
 interface TankConstructor {
     prototype: Tank;

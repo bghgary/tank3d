@@ -2,9 +2,10 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Bullets } from "../bullets";
 import { Sources } from "../sources";
 import { World } from "../world";
-import { Tank } from "../tank";
+import { BarrelTank } from "./barrelTank";
+import { Tank } from "./tank";
 
-export class FlankGuardTank extends Tank {
+export class FlankGuardTank extends BarrelTank {
     public constructor(world: World, bullets: Bullets, previousTank?: Tank) {
         super("Flank Guard Tank", FlankGuardTank.CreateNode(world.sources), {}, world, bullets, previousTank);
     }
