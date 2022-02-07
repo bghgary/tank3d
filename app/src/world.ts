@@ -15,6 +15,7 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { CreateGridMaterial } from "./materials/gridMaterial";
 import { Container } from "@babylonjs/gui/2D/controls/container";
 import { Control, TextBlock } from "@babylonjs/gui";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 
 declare const VERSION: string;
 declare const DEV_BUILD: boolean;
@@ -33,14 +34,14 @@ export class World {
         this.scene = new Scene(engine);
         this.sources = new Sources(this);
         this.collisions = new Collisions(this);
+        this.bullets = new Bullets(this);
         this.uiContainer = AdvancedDynamicTexture.CreateFullscreenUI("Fullscreen").rootContainer;
 
         const shapes = new Shapes(this, 200);
-        const bullets = new Bullets(this);
-        const crashers = new Crashers(this, bullets, 100);
-        const player = new Player(this, bullets, shapes, crashers);
+        const crashers = new Crashers(this, 100);
+        const player = new Player(this, shapes, crashers);
 
-        this._createGround();
+        const ground = this._createGround();
 
         new HemisphericLight("light", new Vector3(0.1, 1, -0.5), this.scene);
 
@@ -56,7 +57,7 @@ export class World {
         this.uiContainer.addControl(versionTextBlock);
 
         this.scene.onKeyboardObservable.add((data) => {
-            if (data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey) {
+            if (data.type === KeyboardEventTypes.KEYUP && data.event.ctrlKey && data.event.shiftKey && data.event.altKey) {
                 if (DEV_BUILD && data.event.code === "KeyI") {
                     import("@babylonjs/inspector").then(() => {
                         if (this.scene.debugLayer.isVisible()) {
@@ -66,14 +67,22 @@ export class World {
                         }
                     });
                 }
-
-                switch (data.event.code) {
-                    case "KeyP": {
-                        this.paused = !this.paused;
-                        break;
-                    }
-                }
             }
+
+            if (data.type === KeyboardEventTypes.KEYUP && data.event.code === "Escape") {
+                this.paused = !this.paused;
+            }
+        });
+
+        this.scene.pointerDownPredicate = () => false;
+        this.scene.pointerUpPredicate = () => false;
+        this.scene.pointerMovePredicate = () => false;
+
+        let pointerOffsetX = 0;
+        let pointerOffsetY = 0;
+        this.scene.onPointerObservable.add((data) => {
+            pointerOffsetX = data.event.offsetX;
+            pointerOffsetY = data.event.offsetY;
         });
 
         this._previousTime = now();
@@ -84,8 +93,14 @@ export class World {
             this._previousTime = currentTime;
 
             if (!this._suspended && !this._paused) {
+                const pickInfo = this.scene.pick(pointerOffsetX, pointerOffsetY, (mesh) => mesh === ground);
+                if (pickInfo && pickInfo.pickedPoint) {
+                    this.pointerPosition.copyFrom(pickInfo.pickedPoint);
+                }
+
+                this.bullets.update(deltaTime);
+
                 shapes.update(deltaTime);
-                bullets.update(deltaTime);
                 player.update(deltaTime);
                 crashers.update(deltaTime, player);
 
@@ -102,7 +117,9 @@ export class World {
     public readonly scene: Scene;
     public readonly sources: Sources;
     public readonly collisions: Collisions;
+    public readonly bullets: Bullets;
     public readonly uiContainer: Container;
+    public readonly pointerPosition = new Vector3();
 
     public suspend(): void {
         this._suspended = true;
@@ -126,16 +143,17 @@ export class World {
 
     public onPausedStateChangedObservable = new Observable<boolean>();
 
-    private _createGround(): void {
+    private _createGround(): Mesh {
         const ground = MeshBuilder.CreateGround("ground", { width: 1000, height: 1000 }, this.scene);
         ground.visibility = 0;
 
         const grid = MeshBuilder.CreateGround("grid", { width: 1000, height: 1000 }, this.scene);
         grid.position.y = -1;
-        grid.isPickable = false;
         grid.doNotSyncBoundingInfo = true;
         grid.alwaysSelectAsActiveMesh = true;
         grid.material = CreateGridMaterial(this.scene, this.size);
         grid.parent = ground;
+
+        return ground;
     }
 }

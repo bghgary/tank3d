@@ -2,6 +2,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Bullet, BulletProperties, Bullets } from "../bullets";
+import { Drone, Drones } from "../drones";
 import { Entity } from "../entity";
 import { BarrelMetadata } from "../sources";
 import { World } from "../world";
@@ -16,9 +17,14 @@ export class Barrel {
         this._metadata = metadata;
     }
 
-    public shoot(bullets: Bullets, owner: Entity, createBulletNode: (parent: TransformNode) => TransformNode, bulletProperties: BulletProperties): Bullet {
+    public shootBullet(bullets: Bullets, owner: Entity, createNode: (parent: TransformNode) => TransformNode, properties: BulletProperties): Bullet {
         this._mesh.scaling.z = 0.9;
-        return bullets.add(owner, this._metadata, createBulletNode, bulletProperties);
+        return bullets.add(owner, this._metadata, createNode, properties);
+    }
+
+    public shootDrone(drones: Drones, owner: Entity, createNode: (parent: TransformNode) => TransformNode): Drone {
+        this._mesh.scaling.z = 0.9;
+        return drones.add(owner, this._metadata, createNode);
     }
 
     public update(deltaTime: number) {
@@ -27,53 +33,19 @@ export class Barrel {
     }
 }
 
-export class BarrelTank extends Tank {
-    protected readonly _bullets: Bullets;
-    protected readonly _createBulletNode: (parent: TransformNode) => TransformNode;
+export abstract class BarrelTank extends Tank {
     protected readonly _barrels: Array<Barrel>;
 
     protected _reloadTime = 0;
+    protected _recoil = new Vector3();
 
-    private _recoil = new Vector3();
-
-    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<TankProperties>, world: World, bullets: Bullets, previousTank?: Tank) {
+    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<TankProperties>, world: World, previousTank?: Tank) {
         super(displayName, node, multiplier, world, previousTank);
-
-        this._bullets = bullets;
-        this._createBulletNode = (parent) => world.sources.createTankBullet(parent);
 
         this._barrels = this._metadata.barrels.map((metadata) => {
             const mesh = node.getChildMeshes().find((mesh) => mesh.name === metadata.mesh)!;
             return new Barrel(mesh, metadata);
         });
-    }
-
-    public override shoot(): void {
-        if (this._reloadTime === 0) {
-            const bulletProperties = this._getBulletProperties();
-
-            for (const barrel of this._barrels) {
-                this._shootFrom(barrel, bulletProperties);
-            }
-
-            this._reloadTime = this._properties.reloadTime;
-        }
-
-        super.shoot();
-    }
-
-    protected _shootFrom(barrel: Barrel, bulletProperties: BulletProperties): void {
-        const bullet = barrel.shoot(this._bullets, this, this._createBulletNode, bulletProperties);
-        this._recoil.x += bullet.velocity.x * bullet.mass;
-        this._recoil.z += bullet.velocity.z * bullet.mass;
-    }
-
-    protected _getBulletProperties(): BulletProperties {
-        return {
-            speed: this._properties.bulletSpeed,
-            damage: this._properties.bulletDamage,
-            health: this._properties.bulletHealth,
-        };
     }
 
     public override update(deltaTime: number, onDestroyed: (entity: Entity) => void): void {

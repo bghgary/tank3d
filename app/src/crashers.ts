@@ -37,10 +37,10 @@ export class Crashers {
     private readonly _crashers = new Set<CrasherImpl>();
     private _spawnTime = 0;
 
-    public constructor(world: World, bullets: Bullets, maxCount: number) {
+    public constructor(world: World, maxCount: number) {
         this._sources = world.sources;
         this._worldSize = world.size;
-        this._bullets = bullets;
+        this._bullets = world.bullets;
         this._maxCount = maxCount;
 
         this._root = new TransformNode("crashers", world.scene);
@@ -129,7 +129,7 @@ class CrasherImpl implements Crasher, CollidableEntity {
         this.damage = damage;
         this.points = points;
         this._bullets = bullets;
-        this._createBulletNode = (parent) => sources.createShooterCrasherBullet(parent);
+        this._createBulletNode = (parent) => sources.createCrasherBullet(parent);
     }
 
     // Entity
@@ -209,13 +209,9 @@ class CrasherImpl implements Crasher, CollidableEntity {
         });
     }
 
-    public getCollisionRepeatRate(other: Entity): number {
-        return (other.type === EntityType.Crasher) ? 0 : 1;
-    }
-
-    public onCollide(other: Entity): void {
+    public onCollide(other: Entity): number {
         if (other.type === EntityType.Bullet && (other as Bullet).owner.type === EntityType.Crasher) {
-            return;
+            return 1;
         }
 
         if (other.type !== EntityType.Crasher) {
@@ -223,5 +219,7 @@ class CrasherImpl implements Crasher, CollidableEntity {
         }
 
         ApplyCollisionForce(this, other);
+
+        return (other.type === EntityType.Crasher) ? 0 : 1;
     }
 }

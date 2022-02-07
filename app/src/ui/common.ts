@@ -23,7 +23,7 @@ export interface KeyInfo {
 
 export function registerKeyboard(world: World, keyInfo: KeyInfo, onDown?: () => void, onUp?: () => void): Nullable<Observer<KeyboardInfo>> {
     return world.scene.onKeyboardObservable.add((data) => {
-        if ((data.event as any).repeat || world.paused) {
+        if (world.paused) {
             return;
         }
 

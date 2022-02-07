@@ -126,11 +126,7 @@ class BulletImpl implements Bullet, CollidableEntity {
         }
     }
 
-    public getCollisionRepeatRate(): number {
-        return 0.2;
-    }
-
-    public onCollide(other: Entity): void {
+    public onCollide(other: Entity): number {
         switch (other.type) {
             case EntityType.Bullet: {
                 const bullet = other as Bullet;
@@ -156,5 +152,7 @@ class BulletImpl implements Bullet, CollidableEntity {
                 break;
             }
         }
+
+        return 0.2;
     }
 }

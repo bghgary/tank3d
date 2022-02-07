@@ -1,15 +1,18 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "../sources";
 import { World } from "../world";
-import { BulletTank } from "./bulletTank";
+import { DroneTank } from "./droneTank";
 import { Tank } from "./tank";
 
-export class BaseTank extends BulletTank {
+export class DirectorTank extends DroneTank {
     public constructor(world: World, parent: TransformNode, previousTank?: Tank) {
-        super("Tank", BaseTank.CreateNode(world.sources, parent), {}, world, previousTank);
+        super("Director", DirectorTank.CreateNode(world.sources, parent), {
+            projectileSpeed: 0.5,
+            reloadTime: 3,
+        }, world, previousTank);
     }
 
     public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {
-        return sources.createBaseTank(parent);
+        return sources.createDirectorTank(parent);
     }
 }

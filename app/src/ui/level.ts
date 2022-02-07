@@ -82,12 +82,13 @@ function computeLevel(score: number): number {
 
 export class Level {
     private readonly _bar: Bar;
+    private _tankDisplayName: string;
     private _currentValue = MIN_BAR_VALUE;
     private _targetValue = MIN_BAR_VALUE;
     private _currentLevel = 1;
     private _targetLevel = 1;
 
-    public constructor(parent: Container, score: Score) {
+    public constructor(parent: Container, score: Score, tankDisplayName: string) {
         this._bar = new Bar("level", parent, {
             maxValue: 1,
             width: 400,
@@ -95,6 +96,8 @@ export class Level {
             backgroundColor: Theme.BackgroundColor,
             barColor: "#FFFF007F",
         });
+
+        this._tankDisplayName = tankDisplayName;
 
         this._updateValue();
         this._updateText();
@@ -140,6 +143,11 @@ export class Level {
         }
     }
 
+    public setTankDisplayName(tankDisplayName: string): void {
+        this._tankDisplayName = tankDisplayName;
+        this._updateText();
+    }
+
     public get value(): number {
         return this._targetLevel;
     }
@@ -151,6 +159,6 @@ export class Level {
     }
 
     private _updateText(): void {
-        this._bar.text = `Level ${this._currentLevel}`;
+        this._bar.text = `Level ${this._currentLevel} ${this._tankDisplayName}`;
     }
 }

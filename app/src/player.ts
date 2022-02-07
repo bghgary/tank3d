@@ -4,9 +4,9 @@ import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Bullet, Bullets } from "./bullets";
+import { Bullet } from "./bullets";
 import { Crashers } from "./crashers";
-import { Entity, EntityType } from "./entity";
+import { Entity } from "./entity";
 import { Message } from "./message";
 import { Shapes } from "./shapes";
 import { Tank } from "./tanks/tank";
@@ -18,6 +18,8 @@ import { Evolutions } from "./ui/evolutions";
 import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { EvolutionNode, EvolutionRootNode } from "./evolutions";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Drone } from "./drones";
 
 declare const DEV_BUILD: boolean;
 
@@ -58,7 +60,7 @@ const KeyMapping = new Map([
 
 export class Player {
     private readonly _world: World;
-    private readonly _bullets: Bullets;
+    private readonly _root: TransformNode;
     private readonly _score: Score;
     private readonly _level: Level;
     private readonly _upgrades: Upgrades;
@@ -70,11 +72,11 @@ export class Player {
     private _autoShoot = false;
     private _autoRotate = false;
 
-    public constructor(world: World, bullets: Bullets, shapes: Shapes, crashers: Crashers) {
+    public constructor(world: World, shapes: Shapes, crashers: Crashers) {
         this._world = world;
-        this._bullets = bullets;
 
-        this._tank = new EvolutionRootNode.Tank(world, bullets);
+        this._root = new TransformNode("player", world.scene);
+        this._tank = new EvolutionRootNode.Tank(world, this._root);
 
         const bottomPanel = new StackPanel("bottomPanel");
         bottomPanel.adaptWidthToChildren = true;
@@ -84,7 +86,7 @@ export class Player {
         world.uiContainer.addControl(bottomPanel);
 
         this._score = new Score(bottomPanel);
-        this._level = new Level(bottomPanel, this._score);
+        this._level = new Level(bottomPanel, this._score, this._tank.displayName);
 
         this._upgrades = new Upgrades(world, this._level);
         this._upgrades.onUpgradeObservable.add(() => this._updateTankProperties());
@@ -96,11 +98,11 @@ export class Player {
         this._camera.lowerRadiusLimit = 2;
 
         world.scene.onKeyboardObservable.add((data) => {
-            if ((data.event as any).repeat || world.paused) {
+            if (world.paused) {
                 return;
             }
 
-            if (DEV_BUILD && data.type === KeyboardEventTypes.KEYDOWN && data.event.ctrlKey && data.event.shiftKey && data.event.altKey && data.event.code === "KeyG") {
+            if (DEV_BUILD && data.type === KeyboardEventTypes.KEYUP && data.event.ctrlKey && data.event.shiftKey && data.event.altKey && data.event.code === "KeyG") {
                 this._score.add(10000);
             }
 
@@ -108,13 +110,13 @@ export class Player {
             if (command !== undefined) {
                 switch (command) {
                     case Command.AutoShoot: {
-                        if (data.type === KeyboardEventTypes.KEYDOWN) {
+                        if (data.type === KeyboardEventTypes.KEYUP) {
                             this._autoShoot = !this._autoShoot;
                         }
                         break;
                     }
                     case Command.AutoRotate: {
-                        if (data.type === KeyboardEventTypes.KEYDOWN) {
+                        if (data.type === KeyboardEventTypes.KEYUP) {
                             this._autoRotate = !this._autoRotate;
                         }
                         break;
@@ -135,13 +137,6 @@ export class Player {
         world.scene.onPointerObservable.add((data) => {
             if (world.paused) {
                 return;
-            }
-
-            if (!this._autoRotate) {
-                const pickedPoint = data.pickInfo?.pickedPoint || world.scene.pick(data.event.offsetX, data.event.offsetY)?.pickedPoint;
-                if (pickedPoint) {
-                    this._tank.lookAt(pickedPoint);
-                }
             }
 
             if (data.event.button === 0) {
@@ -170,20 +165,9 @@ export class Player {
         });
 
         const handleEntityDestroyed = (target: { points: number }, other: Entity): void => {
-            switch (other.type) {
-                case EntityType.Bullet: {
-                    const bullet = other as Bullet;
-                    if (bullet.owner === this._tank) {
-                        this._score.add(target.points);
-                    }
-                    break;
-                }
-                case EntityType.Tank: {
-                    if (other === this._tank && !this.shielded) {
-                        this._score.add(target.points);
-                    }
-                    break;
-                }
+            if ((other as Bullet | Drone).owner === this._tank ||
+                (other === this._tank && !this.shielded)) {
+                this._score.add(target.points);
             }
         };
 
@@ -212,6 +196,8 @@ export class Player {
     public update(deltaTime: number): void {
         if (this._autoRotate) {
             this._tank.rotate(AUTO_ROTATE_SPEED * deltaTime);
+        } else {
+            this._tank.lookAt(this._world.pointerPosition);
         }
 
         const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
@@ -261,19 +247,21 @@ export class Player {
 
     private _updateTankProperties(): void {
         this._tank.setUpgrades({
-            bulletSpeed:  this._upgrades.getUpgradeValue(UpgradeType.BulletSpeed)  * 1,
-            bulletDamage: this._upgrades.getUpgradeValue(UpgradeType.BulletDamage) * 3,
-            bulletHealth: this._upgrades.getUpgradeValue(UpgradeType.BulletHealth) * 5,
-            reloadTime:   this._upgrades.getUpgradeValue(UpgradeType.ReloadTime)   * -0.03,
-            healthRegen:  this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)  * 1.6,
-            maxHealth:    this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)    * 15,
-            moveSpeed:    this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)    * 0.5,
-            bodyDamage:   this._upgrades.getUpgradeValue(UpgradeType.BodyDamage)   * 5,
+            projectileSpeed:  this._upgrades.getUpgradeValue(UpgradeType.ProjectileSpeed)  * 1,
+            projectileDamage: this._upgrades.getUpgradeValue(UpgradeType.ProjectileDamage) * 3,
+            projectileHealth: this._upgrades.getUpgradeValue(UpgradeType.ProjectileHealth) * 5,
+            reloadTime:       this._upgrades.getUpgradeValue(UpgradeType.ReloadTime)       * -0.03,
+            healthRegen:      this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)      * 1.6,
+            maxHealth:        this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)        * 15,
+            moveSpeed:        this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)        * 0.5,
+            bodyDamage:       this._upgrades.getUpgradeValue(UpgradeType.BodyDamage)       * 5,
         });
     }
 
     private _updateTank(evolutionNode: EvolutionNode): void {
-        this._tank = new evolutionNode.Tank(this._world, this._bullets, this._tank);
+        this._tank = new evolutionNode.Tank(this._world, this._root, this._tank);
+        this._upgrades.setProjectileType(this._tank.projectileType);
+        this._level.setTankDisplayName(this._tank.displayName);
         this._updateTankProperties();
     }
 }

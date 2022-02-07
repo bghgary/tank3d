@@ -10,11 +10,23 @@ import { Scene } from "@babylonjs/core/scene";
 import { CreateShadowMaterial } from "./materials/shadowMaterial";
 import { World } from "./world";
 
-function createBarrel(name: string, size: number, length: number, scene: Scene): Mesh {
-    const barrel = MeshBuilder.CreateCylinder(name, { tessellation: Math.round(36 * size), cap: Mesh.CAP_END, diameter: size, height: length }, scene);
+function createBarrel(name: string, size: { muzzle: number, base: number } | number, length: number, scene: Scene): Mesh {
+    if (typeof size === "number") {
+        size = { muzzle: size, base: size };
+    }
+ 
+    const barrel = MeshBuilder.CreateCylinder(name, {
+        tessellation: Math.round(36 * Math.max(size.muzzle, size.base)),
+        cap: Mesh.CAP_END,
+        diameterTop: size.muzzle,
+        diameterBottom: size.base,
+        height: length
+    }, scene);
+
     barrel.rotation.x = Math.PI / 2;
     barrel.position.z = length / 2;
     barrel.bakeCurrentTransformIntoVertices();
+
     return barrel;
 }
 
@@ -37,6 +49,7 @@ interface BarrelsMetadata {
 export interface ShapeMetadata extends SizeMetadata { }
 export interface CrasherMetadata extends SizeMetadata { }
 export interface BulletMetadata extends SizeMetadata { }
+export interface DroneMetadata extends SizeMetadata { }
 export interface ShooterCrasherMetadata extends SizeMetadata, BarrelsMetadata { }
 export interface TankMetadata extends SizeMetadata, BarrelsMetadata {
     readonly shieldSize: number;
@@ -61,7 +74,8 @@ export class Sources {
         readonly health: Mesh;
         readonly shadow: Mesh;
         readonly tankBullet: Mesh;
-        readonly shooterCrasherBullet: Mesh;
+        readonly crasherBullet: Mesh;
+        readonly tankDrone: Mesh;
         readonly cube: Mesh;
         readonly tetrahedron: Mesh;
         readonly dodecahedron: Mesh;
@@ -74,6 +88,7 @@ export class Sources {
         readonly twinTank: TransformNode;
         readonly flankGuardTank: TransformNode;
         readonly pounderTank: TransformNode;
+        readonly directorTank: TransformNode;
     };
 
     public constructor(world: World) {
@@ -98,7 +113,8 @@ export class Sources {
             health: this._createHealthSource(sources),
             shadow: this._createShadowSource(sources),
             tankBullet: this._createBulletSource(sources, "bulletTank", 8, this._materials.blue),
-            shooterCrasherBullet: this._createBulletSource(sources, "bulletShooterCrasher", 4, this._materials.pink),
+            crasherBullet: this._createBulletSource(sources, "bulletCrasher", 4, this._materials.pink),
+            tankDrone: this._createDroneSource(sources, "droneTank", this._materials.blue),
             cube: this._createCubeSource(sources),
             tetrahedron: this._createTetrahedronSource(sources),
             dodecahedron: this._createDodecahedronSource(sources),
@@ -106,80 +122,89 @@ export class Sources {
             smallCrasher: this._createSmallCrasherSource(sources),
             bigCrasher: this._createBigCrasherSource(sources),
             shooterCrasher: this._createShooterCrasherSource(sources),
-            baseTank: this._createTankSource(sources),
+            baseTank: this._createBaseTankSource(sources),
             sniperTank: this._createSniperTankSource(sources),
             twinTank: this._createTwinTankSource(sources),
             flankGuardTank: this._createFlankGuardTankSource(sources),
             pounderTank: this._createPounderTankSource(sources),
+            directorTank: this._createDirectorTankSource(sources),
         };
     }
 
-    public createShield(parent?: TransformNode, name?: string): Mesh {
-        return this._createClone(this._meshes.shield, name || "shield", parent);
+    public createShield(parent?: TransformNode): Mesh {
+        return this._createClone(this._meshes.shield, "shield", parent);
     }
 
-    public createHealth(parent?: TransformNode, name?: string): TransformNode {
-        return this._createInstance(this._meshes.health, name || "health", parent);
+    public createHealth(parent?: TransformNode): TransformNode {
+        return this._createInstance(this._meshes.health, "health", parent);
     }
 
-    public createShadow(parent?: TransformNode, name?: string): TransformNode {
-        return this._createInstance(this._meshes.shadow, name || "shadow", parent);
+    public createShadow(parent?: TransformNode): TransformNode {
+        return this._createInstance(this._meshes.shadow, "shadow", parent);
     }
 
-    public createTankBullet(parent?: TransformNode, name?: string): TransformNode {
-        return this._createInstance(this._meshes.tankBullet, name || "tank", parent);
+    public createTankBullet(parent?: TransformNode): TransformNode {
+        return this._createInstance(this._meshes.tankBullet, "tank", parent);
     }
 
-    public createShooterCrasherBullet(parent?: TransformNode, name?: string): TransformNode {
-        return this._createInstance(this._meshes.shooterCrasherBullet, name || "shooterCrasher", parent);
+    public createCrasherBullet(parent?: TransformNode): TransformNode {
+        return this._createInstance(this._meshes.crasherBullet, "crasher", parent);
     }
 
-    public createCubeShape(parent?: TransformNode, name?: string): TransformNode {
-        return this._createInstance(this._meshes.cube, name || "cube", parent);
+    public createTankDrone(parent?: TransformNode): TransformNode {
+        return this._createInstance(this._meshes.tankDrone, "tank", parent);
     }
 
-    public createTetrahedronShape(parent?: TransformNode, name?: string): TransformNode {
-        return this._createInstance(this._meshes.tetrahedron, name || "tetrahedron", parent);
+    public createCubeShape(parent?: TransformNode): TransformNode {
+        return this._createInstance(this._meshes.cube, "cube", parent);
     }
 
-    public createDodecahedronShape(parent?: TransformNode, name?: string): TransformNode {
-        return this._createInstance(this._meshes.dodecahedron, name || "dodecahedron", parent);
+    public createTetrahedronShape(parent?: TransformNode): TransformNode {
+        return this._createInstance(this._meshes.tetrahedron, "tetrahedron", parent);
     }
 
-    public createGoldberg11Shape(parent?: TransformNode, name?: string): TransformNode {
-        return this._createInstance(this._meshes.goldberg11, name || "goldberg11", parent);
+    public createDodecahedronShape(parent?: TransformNode): TransformNode {
+        return this._createInstance(this._meshes.dodecahedron, "dodecahedron", parent);
     }
 
-    public createSmallCrasher(parent?: TransformNode, name?: string): TransformNode {
-        return this._createInstance(this._meshes.smallCrasher, name || "small", parent);
+    public createGoldberg11Shape(parent?: TransformNode): TransformNode {
+        return this._createInstance(this._meshes.goldberg11, "goldberg11", parent);
     }
 
-    public createBigCrasher(parent?: TransformNode, name?: string): TransformNode {
-        return this._createInstance(this._meshes.bigCrasher, name || "big", parent);
+    public createSmallCrasher(parent?: TransformNode): TransformNode {
+        return this._createInstance(this._meshes.smallCrasher, "small", parent);
     }
 
-    public createShooterCrasher(parent?: TransformNode, name?: string): TransformNode {
-        return this._instantiateHeirarchy(this._meshes.shooterCrasher, name || "shooter", parent);
+    public createBigCrasher(parent?: TransformNode): TransformNode {
+        return this._createInstance(this._meshes.bigCrasher, "big", parent);
     }
 
-    public createBaseTank(parent?: TransformNode, name?: string): TransformNode {
-        return this._instantiateHeirarchy(this._meshes.baseTank, name || "base", parent);
+    public createShooterCrasher(parent?: TransformNode): TransformNode {
+        return this._instantiateHeirarchy(this._meshes.shooterCrasher, "shooter", parent);
     }
 
-    public createSniperTank(parent?: TransformNode, name?: string): TransformNode {
-        return this._instantiateHeirarchy(this._meshes.sniperTank, name || "sniper", parent);
+    public createBaseTank(parent?: TransformNode): TransformNode {
+        return this._instantiateHeirarchy(this._meshes.baseTank, "base", parent);
     }
 
-    public createTwinTank(parent?: TransformNode, name?: string): TransformNode {
-        return this._instantiateHeirarchy(this._meshes.twinTank, name || "twin", parent);
+    public createSniperTank(parent?: TransformNode): TransformNode {
+        return this._instantiateHeirarchy(this._meshes.sniperTank, "sniper", parent);
     }
 
-    public createFlankGuardTank(parent?: TransformNode, name?: string): TransformNode {
-        return this._instantiateHeirarchy(this._meshes.flankGuardTank, name || "flankGuard", parent);
+    public createTwinTank(parent?: TransformNode): TransformNode {
+        return this._instantiateHeirarchy(this._meshes.twinTank, "twin", parent);
     }
 
-    public createPounderTank(parent?: TransformNode, name?: string): TransformNode {
-        return this._instantiateHeirarchy(this._meshes.pounderTank, name || "pounder", parent);
+    public createFlankGuardTank(parent?: TransformNode): TransformNode {
+        return this._instantiateHeirarchy(this._meshes.flankGuardTank, "flankGuard", parent);
+    }
+
+    public createPounderTank(parent?: TransformNode): TransformNode {
+        return this._instantiateHeirarchy(this._meshes.pounderTank, "pounder", parent);
+    }
+
+    public createDirectorTank(parent?: TransformNode): TransformNode {
+        return this._instantiateHeirarchy(this._meshes.directorTank, "director", parent);
     }
 
     private _createMaterial(name: string, r: number, g: number, b: number, unlit = false): Material {
@@ -221,7 +246,6 @@ export class Sources {
     }
 
     private _initMesh(mesh: AbstractMesh): void {
-        mesh.isPickable = false;
         mesh.doNotSyncBoundingInfo = true;
         mesh.alwaysSelectAsActiveMesh = true;
     }
@@ -321,7 +345,7 @@ export class Sources {
             size: 0.6,
         };
 
-        const source = MeshBuilder.CreatePolyhedron("crasherSmall", { type: 0, size: 0.2 }, this._scene);
+        const source = MeshBuilder.CreatePolyhedron("crasherSmall", { type: 0, size: metadata.size / 3 }, this._scene);
         source.rotation.z = Math.PI / 6;
         source.bakeCurrentTransformIntoVertices();
         source.metadata = metadata;
@@ -335,7 +359,7 @@ export class Sources {
             size: 0.8,
         };
 
-        const source = MeshBuilder.CreatePolyhedron("crasherBig", { type: 0, size: 0.3 }, this._scene);
+        const source = MeshBuilder.CreatePolyhedron("crasherBig", { type: 0, size: metadata.size / 3 }, this._scene);
         source.rotation.z = Math.PI / 6;
         source.bakeCurrentTransformIntoVertices();
         source.metadata = metadata;
@@ -376,7 +400,7 @@ export class Sources {
         return source;
     }
 
-    private _createTankSource(sources: TransformNode): TransformNode {
+    private _createBaseTankSource(sources: TransformNode): TransformNode {
         const barrelSize = 0.45;
         const barrelLength = 0.75;
 
@@ -392,7 +416,7 @@ export class Sources {
             }],
         };
 
-        const source = new TransformNode("tank", this._scene);
+        const source = new TransformNode("tankBase", this._scene);
         source.metadata = metadata;
         source.parent = sources;
 
@@ -553,6 +577,51 @@ export class Sources {
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
+        return source;
+    }
+
+    private _createDirectorTankSource(sources: TransformNode): TransformNode {
+        const barrelSize = { muzzle: 0.8, base: 0.25 };
+        const barrelLength = 0.70;
+
+        const metadata: TankMetadata = {
+            size: 1,
+            shieldSize: 1.75,
+            barrels: [{
+                size: barrelSize.muzzle,
+                length: barrelLength,
+                offset: new Vector3(0, 0, 0),
+                forward: new Vector3(0, 0, 1),
+                mesh: "barrel",
+            }],
+        };
+
+        const source = new TransformNode("tankDirector", this._scene);
+        source.metadata = metadata;
+        source.parent = sources;
+
+        const body = MeshBuilder.CreateSphere("body", { segments: 16 }, this._scene);
+        body.material = this._materials.blue;
+        body.parent = source;
+
+        const barrel = createBarrel("barrel", barrelSize, barrelLength, this._scene);
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
+
+        return source;
+    }
+
+    private _createDroneSource(sources: TransformNode, name: string, material: Material): Mesh {
+        const metadata: DroneMetadata = {
+            size: 1,
+        };
+
+        const source = MeshBuilder.CreatePolyhedron(name, { type: 0, size: metadata.size / 3 }, this._scene);
+        source.rotation.z = Math.PI / 6;
+        source.bakeCurrentTransformIntoVertices();
+        source.metadata = metadata;
+        source.material = material;
+        source.parent = sources;
         return source;
     }
 }

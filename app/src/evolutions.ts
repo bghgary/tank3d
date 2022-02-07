@@ -1,4 +1,3 @@
-import { Bullets } from "./bullets";
 import { BaseTank } from "./tanks/baseTank";
 import { FlankGuardTank } from "./tanks/flankGuardTank";
 import { PounderTank } from "./tanks/pounderTank";
@@ -8,11 +7,12 @@ import { TwinTank } from "./tanks/twinTank";
 import { World } from "./world";
 import { Sources } from "./sources";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DirectorTank } from "./tanks/directorTank";
 
 interface TankConstructor {
     prototype: Tank;
-    new(world: World, bullets: Bullets, previousTank?: Tank): Tank;
-    CreateNode(sources: Sources): TransformNode;
+    new(world: World, parent: TransformNode, previousTank?: Tank): Tank;
+    CreateNode(sources: Sources, parent?: TransformNode): TransformNode;
 }
 
 export interface EvolutionNode {
@@ -33,6 +33,9 @@ export const EvolutionRootNode: EvolutionNode = {
         children: []
     }, {
         Tank: PounderTank,
+        children: []
+    }, {
+        Tank: DirectorTank,
         children: []
     }],
 };

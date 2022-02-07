@@ -4,6 +4,7 @@ import { IDisposable } from "@babylonjs/core/scene";
 import { Bullet } from "../bullets";
 import { CollidableEntity } from "../collisions";
 import { ApplyCollisionForce, ApplyWallClamp } from "../common";
+import { Drone } from "../drones";
 import { Entity, EntityType } from "../entity";
 import { Health } from "../health";
 import { Shadow } from "../shadow";
@@ -11,10 +12,15 @@ import { Shield } from "../shield";
 import { TankMetadata } from "../sources";
 import { World } from "../world";
 
+export const enum ProjectileType {
+    Bullet,
+    Drone,
+}
+
 export interface TankProperties {
-    readonly bulletSpeed: number;
-    readonly bulletDamage: number;
-    readonly bulletHealth: number;
+    readonly projectileSpeed: number;
+    readonly projectileDamage: number;
+    readonly projectileHealth: number;
     readonly reloadTime: number;
     readonly healthRegen: number;
     readonly maxHealth: number;
@@ -23,9 +29,9 @@ export interface TankProperties {
 }
 
 const BaseProperties: TankProperties = {
-    bulletSpeed: 5,
-    bulletDamage: 6,
-    bulletHealth: 10,
+    projectileSpeed: 5,
+    projectileDamage: 6,
+    projectileHealth: 10,
     reloadTime: 0.5,
     healthRegen: 0,
     maxHealth: 100,
@@ -35,31 +41,31 @@ const BaseProperties: TankProperties = {
 
 function add(properties: TankProperties, value: Partial<TankProperties>): TankProperties {
     return {
-        bulletSpeed:  properties.bulletSpeed  + (value.bulletSpeed  || 0),
-        bulletDamage: properties.bulletDamage + (value.bulletDamage || 0),
-        bulletHealth: properties.bulletHealth + (value.bulletHealth || 0),
-        reloadTime:   properties.reloadTime   + (value.reloadTime   || 0),
-        healthRegen:  properties.healthRegen  + (value.healthRegen  || 0),
-        maxHealth:    properties.maxHealth    + (value.maxHealth    || 0),
-        moveSpeed:    properties.moveSpeed    + (value.moveSpeed    || 0),
-        bodyDamage:   properties.bodyDamage   + (value.bodyDamage   || 0),
+        projectileSpeed:  properties.projectileSpeed  + (value.projectileSpeed  || 0),
+        projectileDamage: properties.projectileDamage + (value.projectileDamage || 0),
+        projectileHealth: properties.projectileHealth + (value.projectileHealth || 0),
+        reloadTime:       properties.reloadTime       + (value.reloadTime       || 0),
+        healthRegen:      properties.healthRegen      + (value.healthRegen      || 0),
+        maxHealth:        properties.maxHealth        + (value.maxHealth        || 0),
+        moveSpeed:        properties.moveSpeed        + (value.moveSpeed        || 0),
+        bodyDamage:       properties.bodyDamage       + (value.bodyDamage       || 0),
     };
 }
 
 function multiply(properties: TankProperties, value: Partial<TankProperties>): TankProperties {
     return {
-        bulletSpeed:  properties.bulletSpeed  * (value.bulletSpeed  || 1),
-        bulletDamage: properties.bulletDamage * (value.bulletDamage || 1),
-        bulletHealth: properties.bulletHealth * (value.bulletHealth || 1),
-        reloadTime:   properties.reloadTime   * (value.reloadTime   || 1),
-        healthRegen:  properties.healthRegen  * (value.healthRegen  || 1),
-        maxHealth:    properties.maxHealth    * (value.maxHealth    || 1),
-        moveSpeed:    properties.moveSpeed    * (value.moveSpeed    || 1),
-        bodyDamage:   properties.bodyDamage   * (value.bodyDamage   || 1),
+        projectileSpeed:  properties.projectileSpeed  * (value.projectileSpeed  || 1),
+        projectileDamage: properties.projectileDamage * (value.projectileDamage || 1),
+        projectileHealth: properties.projectileHealth * (value.projectileHealth || 1),
+        reloadTime:       properties.reloadTime       * (value.reloadTime       || 1),
+        healthRegen:      properties.healthRegen      * (value.healthRegen      || 1),
+        maxHealth:        properties.maxHealth        * (value.maxHealth        || 1),
+        moveSpeed:        properties.moveSpeed        * (value.moveSpeed        || 1),
+        bodyDamage:       properties.bodyDamage       * (value.bodyDamage       || 1),
     };
 }
 
-export class Tank implements CollidableEntity {
+export abstract class Tank implements CollidableEntity {
     private readonly _multiplier: Partial<TankProperties>;
     private readonly _collisionToken: IDisposable;
 
@@ -129,6 +135,8 @@ export class Tank implements CollidableEntity {
     public get width() { return this.size; }
     public get height() { return this.size; }
 
+    public abstract readonly projectileType: ProjectileType;
+
     public lookAt(targetPoint: Vector3): void {
         this._node.lookAt(targetPoint);
     }
@@ -186,19 +194,14 @@ export class Tank implements CollidableEntity {
         this._shield.enabled = true;
     }
 
-    public getCollisionRepeatRate(): number {
-        return 1;
-    }
-
-    public onCollide(other: Entity): void {
-        if (other.type === EntityType.Bullet && (other as Bullet).owner === this) {
-            return;
+    public onCollide(other: Entity): number {
+        if (this._shield.enabled || (other as Bullet | Drone).owner === this) {
+            ApplyCollisionForce(this, other);
+            return 0;
         }
 
-        if (!this._shield.enabled) {
-            this._health.takeDamage(other);
-        }
-
+        this._health.takeDamage(other);
         ApplyCollisionForce(this, other);
+        return 1;
     }
 }

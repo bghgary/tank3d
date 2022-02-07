@@ -177,23 +177,14 @@ class ShapeImpl implements Shape, CollidableEntity {
         });
     }
 
-    public getCollisionRepeatRate(other: Entity): number {
-        return (other.type === EntityType.Shape) ? 0 : 1;
-    }
-
-    public onCollide(other: Entity): void {
-        switch (other.type) {
-            case EntityType.Bullet:
-            case EntityType.Tank:
-            case EntityType.Crasher: {
-                this._health.takeDamage(other);
-                ApplyCollisionForce(this, other);
-                break;
-            }
-            case EntityType.Shape: {
-                ApplyCollisionForce(this, other);
-                break;
-            }
+    public onCollide(other: Entity): number {
+        if (other.type === EntityType.Shape) {
+            ApplyCollisionForce(this, other);
+            return 0;
         }
+
+        this._health.takeDamage(other);
+        ApplyCollisionForce(this, other);
+        return 1;
     }
 }

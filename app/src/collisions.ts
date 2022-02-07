@@ -4,8 +4,7 @@ import { Entity } from "./entity";
 import { World } from "./world";
 
 export interface CollidableEntity extends Entity, Quadtree.Rect {
-    getCollisionRepeatRate(other: Entity): number;
-    onCollide(other: Entity): void;
+    onCollide(other: Entity): number;
 }
 
 export class Collisions {
@@ -32,8 +31,8 @@ export class Collisions {
         const targetMap = this._collidedEntitiesMap;
         for (const [target, otherMap] of targetMap) {
             for (const [other, data] of otherMap) {
-                data.time += deltaTime;
-                if (data.time >= target.getCollisionRepeatRate(other)) {
+                data.time -= deltaTime;
+                if (data.time <= 0) {
                     otherMap.delete(other);
                     if (otherMap.size === 0) {
                         targetMap.delete(target);
@@ -67,8 +66,7 @@ export class Collisions {
                         if (intersects(target, other)) {
                             const otherMap = targetMap.get(target) || new Map<CollidableEntity, { time: number }>();
                             if (!otherMap.has(other)) {
-                                target.onCollide(other);
-                                otherMap.set(other, { time: 0 });
+                                otherMap.set(other, { time: target.onCollide(other) });
                                 targetMap.set(target, otherMap);
                             }
                         }

@@ -111,7 +111,7 @@ export class BarButton extends BarBase<Button> {
         key.shadowBlur = 4;
         this._root.addControl(key);
 
-        registerKeyboard(world, properties.keyInfo, undefined, () => {
+        registerKeyboard(world, properties.keyInfo, () => {
             if (isHierarchyEnabled(this._root)) {
                 this.onClickObservable.notifyObservers(this);
             }
