@@ -9,7 +9,7 @@ import { Crashers } from "./crashers";
 import { Entity } from "./entity";
 import { Message } from "./message";
 import { Shapes } from "./shapes";
-import { Tank } from "./tanks/tank";
+import { PlayerTank } from "./tanks/playerTank";
 import { World } from "./world";
 import { Level } from "./ui/level";
 import { Score } from "./ui/score";
@@ -23,7 +23,6 @@ import { Drone } from "./drones";
 
 declare const DEV_BUILD: boolean;
 
-const AUTO_ROTATE_SPEED = 1;
 const CAMERA_ALPHA = -Math.PI / 2;
 const CAMERA_BETA = Math.PI / 3.5;
 const CAMERA_RADIUS = 15;
@@ -68,9 +67,7 @@ export class Player {
     private readonly _camera: ArcRotateCamera;
     private readonly _commandState = new Map<Command, State>();
 
-    private _tank: Tank;
-    private _autoShoot = false;
-    private _autoRotate = false;
+    private _tank: PlayerTank;
 
     public constructor(world: World, shapes: Shapes, crashers: Crashers) {
         this._world = world;
@@ -89,7 +86,7 @@ export class Player {
         this._level = new Level(bottomPanel, this._score, this._tank.displayName);
 
         this._upgrades = new Upgrades(world, this._level);
-        this._upgrades.onUpgradeObservable.add(() => this._updateTankProperties());
+        this._upgrades.onUpgradeObservable.add(() => this._setTankUpgrades());
 
         this._evolutions = new Evolutions(world, this._level);
         this._evolutions.onEvolveObservable.add((evolutionNode) => this._updateTank(evolutionNode));
@@ -111,13 +108,13 @@ export class Player {
                 switch (command) {
                     case Command.AutoShoot: {
                         if (data.type === KeyboardEventTypes.KEYUP) {
-                            this._autoShoot = !this._autoShoot;
+                            this._tank.toggleAutoShoot();
                         }
                         break;
                     }
                     case Command.AutoRotate: {
                         if (data.type === KeyboardEventTypes.KEYUP) {
-                            this._autoRotate = !this._autoRotate;
+                            this._tank.toggleAutoRotate();
                         }
                         break;
                     }
@@ -188,23 +185,17 @@ export class Player {
     }
 
     public get inBounds(): boolean {
-        const limit = (this._world.size + this._tank.size) * 0.5;
-        const position = this._tank.position;
-        return -limit <= position.x && position.x <= limit && -limit <= position.z && position.z < limit;
+        return this._tank.inBounds;
     }
 
     public update(deltaTime: number): void {
-        if (this._autoRotate) {
-            this._tank.rotate(AUTO_ROTATE_SPEED * deltaTime);
-        } else {
-            this._tank.lookAt(this._world.pointerPosition);
-        }
+        this._tank.rotate(deltaTime);
 
         const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
         const z = (this._commandState.get(Command.Up) ? 1 : 0) + (this._commandState.get(Command.Down) ? -1 : 0);
         this._tank.move(deltaTime, x, z, this._world.size + 10);
 
-        if ((this._autoShoot || !!this._commandState.get(Command.Shoot)) && this.inBounds) {
+        if (this._commandState.get(Command.Shoot) && this._tank.inBounds) {
             this._tank.shoot();
         }
 
@@ -234,8 +225,6 @@ export class Player {
             this._evolutions.reset();
             this._updateTank(EvolutionRootNode);
             this._tank.reset();
-            this._autoRotate = false;
-            this._autoShoot = false;
 
             const limit = this._world.size * 0.5;
             const x = Scalar.RandomRange(-limit, limit);
@@ -245,7 +234,7 @@ export class Player {
         });
     }
 
-    private _updateTankProperties(): void {
+    private _setTankUpgrades(): void {
         this._tank.setUpgrades({
             projectileSpeed:  this._upgrades.getUpgradeValue(UpgradeType.ProjectileSpeed)  * 1,
             projectileDamage: this._upgrades.getUpgradeValue(UpgradeType.ProjectileDamage) * 3,
@@ -262,6 +251,6 @@ export class Player {
         this._tank = new evolutionNode.Tank(this._world, this._root, this._tank);
         this._upgrades.setProjectileType(this._tank.projectileType);
         this._level.setTankDisplayName(this._tank.displayName);
-        this._updateTankProperties();
+        this._setTankUpgrades();
     }
 }

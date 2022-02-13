@@ -2,7 +2,7 @@ import { BaseTank } from "./tanks/baseTank";
 import { FlankGuardTank } from "./tanks/flankGuardTank";
 import { PounderTank } from "./tanks/pounderTank";
 import { SniperTank } from "./tanks/sniperTank";
-import { Tank } from "./tanks/tank";
+import { PlayerTank } from "./tanks/playerTank";
 import { TwinTank } from "./tanks/twinTank";
 import { World } from "./world";
 import { Sources } from "./sources";
@@ -10,8 +10,8 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DirectorTank } from "./tanks/directorTank";
 
 interface TankConstructor {
-    prototype: Tank;
-    new(world: World, parent: TransformNode, previousTank?: Tank): Tank;
+    prototype: PlayerTank;
+    new(world: World, parent: TransformNode, previousTank?: PlayerTank): PlayerTank;
     CreateNode(sources: Sources, parent?: TransformNode): TransformNode;
 }
 

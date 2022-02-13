@@ -1,21 +1,34 @@
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { DroneProperties, Drones } from "../drones";
+import { DroneBehavior, DroneProperties, Drones } from "../drones";
 import { Entity } from "../entity";
 import { World } from "../world";
 import { Barrel, BarrelTank } from "./barrelTank";
-import { ProjectileType, Tank, TankProperties } from "./tank";
+import { ProjectileType, PlayerTank, TankProperties } from "./playerTank";
 
 const MAX_DRONE_COUNT = 4;
 
-export class DroneTank extends BarrelTank {
+export abstract class DroneTank extends BarrelTank {
     protected readonly _drones: Drones;
     protected readonly _createDroneNode: (parent: TransformNode) => TransformNode;
+    protected readonly _droneProperties: DroneProperties;
+    protected _behavior: DroneBehavior;
+    protected readonly _rotateRadius = 3;
+    protected readonly _target = new Vector3();
 
-    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<TankProperties>, world: World, previousTank?: Tank) {
+    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<Readonly<TankProperties>>, world: World, previousTank?: PlayerTank) {
         super(displayName, node, multiplier, world, previousTank);
 
-        this._drones = new Drones(world, node.parent as TransformNode, this._getDroneProperties());
+        this._droneProperties = {
+            speed: this._properties.projectileSpeed,
+            damage: this._properties.projectileDamage,
+            health: this._properties.projectileHealth,
+        };
+
+        this._drones = new Drones(world, node.parent as TransformNode, this._droneProperties);
         this._createDroneNode = (parent) => world.sources.createTankDrone(parent);
+        this._behavior = DroneBehavior.Attack;
+        this._target.copyFrom(world.pointerPosition);
     }
 
     public override dispose(): void {
@@ -38,13 +51,13 @@ export class DroneTank extends BarrelTank {
     }
 
     public override update(deltaTime: number, onDestroyed: (entity: Entity) => void): void {
-        this._drones.update(deltaTime);
+        this._drones.update(deltaTime, this._target, this._behavior, this._rotateRadius);
         super.update(deltaTime, onDestroyed);
     }
 
-    public override setUpgrades(upgrades: TankProperties): void {
+    public override setUpgrades(upgrades: Readonly<TankProperties>): void {
         super.setUpgrades(upgrades);
-        this._drones.setProperties(this._getDroneProperties());
+        this._updateDroneProperties();
     }
 
     protected _shootFrom(barrel: Barrel): void {
@@ -53,11 +66,9 @@ export class DroneTank extends BarrelTank {
         this._recoil.z += drone.velocity.z * drone.mass;
     }
 
-    private _getDroneProperties(): DroneProperties {
-        return {
-            speed: this._properties.projectileSpeed,
-            damage: this._properties.projectileDamage,
-            health: this._properties.projectileHealth,
-        };
+    protected _updateDroneProperties(): void {
+        this._droneProperties.speed = this._properties.projectileSpeed;
+        this._droneProperties.damage = this._properties.projectileDamage;
+        this._droneProperties.health = this._properties.projectileHealth;
     }
 }

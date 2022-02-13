@@ -6,7 +6,7 @@ import { Drone, Drones } from "../drones";
 import { Entity } from "../entity";
 import { BarrelMetadata } from "../sources";
 import { World } from "../world";
-import { Tank, TankProperties } from "./tank";
+import { PlayerTank, TankProperties } from "./playerTank";
 
 export class Barrel {
     private readonly _mesh: AbstractMesh;
@@ -17,7 +17,7 @@ export class Barrel {
         this._metadata = metadata;
     }
 
-    public shootBullet(bullets: Bullets, owner: Entity, createNode: (parent: TransformNode) => TransformNode, properties: BulletProperties): Bullet {
+    public shootBullet(bullets: Bullets, owner: Entity, createNode: (parent: TransformNode) => TransformNode, properties: Readonly<BulletProperties>): Bullet {
         this._mesh.scaling.z = 0.9;
         return bullets.add(owner, this._metadata, createNode, properties);
     }
@@ -33,13 +33,13 @@ export class Barrel {
     }
 }
 
-export abstract class BarrelTank extends Tank {
+export abstract class BarrelTank extends PlayerTank {
     protected readonly _barrels: Array<Barrel>;
 
     protected _reloadTime = 0;
     protected _recoil = new Vector3();
 
-    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<TankProperties>, world: World, previousTank?: Tank) {
+    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<Readonly<TankProperties>>, world: World, previousTank?: PlayerTank) {
         super(displayName, node, multiplier, world, previousTank);
 
         this._barrels = this._metadata.barrels.map((metadata) => {

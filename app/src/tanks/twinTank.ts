@@ -2,12 +2,12 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "../sources";
 import { World } from "../world";
 import { BulletTank } from "./bulletTank";
-import { Tank } from "./tank";
+import { PlayerTank } from "./playerTank";
 
 export class TwinTank extends BulletTank {
     private _barrelIndex = 0;
 
-    public constructor(world: World, parent: TransformNode, previousTank?: Tank) {
+    public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
         super("Twin", TwinTank.CreateNode(world.sources, parent), {
             reloadTime: 0.6,
         }, world, previousTank);
@@ -24,6 +24,6 @@ export class TwinTank extends BulletTank {
             this._reloadTime = this._properties.reloadTime;
         }
 
-        Tank.prototype.shoot.call(this);
+        PlayerTank.prototype.shoot.call(this);
     }
 }

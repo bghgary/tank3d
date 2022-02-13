@@ -1,7 +1,8 @@
 import { TmpVectors, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { CollidableEntity } from "./collisions";
+import { Collider } from "./collisions";
 import { ApplyCollisionForce, ApplyMovement } from "./common";
+import { Drone } from "./drones";
 import { Entity, EntityType } from "./entity";
 import { Shadow } from "./shadow";
 import { BarrelMetadata, Sources } from "./sources";
@@ -14,9 +15,9 @@ export interface Bullet extends Entity {
 }
 
 export interface BulletProperties {
-    readonly speed: number;
-    readonly damage: number;
-    readonly health: number;
+    speed: number;
+    damage: number;
+    health: number;
 }
 
 export class Bullets {
@@ -30,7 +31,7 @@ export class Bullets {
         world.collisions.register(this._bullets);
     }
 
-    public add(owner: Entity, barrelMetadata: BarrelMetadata, createNode: (parent: TransformNode) => TransformNode, properties: BulletProperties): Bullet {
+    public add(owner: Entity, barrelMetadata: BarrelMetadata, createNode: (parent: TransformNode) => TransformNode, properties: Readonly<BulletProperties>): Bullet {
         const size = barrelMetadata.size * 0.75;
 
         const forward = TmpVectors.Vector3[0];
@@ -64,12 +65,12 @@ export class Bullets {
     }
 }
 
-class BulletImpl implements Bullet, CollidableEntity {
+class BulletImpl implements Bullet, Collider {
     private readonly _node: TransformNode;
     private readonly _shadow: Shadow;
     private _health: number;
 
-    public constructor(owner: Entity, node: TransformNode, sources: Sources, size: number, properties: BulletProperties) {
+    public constructor(owner: Entity, node: TransformNode, sources: Sources, size: number, properties: Readonly<BulletProperties>) {
         this.owner = owner;
         this._node = node;
         this._shadow = new Shadow(sources, node);
@@ -128,9 +129,10 @@ class BulletImpl implements Bullet, CollidableEntity {
 
     public onCollide(other: Entity): number {
         switch (other.type) {
-            case EntityType.Bullet: {
-                const bullet = other as Bullet;
-                if (bullet.owner !== this.owner) {
+            case EntityType.Bullet:
+            case EntityType.Drone: {
+                const bulletOrDrone = other as Bullet | Drone;
+                if (bulletOrDrone.owner !== this.owner) {
                     this._health -= other.damage;
                 }
                 break;

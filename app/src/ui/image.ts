@@ -9,19 +9,19 @@ import { registerKeyboard, isHierarchyEnabled, KeyInfo } from "./common";
 const CORNER_RADIUS = 15;
 
 export interface ImageButtonProperties {
-    readonly width: number;
-    readonly height: number;
-    readonly backgroundColor: string;
-    readonly pressColor: string;
-    readonly hoverColor: string;
-    readonly keyInfo: KeyInfo;
-    readonly keyText: string;
+    width: number;
+    height: number;
+    backgroundColor: string;
+    pressColor: string;
+    hoverColor: string;
+    keyInfo: KeyInfo;
+    keyText: string;
 }
 
 export class ImageButton {
     private readonly _root: Button;
 
-    public constructor(name: string, parent: Container, url: string, properties: ImageButtonProperties, world: World) {
+    public constructor(name: string, parent: Container, url: string, properties: Readonly<ImageButtonProperties>, world: World) {
         this._root = Button.CreateImageOnlyButton(name, url);
         this._root.widthInPixels = properties.width;
         this._root.heightInPixels = properties.height;

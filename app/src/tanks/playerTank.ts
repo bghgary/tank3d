@@ -2,7 +2,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { Bullet } from "../bullets";
-import { CollidableEntity } from "../collisions";
+import { Collider } from "../collisions";
 import { ApplyCollisionForce, ApplyWallClamp } from "../common";
 import { Drone } from "../drones";
 import { Entity, EntityType } from "../entity";
@@ -18,17 +18,17 @@ export const enum ProjectileType {
 }
 
 export interface TankProperties {
-    readonly projectileSpeed: number;
-    readonly projectileDamage: number;
-    readonly projectileHealth: number;
-    readonly reloadTime: number;
-    readonly healthRegen: number;
-    readonly maxHealth: number;
-    readonly moveSpeed: number;
-    readonly bodyDamage: number;
+    projectileSpeed: number;
+    projectileDamage: number;
+    projectileHealth: number;
+    reloadTime: number;
+    healthRegen: number;
+    maxHealth: number;
+    moveSpeed: number;
+    bodyDamage: number;
 }
 
-const BaseProperties: TankProperties = {
+const BaseProperties: Readonly<TankProperties> = {
     projectileSpeed: 5,
     projectileDamage: 6,
     projectileHealth: 10,
@@ -39,7 +39,7 @@ const BaseProperties: TankProperties = {
     bodyDamage: 30,
 };
 
-function add(properties: TankProperties, value: Partial<TankProperties>): TankProperties {
+function add(properties: Readonly<TankProperties>, value: Partial<Readonly<TankProperties>>): TankProperties {
     return {
         projectileSpeed:  properties.projectileSpeed  + (value.projectileSpeed  || 0),
         projectileDamage: properties.projectileDamage + (value.projectileDamage || 0),
@@ -52,7 +52,7 @@ function add(properties: TankProperties, value: Partial<TankProperties>): TankPr
     };
 }
 
-function multiply(properties: TankProperties, value: Partial<TankProperties>): TankProperties {
+function multiply(properties: Readonly<TankProperties>, value: Partial<Readonly<TankProperties>>): TankProperties {
     return {
         projectileSpeed:  properties.projectileSpeed  * (value.projectileSpeed  || 1),
         projectileDamage: properties.projectileDamage * (value.projectileDamage || 1),
@@ -65,27 +65,33 @@ function multiply(properties: TankProperties, value: Partial<TankProperties>): T
     };
 }
 
-export abstract class Tank implements CollidableEntity {
-    private readonly _multiplier: Partial<TankProperties>;
+export abstract class PlayerTank implements Collider {
+    private readonly _multiplier: Partial<Readonly<TankProperties>>;
     private readonly _collisionToken: IDisposable;
 
+    protected readonly _world: World;
     protected readonly _node: TransformNode;
     protected readonly _shield: Shield;
     protected readonly _health: Health;
     protected readonly _shadow: Shadow;
 
-    protected _properties: TankProperties;
+    protected _autoShoot = false;
+    protected _autoRotate = false;
+    protected _autoRotateSpeed = 1;
+    protected _properties: Readonly<TankProperties>;
 
     protected get _metadata(): TankMetadata {
         return this._node.metadata;
     }
 
-    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<TankProperties>, world: World, previousTank?: Tank) {
+    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<Readonly<TankProperties>>, world: World, previousTank?: PlayerTank) {
         this.displayName = displayName;
 
         this._node = node;
         this._multiplier = multiplier;
         this._properties = multiply(BaseProperties, multiplier);
+
+        this._world = world;
 
         if (previousTank) {
             this._node.position.copyFrom(previousTank._node.position);
@@ -137,12 +143,26 @@ export abstract class Tank implements CollidableEntity {
 
     public abstract readonly projectileType: ProjectileType;
 
-    public lookAt(targetPoint: Vector3): void {
-        this._node.lookAt(targetPoint);
+    public get inBounds(): boolean {
+        const limit = (this._world.size + this._metadata.size) * 0.5;
+        const position = this._node.position;
+        return -limit <= position.x && position.x <= limit && -limit <= position.z && position.z < limit;
     }
 
-    public rotate(value: number): void {
-        this._node.addRotation(0, value, 0);
+    public toggleAutoShoot(): void {
+        this._autoShoot = !this._autoShoot;
+    }
+
+    public toggleAutoRotate(): void {
+        this._autoRotate = !this._autoRotate;
+    }
+
+    public rotate(deltaTime: number): void {
+        if (this._autoRotate) {
+            this._node.addRotation(0, this._autoRotateSpeed * deltaTime, 0);
+        } else {
+            this._node.lookAt(this._world.pointerPosition);
+        }
     }
 
     public move(deltaTime: number, x: number, z: number, limit: number): void {
@@ -172,6 +192,10 @@ export abstract class Tank implements CollidableEntity {
     }
 
     public update(deltaTime: number, onDestroyed: (entity: Entity) => void): void {
+        if (this._autoShoot && this.inBounds) {
+            this.shoot();
+        }
+
         this._shield.update(deltaTime);
 
         this._health.update(deltaTime, (entity) => {
@@ -180,7 +204,7 @@ export abstract class Tank implements CollidableEntity {
         });
     }
 
-    public setUpgrades(upgrades: TankProperties): void {
+    public setUpgrades(upgrades: Readonly<TankProperties>): void {
         this._properties = multiply(add(BaseProperties, upgrades), this._multiplier);
         this._health.setMax(this._properties.maxHealth);
         this._health.setRegenSpeed(this._properties.healthRegen);
@@ -192,6 +216,8 @@ export abstract class Tank implements CollidableEntity {
         this.velocity.setAll(0);
         this._node.setEnabled(true);
         this._shield.enabled = true;
+        this._autoRotate = false;
+        this._autoShoot = false;
     }
 
     public onCollide(other: Entity): number {

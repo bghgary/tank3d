@@ -2,21 +2,23 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { BulletProperties, Bullets } from "../bullets";
 import { World } from "../world";
 import { Barrel, BarrelTank } from "./barrelTank";
-import { ProjectileType, Tank, TankProperties } from "./tank";
+import { ProjectileType, PlayerTank, TankProperties } from "./playerTank";
 
 export class BulletTank extends BarrelTank {
     protected readonly _bullets: Bullets;
     protected readonly _createBulletNode: (parent: TransformNode) => TransformNode;
+    protected readonly _bulletProperties: BulletProperties;
 
-    private _bulletProperties: BulletProperties;
-
-    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<TankProperties>, world: World, previousTank?: Tank) {
+    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<Readonly<TankProperties>>, world: World, previousTank?: PlayerTank) {
         super(displayName, node, multiplier, world, previousTank);
 
         this._bullets = world.bullets;
         this._createBulletNode = (parent) => world.sources.createTankBullet(parent);
-
-        this._bulletProperties = this._getBulletProperties();
+        this._bulletProperties = {
+            speed: this._properties.projectileSpeed,
+            damage: this._properties.projectileDamage,
+            health: this._properties.projectileHealth,
+        };
     }
 
     public override readonly projectileType = ProjectileType.Bullet;
@@ -33,9 +35,9 @@ export class BulletTank extends BarrelTank {
         super.shoot();
     }
 
-    public override setUpgrades(upgrades: TankProperties): void {
+    public override setUpgrades(upgrades: Readonly<TankProperties>): void {
         super.setUpgrades(upgrades);
-        this._bulletProperties = this._getBulletProperties();
+        this._updateBulletProperties();
     }
 
     protected _shootFrom(barrel: Barrel): void {
@@ -44,11 +46,9 @@ export class BulletTank extends BarrelTank {
         this._recoil.z += bullet.velocity.z * bullet.mass;
     }
 
-    private _getBulletProperties(): BulletProperties {
-        return {
-            speed: this._properties.projectileSpeed,
-            damage: this._properties.projectileDamage,
-            health: this._properties.projectileHealth,
-        };
+    protected _updateBulletProperties(): void {
+        this._bulletProperties.speed = this._properties.projectileSpeed;
+        this._bulletProperties.damage = this._properties.projectileDamage;
+        this._bulletProperties.health = this._properties.projectileHealth;
     }
 }

@@ -1,17 +1,24 @@
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { IDisposable } from "@babylonjs/core/scene";
 import Quadtree from "@timohausmann/quadtree-js";
 import { Entity } from "./entity";
 import { World } from "./world";
 
-export interface CollidableEntity extends Entity, Quadtree.Rect {
+export interface Collider extends Quadtree.Rect {
+    readonly size: number;
+    readonly position: Vector3;
     onCollide(other: Entity): number;
+}
+
+function isEntity(collider: Collider | Entity): collider is Entity {
+    return (collider as Entity).type !== undefined;
 }
 
 export class Collisions {
     private readonly _quadtree: Quadtree;
-    private readonly _entries = new Map<number, { entities: Iterable<CollidableEntity> }>();
+    private readonly _entries = new Map<number, { colliders: Iterable<Collider> }>();
     private _registerToken: number = 0;
-    private readonly _collidedEntitiesMap = new Map<CollidableEntity, Map<CollidableEntity, { time: number }>>();
+    private readonly _collidedMap = new Map<Collider, Map<Collider, { time: number }>>();
 
     public constructor(world: World) {
         const size = world.size;
@@ -19,16 +26,16 @@ export class Collisions {
         this._quadtree = new Quadtree({ x: -halfSize, y: -halfSize, width: size, height: size });
     }
 
-    public register(entities: Iterable<CollidableEntity>): IDisposable {
+    public register(colliders: Iterable<Collider>): IDisposable {
         const registerToken = this._registerToken++;
-        this._entries.set(registerToken, { entities: entities });
+        this._entries.set(registerToken, { colliders: colliders });
         return {
             dispose: () => this._entries.delete(registerToken)
         };
     }
 
     public update(deltaTime: number): void {
-        const targetMap = this._collidedEntitiesMap;
+        const targetMap = this._collidedMap;
         for (const [target, otherMap] of targetMap) {
             for (const [other, data] of otherMap) {
                 data.time -= deltaTime;
@@ -43,28 +50,25 @@ export class Collisions {
 
         this._quadtree.clear();
 
-        const intersects = (a: CollidableEntity, b: CollidableEntity): boolean => {
+        const intersects = (a: Collider, b: Collider): boolean => {
             const collisionDistance = (a.size + b.size) * 0.5;
-            const x0 = a.position.x, z0 = a.position.z;
-            const x1 = b.position.x, z1 = b.position.z;
-            const dx = x1 - x0, dz = z1 - z0;
-            const sqrDistance = dx * dx + dz * dz;
-            return (sqrDistance < collisionDistance * collisionDistance);
+            const distanceSquared = Vector3.DistanceSquared(a.position, b.position);
+            return (distanceSquared < collisionDistance * collisionDistance);
         };
 
         for (const entry of this._entries.values()) {
-            for (const entity of entry.entities) {
-                this._quadtree.insert(entity);
+            for (const collider of entry.colliders) {
+                this._quadtree.insert(collider);
             }
         }
 
         for (const entry of this._entries.values()) {
-            for (const target of entry.entities) {
-                const others = this._quadtree.retrieve<CollidableEntity>(target);
+            for (const target of entry.colliders) {
+                const others = this._quadtree.retrieve<Collider>(target);
                 for (const other of others) {
-                    if (other !== target) {
+                    if (other !== target && isEntity(other)) {
                         if (intersects(target, other)) {
-                            const otherMap = targetMap.get(target) || new Map<CollidableEntity, { time: number }>();
+                            const otherMap = targetMap.get(target) || new Map<Collider, { time: number }>();
                             if (!otherMap.has(other)) {
                                 otherMap.set(other, { time: target.onCollide(other) });
                                 targetMap.set(target, otherMap);

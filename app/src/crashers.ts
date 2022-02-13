@@ -4,7 +4,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { Nullable } from "@babylonjs/core/types";
 import { Bullet, Bullets } from "./bullets";
-import { CollidableEntity } from "./collisions";
+import { Collider } from "./collisions";
 import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallClamp } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
@@ -16,7 +16,7 @@ import { World } from "./world";
 const DROP_HEIGHT = 5;
 const IDLE_MOVEMENT_SPEED = 1;
 const IDLE_ROTATION_SPEED = 1;
-const CHASE_DISTANCE = 15;
+const CHASE_DISTANCE_SQUARED = 15 * 15;
 const CHASE_SPEED = 5;
 
 const SHOOTER_BULLET_SPEED = 5;
@@ -108,7 +108,7 @@ export class Crashers {
     }
 }
 
-class CrasherImpl implements Crasher, CollidableEntity {
+class CrasherImpl implements Crasher, Collider {
     private readonly _node: TransformNode;
     private readonly _health: Health;
     private readonly _shadow: Shadow;
@@ -162,7 +162,7 @@ class CrasherImpl implements Crasher, CollidableEntity {
             if (!player.shielded && player.inBounds) {
                 const direction = TmpVectors.Vector3[0];
                 player.position.subtractToRef(this.position, direction);
-                if (direction.lengthSquared() < CHASE_DISTANCE * CHASE_DISTANCE) {
+                if (direction.lengthSquared() < CHASE_DISTANCE_SQUARED) {
                     direction.normalize();
                     const angle = Math.acos(Vector3.Dot(this._node.forward, direction));
 

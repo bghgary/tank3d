@@ -2,7 +2,7 @@ import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Observable } from "@babylonjs/core/Misc/observable";
-import { CollidableEntity } from "./collisions";
+import { Collider } from "./collisions";
 import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallBounce } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
@@ -104,7 +104,7 @@ export class Shapes {
     }
 }
 
-class ShapeImpl implements Shape, CollidableEntity {
+class ShapeImpl implements Shape, Collider {
     private readonly _node: TransformNode;
     private readonly _health: Health;
     private readonly _shadow: Shadow;

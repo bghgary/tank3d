@@ -12,18 +12,18 @@ const CORNER_RADIUS = 15;
 const BORDER = 3;
 
 export interface BarProperties {
-    readonly maxValue: number;
-    readonly width: number;
-    readonly height: number;
-    readonly backgroundColor: string;
-    readonly barColor: string;
+    maxValue: number;
+    width: number;
+    height: number;
+    backgroundColor: string;
+    barColor: string;
 }
 
 export interface BarButtonProperties extends BarProperties {
-    readonly pressColor: string;
-    readonly hoverColor: string;
-    readonly keyInfo: KeyInfo;
-    readonly keyText: string;
+    pressColor: string;
+    hoverColor: string;
+    keyInfo: KeyInfo;
+    keyText: string;
 }
 
 class BarBase<T extends Rectangle> {
@@ -32,7 +32,7 @@ class BarBase<T extends Rectangle> {
     protected readonly _text: TextBlock;
     private _value = 0;
 
-    protected constructor(root: T, parent: Container, properties: BarProperties) {
+    protected constructor(root: T, parent: Container, properties: Readonly<BarProperties>) {
         this._root = root;
         this._root.widthInPixels = properties.width;
         this._root.heightInPixels = properties.height;
@@ -84,13 +84,13 @@ class BarBase<T extends Rectangle> {
 }
 
 export class Bar extends BarBase<Rectangle> {
-    public constructor(name: string, parent: Container, properties: BarProperties) {
+    public constructor(name: string, parent: Container, properties: Readonly<BarProperties>) {
         super(new Rectangle(name), parent, properties);
     }
 }
 
 export class BarButton extends BarBase<Button> {
-    public constructor(name: string, parent: Container, properties: BarButtonProperties, world: World) {
+    public constructor(name: string, parent: Container, properties: Readonly<BarButtonProperties>, world: World) {
         super(new Button(name), parent, properties);
 
         this._root.pointerEnterAnimation = () => this._root.background = properties.hoverColor;

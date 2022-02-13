@@ -1,7 +1,7 @@
 import { TmpVectors, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { CollidableEntity } from "./collisions";
-import { ApplyCollisionForce, ApplyMovement, ApplyWallClamp } from "./common";
+import { Collider } from "./collisions";
+import { ApplyCollisionForce, ApplyMovement } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
 import { Shadow } from "./shadow";
@@ -13,25 +13,26 @@ export interface Drone extends Entity {
 }
 
 export interface DroneProperties {
-    readonly speed: number;
-    readonly damage: number;
-    readonly health: number;
+    speed: number;
+    damage: number;
+    health: number;
+}
+
+export const enum DroneBehavior {
+    Attack,
+    Defend,
 }
 
 export class Drones {
-    private readonly _world: World;
     private readonly _root: TransformNode;
     private readonly _sources: Sources;
+    private readonly _properties: Readonly<DroneProperties>;
     private readonly _drones = new Set<DroneImpl>();
 
-    private _properties: DroneProperties;
-
-    public constructor(world: World, parent: TransformNode, properties: DroneProperties) {
-        this._world = world;
+    public constructor(world: World, parent: TransformNode, properties: Readonly<DroneProperties>) {
         this._root = new TransformNode("drones", world.scene);
         this._root.parent = parent;
         this._sources = world.sources;
-
         this._properties = properties;
 
         world.collisions.register(this._drones);
@@ -60,7 +61,7 @@ export class Drones {
         const node = createNode(this._root);
         node.scaling.setAll(size);
 
-        const drone = new DroneImpl(owner, node, this._sources, size, () => this._properties, this._world.pointerPosition);
+        const drone = new DroneImpl(owner, node, this._sources, size, this._properties);
         drone.position.copyFrom(position);
         drone.rotation.copyFrom(owner.rotation);
         drone.velocity.copyFrom(forward).scaleInPlace(initialSpeed);
@@ -69,35 +70,29 @@ export class Drones {
         return drone;
     }
 
-    public update(deltaTime: number): void {
+    public update(deltaTime: number, target: Vector3, behavior: DroneBehavior, defendRadius: number): void {
         for (const drone of this._drones) {
-            drone.update(deltaTime, this._world.size, () => {
+            drone.update(deltaTime, target, behavior, defendRadius, () => {
                 this._drones.delete(drone);
             });
         }
     }
-
-    public setProperties(properties: DroneProperties): void {
-        this._properties = properties;
-    }
 }
 
-class DroneImpl implements Drone, CollidableEntity {
+class DroneImpl implements Drone, Collider {
     private readonly _node: TransformNode;
     private readonly _health: Health;
     private readonly _shadow: Shadow;
-    private readonly _getProperties: () => DroneProperties;
-    private readonly _target: Vector3;
+    private readonly _properties: Readonly<DroneProperties>;
 
-    public constructor(owner: Entity, node: TransformNode, sources: Sources, size: number, getProperties: () => DroneProperties, target: Vector3) {
+    public constructor(owner: Entity, node: TransformNode, sources: Sources, size: number, properties: Readonly<DroneProperties>) {
         this.owner = owner;
         this._node = node;
-        this._health = new Health(sources, node, getProperties().health);
+        this._health = new Health(sources, node, properties.health);
         this._shadow = new Shadow(sources, node);
         this.size = size;
         this.mass = this.size * this.size;
-        this._getProperties = getProperties;
-        this._target = target;
+        this._properties = properties;
     }
 
     // Drone
@@ -105,7 +100,7 @@ class DroneImpl implements Drone, CollidableEntity {
     public readonly type = EntityType.Drone;
     public readonly size: number;
     public readonly mass: number;
-    public get damage() { return this._getProperties().damage; }
+    public get damage() { return this._properties.damage; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
@@ -118,25 +113,34 @@ class DroneImpl implements Drone, CollidableEntity {
 
     public readonly owner: Entity;
 
-    public update(deltaTime: number, worldSize: number, onDestroyed: () => void): void {
+    public update(deltaTime: number, target: Vector3, behavior: DroneBehavior, defendRadius: number, onDestroyed: () => void): void {
         this._shadow.update();
 
-        ApplyMovement(deltaTime, this._node.position, this.velocity);
-        ApplyWallClamp(this._node.position, this.size, worldSize + 10);
-
         const direction = TmpVectors.Vector3[0];
-        this._target.subtractToRef(this.position, direction);
+        target.subtractToRef(this.position, direction);
+        const distance = direction.length();
+        direction.scaleInPlace(1 / distance);
+
+        if (behavior === DroneBehavior.Defend) {
+            const position = TmpVectors.Vector3[1];
+            direction.scaleToRef(-defendRadius, position).addInPlace(target);
+            position.addInPlaceFromFloats(-direction.z, direction.y, direction.x);
+            position.subtractToRef(this.position, direction).normalize();
+        }
+
         const directionDecayFactor = Math.exp(-deltaTime * 10);
         direction.x = direction.x - (direction.x - this._node.forward.x) * directionDecayFactor;
         direction.z = direction.z - (direction.z - this._node.forward.z) * directionDecayFactor;
         this._node.setDirection(direction);
 
-        const speed = this._getProperties().speed;
-        const decayFactor = Math.exp(-deltaTime * 2);
+        const speed = this._properties.speed * Math.min(distance, 1);
         const targetVelocityX = this._node.forward.x * speed;
         const targetVelocityZ = this._node.forward.z * speed;
-        this.velocity.x = targetVelocityX - (targetVelocityX - this.velocity.x) * decayFactor;
-        this.velocity.z = targetVelocityZ - (targetVelocityZ - this.velocity.z) * decayFactor;
+        const velocityDecayFactor = Math.exp(-deltaTime * 2);
+        this.velocity.x = targetVelocityX - (targetVelocityX - this.velocity.x) * velocityDecayFactor;
+        this.velocity.z = targetVelocityZ - (targetVelocityZ - this.velocity.z) * velocityDecayFactor;
+
+        ApplyMovement(deltaTime, this._node.position, this.velocity);
 
         this._health.update(deltaTime, () => {
             this._node.dispose();
