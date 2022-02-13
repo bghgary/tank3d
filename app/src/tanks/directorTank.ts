@@ -74,7 +74,9 @@ export class DirectorTank extends DroneTank {
     public override update(deltaTime: number, onDestroyed: (entity: Entity) => void): void {
         super.update(deltaTime, onDestroyed);
 
-        if (this._autoShoot || this._autoRotate) {
+        this.shoot();
+
+        if ((this.inBounds && this._autoShoot) || this._autoRotate) {
             if (this._targetCollisionToken) {
                 this._targetCollisionToken.dispose();
                 this._targetCollisionToken = null;
@@ -98,7 +100,7 @@ export class DirectorTank extends DroneTank {
 
             if (!this._targetCollisionToken) {
                 this._targetCollisionToken = this._world.collisions.register([new TargetCollider(this, TARGET_RADIUS, (other) => {
-                    if (other.type === EntityType.Shape || other.type === EntityType.Crasher) {
+                    if (this.inBounds && (other.type === EntityType.Shape || other.type === EntityType.Crasher)) {
                         this._behavior = DroneBehavior.Attack;
                         this._droneProperties.speed = this._properties.projectileSpeed;
 
