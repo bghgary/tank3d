@@ -12,6 +12,7 @@ canvas.style.border = "0";
 canvas.style.outline = "0";
 canvas.style.width = "100%";
 canvas.style.height = "100%";
+canvas.oncontextmenu = () => false;
 document.body.appendChild(canvas);
 
 initialize(canvas);

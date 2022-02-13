@@ -30,6 +30,13 @@ function createBarrel(name: string, size: { muzzle: number, base: number } | num
     return barrel;
 }
 
+function createTetrahedronBody(name: string, size: number, scene: Scene): Mesh {
+    const body = MeshBuilder.CreatePolyhedron(name, { type: 0, size: size / 3 }, scene);
+    body.rotation.z = Math.PI / 6;
+    body.bakeCurrentTransformIntoVertices();
+    return body;
+}
+
 export interface SizeMetadata {
     readonly size: number;
 }
@@ -46,14 +53,14 @@ interface BarrelsMetadata {
     readonly barrels: Array<BarrelMetadata>;
 };
 
-export interface ShapeMetadata extends SizeMetadata { }
-export interface CrasherMetadata extends SizeMetadata { }
-export interface BulletMetadata extends SizeMetadata { }
-export interface DroneMetadata extends SizeMetadata { }
-export interface ShooterCrasherMetadata extends SizeMetadata, BarrelsMetadata { }
-export interface TankMetadata extends SizeMetadata, BarrelsMetadata {
+interface ShieldMetadata {
     readonly shieldSize: number;
 }
+
+export interface ShapeMetadata extends SizeMetadata { }
+export interface CrasherMetadata extends SizeMetadata { }
+export interface ShooterCrasherMetadata extends SizeMetadata, BarrelsMetadata { }
+export interface TankMetadata extends SizeMetadata, BarrelsMetadata, ShieldMetadata { }
 
 export class Sources {
     private readonly _scene: Scene;
@@ -83,6 +90,7 @@ export class Sources {
         readonly smallCrasher: Mesh;
         readonly bigCrasher: Mesh;
         readonly shooterCrasher: TransformNode;
+        readonly megaCrasher: TransformNode;
         readonly baseTank: TransformNode;
         readonly sniperTank: TransformNode;
         readonly twinTank: TransformNode;
@@ -121,7 +129,8 @@ export class Sources {
             goldberg11: this._createGoldberg11Source(sources),
             smallCrasher: this._createSmallCrasherSource(sources),
             bigCrasher: this._createBigCrasherSource(sources),
-            shooterCrasher: this._createShooterCrasherSource(sources),
+            shooterCrasher: this._createShooterCrasherSource(sources, "shooterCrasher", 1),
+            megaCrasher: this._createShooterCrasherSource(sources, "megaCrasher", 2),
             baseTank: this._createBaseTankSource(sources),
             sniperTank: this._createSniperTankSource(sources),
             twinTank: this._createTwinTankSource(sources),
@@ -181,6 +190,10 @@ export class Sources {
 
     public createShooterCrasher(parent?: TransformNode): TransformNode {
         return this._instantiateHeirarchy(this._meshes.shooterCrasher, "shooter", parent);
+    }
+
+    public createMegaCrasher(parent?: TransformNode): TransformNode {
+        return this._instantiateHeirarchy(this._meshes.megaCrasher, "mega", parent);
     }
 
     public createBaseTank(parent?: TransformNode): TransformNode {
@@ -273,7 +286,7 @@ export class Sources {
     }
 
     private _createBulletSource(sources: TransformNode, name: string, segments: number, material: Material): Mesh {
-        const metadata: BulletMetadata = {
+        const metadata: SizeMetadata = {
             size: 1,
         };
 
@@ -301,10 +314,10 @@ export class Sources {
 
     private _createTetrahedronSource(sources: TransformNode): Mesh {
         const metadata: ShapeMetadata = {
-            size: 0.6,
+            size: 0.75,
         };
 
-        const source = MeshBuilder.CreatePolyhedron("shapeTetrahedron", { type: 0, size: 0.25 }, this._scene);
+        const source = MeshBuilder.CreatePolyhedron("shapeTetrahedron", { type: 0, size: metadata.size / 3 }, this._scene);
         source.position.y = -0.1;
         source.rotation.x = -Math.PI / 2;
         source.bakeCurrentTransformIntoVertices();
@@ -345,9 +358,7 @@ export class Sources {
             size: 0.6,
         };
 
-        const source = MeshBuilder.CreatePolyhedron("crasherSmall", { type: 0, size: metadata.size / 3 }, this._scene);
-        source.rotation.z = Math.PI / 6;
-        source.bakeCurrentTransformIntoVertices();
+        const source = createTetrahedronBody("crasherSmall", metadata.size, this._scene);
         source.metadata = metadata;
         source.material = this._materials.pink;
         source.parent = sources;
@@ -359,21 +370,19 @@ export class Sources {
             size: 0.8,
         };
 
-        const source = MeshBuilder.CreatePolyhedron("crasherBig", { type: 0, size: metadata.size / 3 }, this._scene);
-        source.rotation.z = Math.PI / 6;
-        source.bakeCurrentTransformIntoVertices();
+        const source = createTetrahedronBody("crasherBig", metadata.size, this._scene);
         source.metadata = metadata;
         source.material = this._materials.pink;
         source.parent = sources;
         return source;
     }
 
-    private _createShooterCrasherSource(sources: TransformNode): TransformNode {
-        const barrelSize = 0.2;
-        const barrelLength = 0.6;
+    private _createShooterCrasherSource(sources: TransformNode, name: string, size: number): TransformNode {
+        const barrelSize = 0.2 * size;
+        const barrelLength = 0.5 * size;
 
         const metadata: ShooterCrasherMetadata = {
-            size: 0.8,
+            size: 0.8 * size,
             barrels: [{
                 size: barrelSize,
                 length: barrelLength,
@@ -383,13 +392,11 @@ export class Sources {
             }],
         };
 
-        const source = new TransformNode("crasherShooter", this._scene);
+        const source = new TransformNode(name, this._scene);
         source.metadata = metadata;
         source.parent = sources;
 
-        const body = MeshBuilder.CreatePolyhedron("body", { type: 0, size: 0.3 }, this._scene);
-        body.rotation.z = Math.PI / 6;
-        body.bakeCurrentTransformIntoVertices();
+        const body = createTetrahedronBody("body", metadata.size, this._scene);
         body.material = this._materials.pink;
         body.parent = source;
 
@@ -612,13 +619,11 @@ export class Sources {
     }
 
     private _createDroneSource(sources: TransformNode, name: string, material: Material): Mesh {
-        const metadata: DroneMetadata = {
+        const metadata: SizeMetadata = {
             size: 1,
         };
 
-        const source = MeshBuilder.CreatePolyhedron(name, { type: 0, size: metadata.size / 3 }, this._scene);
-        source.rotation.z = Math.PI / 6;
-        source.bakeCurrentTransformIntoVertices();
+        const source = createTetrahedronBody(name, 1, this._scene);
         source.metadata = metadata;
         source.material = material;
         source.parent = sources;
