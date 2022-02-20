@@ -82,7 +82,7 @@ export class Crashers {
     private _spawnCrashers(): void {
         const sources = this._world.sources;
 
-        if (false) {
+        if (Math.random() < 0.95) {
             const create = [
                 () => this._createCrasher(sources.crasher.small),
                 () => this._createCrasher(sources.crasher.big),
