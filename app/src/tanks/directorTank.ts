@@ -36,11 +36,15 @@ class TargetCollider implements Collider {
 }
 
 export class DirectorTank extends DroneTank {
+    private readonly _circleRadius: number;
     private _targetCollisionToken: Nullable<IDisposable> = null;
     private _targetDistanceSquared = 0;
+    private _defendTime = 0;
 
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
         super(world, DirectorTank.CreateNode(world.sources, parent), previousTank);
+
+        this._circleRadius = this._metadata.size + 2;
     }
 
     public override dispose(): void {
@@ -82,15 +86,18 @@ export class DirectorTank extends DroneTank {
             if (this._autoShoot) {
                 this._target.copyFrom(this._world.pointerPosition);
             } else {
-                this._target.copyFrom(this._node.forward).scaleInPlace(this._metadata.size + 2);
+                this._target.copyFrom(this._node.forward).scaleInPlace(this._circleRadius);
                 this._target.addInPlace(this._node.position);
             }
         } else {
-            this._radius = this._metadata.size + 2;
-            this._droneMetadata.speed = this._properties.projectileSpeed * 0.5;
+            this._defendTime = Math.max(this._defendTime - deltaTime, 0);
+            if (this._defendTime === 0) {
+                this._radius = this._circleRadius;
+                this._droneMetadata.speed = this._properties.projectileSpeed * 0.5;
 
-            this._target.copyFrom(this._node.position);
-            this._targetDistanceSquared = Number.MAX_VALUE;
+                this._target.copyFrom(this._node.position);
+                this._targetDistanceSquared = Number.MAX_VALUE;
+            }
 
             if (!this._targetCollisionToken) {
                 this._targetCollisionToken = this._world.collisions.register([new TargetCollider(this, TARGET_RADIUS, (other) => {
@@ -105,6 +112,7 @@ export class DirectorTank extends DroneTank {
                         if (distanceSquared < this._targetDistanceSquared) {
                             this._target.copyFrom(other.position);
                             this._targetDistanceSquared = distanceSquared;
+                            this._defendTime = 1;
                         }
                     }
                 })]);
@@ -120,7 +128,7 @@ export class DirectorTank extends DroneTank {
     }
 
     private _updateAutoRotateSpeed(): void {
-        this._autoRotateSpeed = this._properties.projectileSpeed * 0.5 / (this._metadata.size + 2);
+        this._autoRotateSpeed = this._properties.projectileSpeed * 0.5 / (this._circleRadius);
     }
 
     public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {
