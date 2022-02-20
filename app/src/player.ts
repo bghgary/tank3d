@@ -97,7 +97,8 @@ export class Player {
                 return;
             }
 
-            if (DEV_BUILD && data.type === KeyboardEventTypes.KEYUP && data.event.ctrlKey && data.event.shiftKey && data.event.altKey && data.event.code === "KeyG") {
+            // Cheat shortcut for testing
+            if (data.type === KeyboardEventTypes.KEYUP && data.event.ctrlKey && data.event.shiftKey && data.event.altKey && data.event.code === "KeyG") {
                 this._score.add(10000);
             }
 
