@@ -2,7 +2,8 @@ import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Nullable } from "@babylonjs/core/types";
 import { Entity } from "./entity";
-import { SizeMetadata, Sources } from "./sources";
+import { SizeMetadata } from "./metadata";
+import { Sources } from "./sources";
 
 const REGEN_TIME = 30;
 const REGEN_SPEED = 0.2;
@@ -32,7 +33,7 @@ export class Health {
     }
 
     public setParent(parent: TransformNode): void {
-        const size = (parent.metadata as SizeMetadata).size;
+        const size = (parent.metadata as Readonly<SizeMetadata>).size;
 
         this._node.parent = parent;
         this._node.position.y = size * 0.9;

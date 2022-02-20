@@ -6,10 +6,10 @@ import { PlayerTank } from "./playerTank";
 
 export class FlankGuardTank extends BulletTank {
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super("Flank Guard", FlankGuardTank.CreateNode(world.sources, parent), {}, world, previousTank);
+        super(world, FlankGuardTank.CreateNode(world.sources, parent), previousTank);
     }
 
     public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {
-        return sources.createFlankGuardTank(parent);
+        return sources.create(sources.tank.flankGuard, parent);
     }
 }

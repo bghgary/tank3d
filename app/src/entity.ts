@@ -17,4 +17,5 @@ export interface Entity {
     readonly position: Vector3;
     readonly rotation: Quaternion;
     readonly velocity: Vector3;
+    readonly owner?: Entity;
 }

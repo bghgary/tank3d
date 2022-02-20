@@ -1,6 +1,7 @@
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Sources, TankMetadata } from "./sources";
+import { TankMetadata } from "./metadata";
+import { Sources } from "./sources";
 
 const MAX_VISIBLITY = 0.2;
 

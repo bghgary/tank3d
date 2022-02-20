@@ -8,13 +8,11 @@ export class TwinTank extends BulletTank {
     private _barrelIndex = 0;
 
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super("Twin", TwinTank.CreateNode(world.sources, parent), {
-            reloadTime: 0.6,
-        }, world, previousTank);
+        super(world, TwinTank.CreateNode(world.sources, parent), previousTank);
     }
 
     public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {
-        return sources.createTwinTank(parent);
+        return sources.create(sources.tank.twin, parent);
     }
 
     public override shoot(): void {

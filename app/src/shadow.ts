@@ -1,5 +1,6 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { SizeMetadata, Sources } from "./sources";
+import { SizeMetadata } from "./metadata";
+import { Sources } from "./sources";
 
 export class Shadow {
     private readonly _node: TransformNode;
@@ -7,13 +8,13 @@ export class Shadow {
 
     public constructor(sources: Sources, parent: TransformNode) {
         this._node = sources.createShadow(parent);
-        this._size = (parent.metadata as SizeMetadata).size;
+        this._size = (parent.metadata as Readonly<SizeMetadata>).size;
         this.update();
     }
 
     public setParent(parent: TransformNode): void {
         this._node.parent = parent;
-        this._size = (parent.metadata as SizeMetadata).size;
+        this._size = (parent.metadata as Readonly<SizeMetadata>).size;
     }
 
     public update(): void {

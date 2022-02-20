@@ -4,7 +4,6 @@ import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Bullet } from "./bullets";
 import { Crashers } from "./crashers";
 import { Entity } from "./entity";
 import { Message } from "./message";
@@ -19,7 +18,6 @@ import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { EvolutionNode, EvolutionRootNode } from "./evolutions";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Drone } from "./drones";
 
 declare const DEV_BUILD: boolean;
 
@@ -162,8 +160,7 @@ export class Player {
         });
 
         const handleEntityDestroyed = (target: { points: number }, other: Entity): void => {
-            if ((other as Bullet | Drone).owner === this._tank ||
-                (other === this._tank && !this.shielded)) {
+            if (other.owner === this._tank || (other === this._tank && !this._tank.shielded)) {
                 this._score.add(target.points);
             }
         };
@@ -176,16 +173,8 @@ export class Player {
         return this._tank.position;
     }
 
-    public get velocity(): Vector3 {
-        return this._tank.velocity;
-    }
-
-    public get shielded(): boolean {
-        return this._tank.shielded;
-    }
-
-    public get inBounds(): boolean {
-        return this._tank.inBounds;
+    public get active(): boolean {
+        return !this._tank.shielded && this._tank.inBounds;
     }
 
     public update(deltaTime: number): void {

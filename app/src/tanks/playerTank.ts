@@ -1,15 +1,13 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
-import { Bullet } from "../bullets";
 import { Collider } from "../collisions";
 import { ApplyCollisionForce, ApplyWallClamp } from "../common";
-import { Drone } from "../drones";
 import { Entity, EntityType } from "../entity";
 import { Health } from "../health";
+import { TankMetadata } from "../metadata";
 import { Shadow } from "../shadow";
 import { Shield } from "../shield";
-import { TankMetadata } from "../sources";
 import { World } from "../world";
 
 export const enum ProjectileType {
@@ -65,10 +63,7 @@ function multiply(properties: Readonly<TankProperties>, value: Partial<Readonly<
     };
 }
 
-export abstract class PlayerTank implements Collider {
-    private readonly _multiplier: Partial<Readonly<TankProperties>>;
-    private readonly _collisionToken: IDisposable;
-
+export abstract class PlayerTank implements Entity, Collider {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
     protected readonly _shield: Shield;
@@ -80,18 +75,17 @@ export abstract class PlayerTank implements Collider {
     protected _autoRotateSpeed = 1;
     protected _properties: Readonly<TankProperties>;
 
-    protected get _metadata(): TankMetadata {
+    private readonly _collisionToken: IDisposable;
+
+    protected get _metadata(): Readonly<TankMetadata> {
         return this._node.metadata;
     }
 
-    protected constructor(displayName: string, node: TransformNode, multiplier: Partial<Readonly<TankProperties>>, world: World, previousTank?: PlayerTank) {
-        this.displayName = displayName;
+    protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
+        this._world = world;
 
         this._node = node;
-        this._multiplier = multiplier;
-        this._properties = multiply(BaseProperties, multiplier);
-
-        this._world = world;
+        this._properties = multiply(BaseProperties, this._metadata.multiplier);
 
         if (previousTank) {
             this._node.position.copyFrom(previousTank._node.position);
@@ -113,7 +107,7 @@ export abstract class PlayerTank implements Collider {
             this._shadow = new Shadow(world.sources, this._node);
         }
 
-        this._collisionToken = world.collisions.register([this]);
+        this._collisionToken = this._world.collisions.register([this]);
     }
 
     public dispose(): void {
@@ -126,7 +120,7 @@ export abstract class PlayerTank implements Collider {
     }
 
     // Entity
-    public readonly displayName: string;
+    public get displayName() { return this._metadata.displayName; }
     public readonly type = EntityType.Tank;
     public get size() { return this._shield.enabled ? this._shield.size : this._metadata.size; }
     public readonly mass = 2;
@@ -199,13 +193,13 @@ export abstract class PlayerTank implements Collider {
         this._shield.update(deltaTime);
 
         this._health.update(deltaTime, (entity) => {
-            this._node.setEnabled(false);
             onDestroyed(entity);
+            this._node.setEnabled(false);
         });
     }
 
     public setUpgrades(upgrades: Readonly<TankProperties>): void {
-        this._properties = multiply(add(BaseProperties, upgrades), this._multiplier);
+        this._properties = multiply(add(BaseProperties, upgrades), this._metadata.multiplier);
         this._health.setMax(this._properties.maxHealth);
         this._health.setRegenSpeed(this._properties.healthRegen);
     }
@@ -221,7 +215,7 @@ export abstract class PlayerTank implements Collider {
     }
 
     public onCollide(other: Entity): number {
-        if (this._shield.enabled || (other as Bullet | Drone).owner === this) {
+        if (this._shield.enabled || other.owner === this) {
             ApplyCollisionForce(this, other);
             return 0;
         }

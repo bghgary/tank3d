@@ -27,18 +27,18 @@ export function ApplyMovement(deltaTime: number, position: Vector3, velocity: Ve
 }
 
 export function ApplyGravity(deltaTime: number, position: Vector3, velocity: Vector3): boolean {
-    if (position.y > 0) {
-        velocity.y -= GRAVITY * deltaTime;
-        position.y += velocity.y * deltaTime;
-        if (position.y <= 0) {
-            position.y = 0;
-            velocity.y = 0;
-        }
-
-        return true;
+    if (position.y === 0) {
+        return false;
     }
 
-    return false;
+    velocity.y -= GRAVITY * deltaTime;
+    position.y += velocity.y * deltaTime;
+    if (position.y <= 0) {
+        position.y = 0;
+        velocity.y = 0;
+    }
+
+    return true;
 }
 
 export function ApplyWallBounce(position: Vector3, velocity: Vector3, size: number, wallLimit: number): void {

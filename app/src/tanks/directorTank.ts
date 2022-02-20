@@ -3,7 +3,6 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { Nullable } from "@babylonjs/core/types";
 import { Collider } from "../collisions";
-import { DroneBehavior } from "../drones";
 import { Entity, EntityType } from "../entity";
 import { Sources } from "../sources";
 import { World } from "../world";
@@ -41,10 +40,7 @@ export class DirectorTank extends DroneTank {
     private _targetDistanceSquared = 0;
 
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super("Director", DirectorTank.CreateNode(world.sources, parent), {
-            projectileSpeed: 0.5,
-            reloadTime: 3,
-        }, world, previousTank);
+        super(world, DirectorTank.CreateNode(world.sources, parent), previousTank);
     }
 
     public override dispose(): void {
@@ -66,7 +62,7 @@ export class DirectorTank extends DroneTank {
     public override toggleAutoRotate(): void {
         super.toggleAutoRotate();
         if (this._autoRotate) {
-            this._autoRotateSpeed = this._properties.projectileSpeed * 0.5 / this._rotateRadius;
+            this._updateAutoRotateSpeed();
             this._autoShoot = false;
         }
     }
@@ -82,27 +78,27 @@ export class DirectorTank extends DroneTank {
                 this._targetCollisionToken = null;
             }
 
-            this._behavior = DroneBehavior.Attack;
-            this._droneProperties.speed = this._properties.projectileSpeed;
+            this._radius = 0;
+            this._droneMetadata.speed = this._properties.projectileSpeed;
 
             if (this._autoShoot) {
                 this._target.copyFrom(this._world.pointerPosition);
             } else {
-                this._target.copyFrom(this._node.forward).scaleInPlace(this._rotateRadius);
+                this._target.copyFrom(this._node.forward).scaleInPlace(this._metadata.size + 2);
                 this._target.addInPlace(this._node.position);
             }
         } else {
-            this._behavior = DroneBehavior.Defend;
-            this._droneProperties.speed = this._properties.projectileSpeed * 0.5;
+            this._radius = this._metadata.size + 2;
+            this._droneMetadata.speed = this._properties.projectileSpeed * 0.5;
 
             this._target.copyFrom(this._node.position);
             this._targetDistanceSquared = Number.MAX_VALUE;
 
             if (!this._targetCollisionToken) {
                 this._targetCollisionToken = this._world.collisions.register([new TargetCollider(this, TARGET_RADIUS, (other) => {
-                    if (this.inBounds && (other.type === EntityType.Shape || other.type === EntityType.Crasher)) {
-                        this._behavior = DroneBehavior.Attack;
-                        this._droneProperties.speed = this._properties.projectileSpeed;
+                    if (this.inBounds && other.type !== EntityType.Bullet && other !== this && other.owner !== this) {
+                        this._radius = 0;
+                        this._droneMetadata.speed = this._properties.projectileSpeed;
 
                         const distanceSquared =
                             (other.type === EntityType.Shape ? TARGET_RADIUS * TARGET_RADIUS : 0) +
@@ -118,7 +114,16 @@ export class DirectorTank extends DroneTank {
         }
     }
 
+    protected override _updateDroneMetadata(): void {
+        super._updateDroneMetadata();
+        this._updateAutoRotateSpeed();
+    }
+
+    private _updateAutoRotateSpeed(): void {
+        this._autoRotateSpeed = this._properties.projectileSpeed * 0.5 / (this._metadata.size + 2);
+    }
+
     public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {
-        return sources.createDirectorTank(parent);
+        return sources.create(sources.tank.director, parent);
     }
 }

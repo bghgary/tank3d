@@ -6,14 +6,10 @@ import { PlayerTank } from "./playerTank";
 
 export class PounderTank extends BulletTank {
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super("Pounder", PounderTank.CreateNode(world.sources, parent), {
-            projectileDamage: 2,
-            projectileHealth: 2,
-            reloadTime: 2,
-        }, world, previousTank);
+        super(world, PounderTank.CreateNode(world.sources, parent), previousTank);
     }
 
     public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {
-        return sources.createPounderTank(parent);
+        return sources.create(sources.tank.pounder, parent);
     }
 }
