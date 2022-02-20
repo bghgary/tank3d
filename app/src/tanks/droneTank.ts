@@ -1,10 +1,11 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Barrel } from "../barrel";
 import { Drones } from "../drones";
 import { Entity } from "../entity";
 import { ProjectileMetadata } from "../metadata";
 import { World } from "../world";
-import { Barrel, BarrelTank } from "./barrelTank";
+import { BarrelTank } from "./barrelTank";
 import { ProjectileType, PlayerTank, TankProperties } from "./playerTank";
 
 const MAX_DRONE_COUNT = 4;

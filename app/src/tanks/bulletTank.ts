@@ -1,8 +1,9 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Barrel } from "../barrel";
 import { Bullets } from "../bullets";
 import { ProjectileMetadata } from "../metadata";
 import { World } from "../world";
-import { Barrel, BarrelTank } from "./barrelTank";
+import { BarrelTank } from "./barrelTank";
 import { ProjectileType, PlayerTank, TankProperties } from "./playerTank";
 
 export class BulletTank extends BarrelTank {

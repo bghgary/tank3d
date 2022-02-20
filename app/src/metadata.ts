@@ -36,15 +36,16 @@ export interface CrasherMetadata extends DisplayNameMetadata, SizeMetadata {
     points: number;
 }
 
-export interface BulletCrasherMetadata extends CrasherMetadata {
+export interface BarrelCrasherMetadata extends CrasherMetadata {
     reload: number;
     barrels: Array<Readonly<BarrelMetadata>>;
+}
+
+export interface BulletCrasherMetadata extends BarrelCrasherMetadata {
     bullet: Readonly<ProjectileMetadata>;
 }
 
-export interface DroneCrasherMetadata extends CrasherMetadata {
-    reload: number;
-    barrels: Array<Readonly<BarrelMetadata>>;
+export interface DroneCrasherMetadata extends BarrelCrasherMetadata {
     drone: Readonly<ProjectileMetadata>;
 }
 

@@ -17,6 +17,10 @@ const CRASHER_PROJECTILE_SPEED = 5;
 const CRASHER_PROJECTILE_DAMAGE = 5;
 const CRASHER_PROJECTILE_HEALTH = 8;
 
+const MEGA_CRASHER_HEALTH = 300;
+const MEGA_CRASHER_DAMAGE = 50;
+const MEGA_CRASHER_POINTS = 100;
+
 function createBarrel(name: string, size: { muzzle: number, base: number } | number, length: number, scene: Scene): Mesh {
     if (typeof size === "number") {
         size = { muzzle: size, base: size };
@@ -90,6 +94,7 @@ export class Sources {
         readonly big: Mesh;
         readonly shooter: TransformNode;
         readonly destroyer: TransformNode;
+        readonly twin: TransformNode;
         readonly drone: TransformNode;
     };
 
@@ -157,6 +162,7 @@ export class Sources {
             big: this._createBigCrasherSource(crashers),
             shooter: this._createShooterCrasherSource(crashers),
             destroyer: this._createDestroyerCrasherSource(crashers),
+            twin: this._createTwinCrasherSource(crashers),
             drone: this._createDroneCrasherSource(crashers),
         }
 
@@ -387,28 +393,11 @@ export class Sources {
         return source;
     }
 
-    private _createBulletCrasherSource(parent: TransformNode, name: string, metadata: BulletCrasherMetadata): TransformNode {
-        const source = new TransformNode(name, this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createTetrahedronBody("body", metadata.size, this._scene);
-        body.material = this._materials.pink;
-        body.parent = source;
-
-        const barrelMetadata = metadata.barrels[0]!;
-        const barrel = createBarrel("barrel", barrelMetadata.size, barrelMetadata.length, this._scene);
-        barrel.material = this._materials.gray;
-        barrel.parent = source;
-
-        return source;
-    }
-
     private _createShooterCrasherSource(parent: TransformNode): TransformNode {
         const metadata: Readonly<BulletCrasherMetadata> = {
             displayName: "Shooter Crasher",
             size: 0.7,
-            speed: CRASHER_SPEED,
+            speed: CRASHER_SPEED * 1.1,
             health: 20,
             damage: 30,
             points: 50,
@@ -427,21 +416,34 @@ export class Sources {
             },
         };
 
-        return this._createBulletCrasherSource(parent, "shooter", metadata);
+        const source = new TransformNode("shooter", this._scene);
+        source.metadata = metadata;
+        source.parent = parent;
+
+        const body = createTetrahedronBody("body", metadata.size, this._scene);
+        body.material = this._materials.pink;
+        body.parent = source;
+
+        const barrelMetadata = metadata.barrels[0]!;
+        const barrel = createBarrel("barrel", barrelMetadata.size, barrelMetadata.length, this._scene);
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
+
+        return source;
     }
 
     private _createDestroyerCrasherSource(parent: TransformNode): TransformNode {
         const metadata: Readonly<BulletCrasherMetadata> = {
             displayName: "Destroyer Crasher",
             size: 1.4,
-            speed: CRASHER_SPEED * 0.5,
-            health: 80,
-            damage: 50,
-            points: 100,
+            speed: CRASHER_SPEED * 0.6,
+            health: MEGA_CRASHER_HEALTH,
+            damage: MEGA_CRASHER_DAMAGE,
+            points: MEGA_CRASHER_POINTS,
             reload: CRASHER_PROJECTILE_RELOAD * 2,
             barrels: [{
                 size: 0.4,
-                length: 1,
+                length: 1.1,
                 offset: new Vector3(0, 0, 0),
                 forward: new Vector3(0, 0, 1),
                 mesh: "barrel",
@@ -453,7 +455,74 @@ export class Sources {
             },
         };
 
-        return this._createBulletCrasherSource(parent, "destroyer", metadata);
+        const source = new TransformNode("destroyer", this._scene);
+        source.metadata = metadata;
+        source.parent = parent;
+
+        const body = createTetrahedronBody("body", metadata.size, this._scene);
+        body.material = this._materials.pink;
+        body.parent = source;
+
+        const barrelMetadata = metadata.barrels[0]!;
+        const barrel = createBarrel("barrel", barrelMetadata.size, barrelMetadata.length, this._scene);
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
+
+        return source;
+    }
+
+    private _createTwinCrasherSource(parent: TransformNode): TransformNode {
+        const barrelSize = 0.4;
+        const barrelLength = 1.1;
+        const barrelOffset = barrelSize * 0.51;
+
+        const metadata: Readonly<BulletCrasherMetadata> = {
+            displayName: "Twin Crasher",
+            size: 1.4,
+            speed: CRASHER_SPEED * 0.7,
+            health: MEGA_CRASHER_HEALTH,
+            damage: MEGA_CRASHER_DAMAGE,
+            points: MEGA_CRASHER_POINTS,
+            reload: CRASHER_PROJECTILE_RELOAD * 0.5,
+            barrels: [{
+                size: barrelSize,
+                length: barrelLength,
+                offset: new Vector3(-barrelOffset, 0, 0),
+                forward: new Vector3(0, 0, 1),
+                mesh: "barrelL",
+            }, {
+                size: barrelSize,
+                length: barrelLength,
+                offset: new Vector3(barrelOffset, 0, 0),
+                forward: new Vector3(0, 0, 1),
+                mesh: "barrelR",
+            }],
+            bullet: {
+                speed: CRASHER_PROJECTILE_SPEED,
+                damage: CRASHER_PROJECTILE_DAMAGE,
+                health: CRASHER_PROJECTILE_HEALTH,
+            },
+        };
+
+        const source = new TransformNode("twin", this._scene);
+        source.metadata = metadata;
+        source.parent = parent;
+
+        const body = createTetrahedronBody("body", metadata.size, this._scene);
+        body.material = this._materials.pink;
+        body.parent = source;
+
+        const barrelL = createBarrel("barrelL", barrelSize, barrelLength, this._scene);
+        barrelL.position.x = -barrelOffset;
+        barrelL.material = this._materials.gray;
+        barrelL.parent = source;
+
+        const barrelR = createBarrel("barrelR", barrelSize, barrelLength, this._scene);
+        barrelR.position.x = +barrelOffset;
+        barrelR.material = this._materials.gray;
+        barrelR.parent = source;
+
+        return source;
     }
 
     private _createDroneCrasherSource(parent: TransformNode): TransformNode {
@@ -464,9 +533,9 @@ export class Sources {
             displayName: "Drone Crasher",
             size: 1.4,
             speed: CRASHER_SPEED * 0.5,
-            health: 80,
-            damage: 50,
-            points: 100,
+            health: MEGA_CRASHER_HEALTH,
+            damage: MEGA_CRASHER_DAMAGE,
+            points: MEGA_CRASHER_POINTS,
             reload: CRASHER_PROJECTILE_RELOAD * 4,
             barrels: [{
                 size: barrelSize.muzzle,
