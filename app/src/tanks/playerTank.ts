@@ -66,6 +66,7 @@ function multiply(properties: Readonly<TankProperties>, value: Partial<Readonly<
 export abstract class PlayerTank implements Entity, Collider {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
+    protected readonly _metadata: Readonly<TankMetadata>;
     protected readonly _shield: Shield;
     protected readonly _health: Health;
     protected readonly _shadow: Shadow;
@@ -77,14 +78,11 @@ export abstract class PlayerTank implements Entity, Collider {
 
     private readonly _collisionToken: IDisposable;
 
-    protected get _metadata(): Readonly<TankMetadata> {
-        return this._node.metadata;
-    }
-
     protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         this._world = world;
 
         this._node = node;
+        this._metadata = this._node.metadata;
         this._properties = multiply(BaseProperties, this._metadata.multiplier);
 
         if (previousTank) {
@@ -115,13 +113,10 @@ export abstract class PlayerTank implements Entity, Collider {
         this._collisionToken.dispose();
     }
 
-    public get shielded(): boolean {
-        return this._shield.enabled;
-    }
-
     // Entity
     public get displayName() { return this._metadata.displayName; }
     public readonly type = EntityType.Tank;
+    public get active() { return !this._shield.enabled && this.inBounds && this._node.isEnabled(); }
     public get size() { return this._shield.enabled ? this._shield.size : this._metadata.size; }
     public readonly mass = 2;
     public get damage() { return this._shield.enabled ? 0 : this._properties.bodyDamage; }
@@ -185,7 +180,7 @@ export abstract class PlayerTank implements Entity, Collider {
         this._shield.enabled = false;
     }
 
-    public update(deltaTime: number, onDestroyed: (entity: Entity) => void): void {
+    public update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
         if (this._autoShoot && this.inBounds) {
             this.shoot();
         }
@@ -193,7 +188,7 @@ export abstract class PlayerTank implements Entity, Collider {
         this._shield.update(deltaTime);
 
         this._health.update(deltaTime, (entity) => {
-            onDestroyed(entity);
+            onDestroy(entity);
             this._node.setEnabled(false);
         });
     }

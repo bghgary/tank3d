@@ -1,27 +1,20 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Barrel } from "../barrel";
-import { Bullets } from "../bullets";
 import { BulletCrasherMetadata } from "../metadata";
 import { Player } from "../player";
-import { Sources } from "../sources";
+import { World } from "../world";
 import { BarrelCrasher } from "./barrelCrasher";
 
 const CHASE_ANGLE = 0.02 * Math.PI;
 
 export class BulletCrasher extends BarrelCrasher {
-    private readonly _bullets: Bullets;
     private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
 
-    protected override get _metadata(): BulletCrasherMetadata {
-        return this._node.metadata;
-    }
+    public constructor(world: World, node: TransformNode) {
+        super(world, node);
 
-    public constructor(sources: Sources, bullets: Bullets, node: TransformNode) {
-        super(sources, node);
-
-        this._bullets = bullets;
-        this._createBulletNode = (parent) => sources.create(sources.bullet.crasher, parent);
+        this._createBulletNode = (parent) => world.sources.create(world.sources.bullet.crasher, parent);
     }
 
     protected override _chase(deltaTime: number, player: Player, direction: Vector3): boolean {
@@ -40,13 +33,13 @@ export class BulletCrasher extends BarrelCrasher {
                 for (const barrel of this._barrels) {
                     this._shootFrom(barrel);
                 }
-                this._reloadTime = this._metadata.reload;
+                this._reloadTime = (this._metadata as BulletCrasherMetadata).reload;
             }
         }
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const bullet = barrel.shootBullet(this._bullets, this, this._metadata.bullet, this._createBulletNode);
+        const bullet = barrel.shootBullet(this._world.bullets, this, (this._metadata as BulletCrasherMetadata).bullet, this._createBulletNode);
         this._recoil.x += bullet.velocity.x * bullet.mass;
         this._recoil.z += bullet.velocity.z * bullet.mass;
     }

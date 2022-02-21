@@ -1,4 +1,5 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { BarrelCrasherMetadata } from "../metadata";
 import { BulletCrasher } from "./bulletCrasher";
 
 const CHASE_ANGLE = 0.02 * Math.PI;
@@ -12,7 +13,7 @@ export class TwinCrasher extends BulletCrasher {
             if (angle < CHASE_ANGLE) {
                 this._shootFrom(this._barrels[this._barrelIndex]!);
                 this._barrelIndex = (this._barrelIndex + 1) % this._barrels.length;
-                this._reloadTime = this._metadata.reload;
+                this._reloadTime = (this._metadata as BarrelCrasherMetadata).reload;
             }
         }
     }

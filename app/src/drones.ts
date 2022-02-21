@@ -92,6 +92,7 @@ class DroneImpl implements Drone, Collider {
     // Drone
     public get displayName() { return this.owner.displayName; }
     public readonly type = EntityType.Drone;
+    public get active() { return this._node.isEnabled(); }
     public readonly size: number;
     public get mass() { return this.size * this.size; }
     public get damage() { return this._metadata.damage; }
@@ -107,7 +108,7 @@ class DroneImpl implements Drone, Collider {
 
     public readonly owner: Entity;
 
-    public update(deltaTime: number, target: Vector3, radius: number, onDestroyed: () => void): void {
+    public update(deltaTime: number, target: Vector3, radius: number, onDestroy: () => void): void {
         ApplyMovement(deltaTime, this._node.position, this.velocity);
 
         const direction = TmpVectors.Vector3[0];
@@ -137,22 +138,23 @@ class DroneImpl implements Drone, Collider {
         this._shadow.update();
 
         this._health.update(deltaTime, () => {
-            onDestroyed();
+            onDestroy();
             this._node.dispose();
         });
     }
 
     public onCollide(other: Entity): number {
         if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
-            if (other.type !== EntityType.Bullet) {
-                ApplyCollisionForce(this, other);
-                return 0;
+            if (other.type == EntityType.Bullet) {
+                return 1;
             }
-        } else {
+
             ApplyCollisionForce(this, other);
-            this._health.takeDamage(other);
+            return 0;
         }
 
-        return 1;
+        ApplyCollisionForce(this, other);
+        this._health.takeDamage(other);
+        return 0.2;
     }
 }

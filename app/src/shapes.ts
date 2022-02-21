@@ -8,7 +8,6 @@ import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
 import { ShapeMetadata } from "./metadata";
 import { Shadow } from "./shadow";
-import { Sources } from "./sources";
 import { World } from "./world";
 
 const IDLE_ROTATION_SPEED = 0.15;
@@ -43,7 +42,7 @@ export class Shapes {
 
     public update(deltaTime: number): void {
         for (const shape of this._shapes) {
-            shape.update(deltaTime, this._world, (entity) => {
+            shape.update(deltaTime, (entity) => {
                 this._shapes.delete(shape);
                 this.onShapeDestroyedObservable.notifyObservers({ shape: shape, other: entity });
                 this._spawns.add({ time: SPAWN_TIME });
@@ -70,7 +69,7 @@ export class Shapes {
         const n = Math.random();
         const source = sources[n < 0.6 ? 0 : n < 0.95 ? 1 : n < 0.99 ? 2 : 3]!;
         const node = this._world.sources.create(source, this._root);
-        const shape = new ShapeImpl(this._world.sources, node);
+        const shape = new ShapeImpl(this._world, node);
 
         const limit = (this._world.size - shape.size) * 0.5;
         const x = Scalar.RandomRange(-limit, limit);
@@ -92,7 +91,7 @@ export class Shapes {
 
     private *_getCollidableEntities(): Iterator<ShapeImpl> {
         for (const shape of this._shapes) {
-            if (shape.position.y === 0) {
+            if (shape.active) {
                 yield shape;
             }
         }
@@ -100,18 +99,18 @@ export class Shapes {
 }
 
 class ShapeImpl implements Shape, Collider {
+    private readonly _world: World;
     private readonly _node: TransformNode;
+    private readonly _metadata: Readonly<ShapeMetadata>;
     private readonly _health: Health;
     private readonly _shadow: Shadow;
 
-    private get _metadata(): Readonly<ShapeMetadata> {
-        return this._node.metadata;
-    }
-
-    public constructor(sources: Sources, node: TransformNode) {
+    public constructor(world: World, node: TransformNode) {
+        this._world = world;
         this._node = node;
-        this._health = new Health(sources, node, this._metadata.health);
-        this._shadow = new Shadow(sources, node);
+        this._metadata = this._node.metadata;
+        this._health = new Health(this._world.sources, node, this._metadata.health);
+        this._shadow = new Shadow(this._world.sources, node);
     }
 
     public dispose(): void {
@@ -121,6 +120,7 @@ class ShapeImpl implements Shape, Collider {
     // Entity
     public get displayName() { return this._metadata.displayName; }
     public readonly type = EntityType.Shape;
+    public get active() { return this._node.position.y === 0 && this._node.isEnabled(); }
     public get size() { return this._metadata.size; }
     public get mass() { return this.size * this.size; }
     public get damage() { return this._metadata.damage; }
@@ -137,16 +137,13 @@ class ShapeImpl implements Shape, Collider {
 
     public rotationVelocity = 0;
 
-    public get name(): string { return this._node.name; }
-    public get enabled(): boolean { return this._node.isEnabled(); }
-
-    public update(deltaTime: number, world: World, onDestroyed: (entity: Entity) => void): void {
+    public update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
         if (ApplyGravity(deltaTime, this._node.position, this.velocity)) {
             return;
         }
 
         ApplyMovement(deltaTime, this._node.position, this.velocity);
-        ApplyWallBounce(this._node.position, this.velocity, this.size, world.size);
+        ApplyWallBounce(this._node.position, this.velocity, this.size, this._world.size);
 
         const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
         if (oldSpeed > 0) {
@@ -163,7 +160,7 @@ class ShapeImpl implements Shape, Collider {
         this._shadow.update();
 
         this._health.update(deltaTime, (entity) => {
-            onDestroyed(entity);
+            onDestroy(entity);
             this._node.dispose();
         });
     }

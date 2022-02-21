@@ -2,9 +2,7 @@ import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Quaternion } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Observable } from "@babylonjs/core/Misc/observable";
-import { Drones } from "./drones";
 import { Entity } from "./entity";
-import { DroneCrasherMetadata } from "./metadata";
 import { Player } from "./player";
 import { World } from "./world";
 import { BaseCrasher } from "./crashers/baseCrasher";
@@ -40,7 +38,7 @@ export class Crashers {
 
     public update(deltaTime: number, player: Player): void {
         for (const crasher of this._crashers) {
-            crasher.update(deltaTime, this._world, player, (entity) => {
+            crasher.update(deltaTime, player, (entity) => {
                 this._crashers.delete(crasher);
                 this.onCrasherDestroyedObservable.notifyObservers({ crasher: crasher, other: entity });
             });
@@ -62,21 +60,19 @@ export class Crashers {
     }
 
     private _createCrasher(source: TransformNode): BaseCrasher {
-        return new BaseCrasher(this._world.sources, this._world.sources.create(source, this._root));
+        return new BaseCrasher(this._world, this._world.sources.create(source, this._root));
     }
 
     private _createBulletCrasher(source: TransformNode): BaseCrasher {
-        return new BulletCrasher(this._world.sources, this._world.bullets, this._world.sources.create(source, this._root));
+        return new BulletCrasher(this._world, this._world.sources.create(source, this._root));
     }
 
     private _createTwinCrasher(source: TransformNode): BaseCrasher {
-        return new TwinCrasher(this._world.sources, this._world.bullets, this._world.sources.create(source, this._root));
+        return new TwinCrasher(this._world, this._world.sources.create(source, this._root));
     }
 
     private _createDroneCrasher(source: TransformNode): BaseCrasher {
-        const node = this._world.sources.create(source, this._root);
-        const drones = new Drones(this._world, this._root, (node.metadata as DroneCrasherMetadata).drone);
-        return new DroneCrasher(this._world.sources, drones, node);
+        return new DroneCrasher(this._world, this._world.sources.create(source, this._root));
     }
 
     private _spawnCrashers(): void {

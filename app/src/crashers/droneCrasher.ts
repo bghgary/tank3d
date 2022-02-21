@@ -2,9 +2,8 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Drones } from "../drones";
 import { Entity } from "../entity";
-import { DroneCrasherMetadata } from "../metadata";
+import { BarrelCrasherMetadata, DroneCrasherMetadata } from "../metadata";
 import { Player } from "../player";
-import { Sources } from "../sources";
 import { World } from "../world";
 import { BarrelCrasher } from "./barrelCrasher";
 
@@ -15,26 +14,23 @@ export class DroneCrasher extends BarrelCrasher {
     private readonly _drones: Drones;
     private readonly _createDroneNode: (parent: TransformNode) => TransformNode;
 
-    protected override get _metadata(): DroneCrasherMetadata {
-        return this._node.metadata;
+    public constructor(world: World, node: TransformNode) {
+        super(world, node);
+
+        this._drones = new Drones(world, node.parent as TransformNode, (node.metadata as DroneCrasherMetadata).drone);
+        this._createDroneNode = (parent) => world.sources.create(world.sources.drone.crasher, parent);
     }
 
-    public constructor(sources: Sources, drones: Drones, node: TransformNode) {
-        super(sources, node);
-        this._drones = drones;
-        this._createDroneNode = (parent) => sources.create(sources.drone.crasher, parent);
-    }
-
-    public override update(deltaTime: number, world: World, player: Player, onDestroyed: (entity: Entity) => void): void {
+    public override update(deltaTime: number, player: Player, onDestroy: (entity: Entity) => void): void {
         if (player.active) {
             this._drones.update(deltaTime, player.position, 0);
         } else {
             this._drones.update(deltaTime, this._node.position, this._metadata.size);
         }
 
-        super.update(deltaTime, world, player, (entity) => {
-            onDestroyed(entity);
+        super.update(deltaTime, player, (entity) => {
             this._drones.dispose();
+            onDestroy(entity);
         });
     }
 
@@ -52,7 +48,7 @@ export class DroneCrasher extends BarrelCrasher {
                     this._recoil.z += drone.velocity.z * drone.mass;
                 }
 
-                this._reloadTime = this._metadata.reload;
+                this._reloadTime = (this._metadata as BarrelCrasherMetadata).reload;
             }
         }
 

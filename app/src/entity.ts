@@ -11,6 +11,7 @@ export const enum EntityType {
 export interface Entity {
     readonly displayName: string;
     readonly type: EntityType;
+    readonly active: boolean;
     readonly size: number;
     readonly mass: number;
     readonly damage: number;

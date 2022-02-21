@@ -77,6 +77,7 @@ class BulletImpl implements Bullet, Collider {
     // Bullet
     public get displayName() { return this.owner.displayName; }
     public readonly type = EntityType.Bullet;
+    public get active() { return this._node.isEnabled(); }
     public readonly size: number;
     public get mass() { return this.size * this.size; }
     public get damage() { return this._metadata.damage; }
@@ -95,7 +96,7 @@ class BulletImpl implements Bullet, Collider {
     public targetSpeed = 0;
     public time = 0;
 
-    public update(deltaTime: number, onDestroyed: () => void): void {
+    public update(deltaTime: number, onDestroy: () => void): void {
         ApplyMovement(deltaTime, this._node.position, this.velocity);
 
         const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
@@ -110,44 +111,24 @@ class BulletImpl implements Bullet, Collider {
         this._shadow.update();
 
         if (this._health <= 0) {
-            onDestroyed();
+            onDestroy();
             this._node.dispose();
         }
 
         this.time += deltaTime;
         if (this.time > MAX_DURATION) {
-            onDestroyed();
+            onDestroy();
             this._node.dispose();
         }
     }
 
     public onCollide(other: Entity): number {
-        switch (other.type) {
-            case EntityType.Bullet:
-            case EntityType.Drone: {
-                if (other.owner !== this.owner) {
-                    this._health -= other.damage;
-                }
-                break;
-            }
-            case EntityType.Tank: {
-                // TODO
-                break;
-            }
-            case EntityType.Crasher: {
-                if (this.owner.type !== EntityType.Crasher) {
-                    ApplyCollisionForce(this, other, 5);
-                    this._health -= other.damage;
-                }
-                break;
-            }
-            case EntityType.Shape: {
-                ApplyCollisionForce(this, other, 5);
-                this._health -= other.damage;
-                break;
-            }
+        if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
+            return 1;
         }
 
+        ApplyCollisionForce(this, other);
+        this._health -= other.damage;
         return 0.2;
     }
 }

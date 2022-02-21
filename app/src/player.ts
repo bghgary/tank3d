@@ -161,7 +161,7 @@ export class Player {
         });
 
         const handleEntityDestroyed = (target: { points: number }, other: Entity): void => {
-            if (other.owner === this._tank || (other === this._tank && !this._tank.shielded)) {
+            if (other === this._tank || other.owner === this._tank) {
                 this._score.add(target.points);
             }
         };
@@ -175,7 +175,7 @@ export class Player {
     }
 
     public get active(): boolean {
-        return !this._tank.shielded && this._tank.inBounds;
+        return this._tank.active;
     }
 
     public update(deltaTime: number): void {

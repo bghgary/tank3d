@@ -20,7 +20,7 @@ export abstract class BarrelTank extends PlayerTank {
         });
     }
 
-    public override update(deltaTime: number, onDestroyed: (entity: Entity) => void): void {
+    public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
         for (const barrel of this._barrels) {
             barrel.update(deltaTime);
         }
@@ -30,6 +30,6 @@ export abstract class BarrelTank extends PlayerTank {
         this.velocity.subtractInPlace(this._recoil);
         this._recoil.setAll(0);
 
-        super.update(deltaTime, onDestroyed);
+        super.update(deltaTime, onDestroy);
     }
 }

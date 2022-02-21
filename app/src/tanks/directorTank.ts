@@ -71,7 +71,7 @@ export class DirectorTank extends DroneTank {
         }
     }
 
-    public override update(deltaTime: number, onDestroyed: (entity: Entity) => void): void {
+    public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
         this.shoot();
 
         if ((this.inBounds && this._autoShoot) || this._autoRotate) {
@@ -119,7 +119,7 @@ export class DirectorTank extends DroneTank {
             }
         }
 
-        super.update(deltaTime, onDestroyed);
+        super.update(deltaTime, onDestroy);
     }
 
     protected override _updateDroneMetadata(): void {

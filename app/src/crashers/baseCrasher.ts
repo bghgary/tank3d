@@ -7,7 +7,6 @@ import { Health } from "../health";
 import { CrasherMetadata } from "../metadata";
 import { Player } from "../player";
 import { Shadow } from "../shadow";
-import { Sources } from "../sources";
 import { World } from "../world";
 import { Crasher } from "../crashers";
 
@@ -16,23 +15,24 @@ const IDLE_ROTATION_SPEED = 1;
 const CHASE_DISTANCE = 15;
 
 export class BaseCrasher implements Crasher, Collider {
+    protected readonly _world: World;
     protected readonly _node: TransformNode;
+    protected readonly _metadata: Readonly<CrasherMetadata>;
     protected readonly _health: Health;
     protected readonly _shadow: Shadow;
 
-    protected get _metadata(): Readonly<CrasherMetadata> {
-        return this._node.metadata;
-    }
-
-    public constructor(sources: Sources, node: TransformNode) {
+    public constructor(world: World, node: TransformNode) {
+        this._world = world;
         this._node = node;
-        this._health = new Health(sources, node, this._metadata.health);
-        this._shadow = new Shadow(sources, node);
+        this._metadata = this._node.metadata;
+        this._health = new Health(this._world.sources, node, this._metadata.health);
+        this._shadow = new Shadow(this._world.sources, node);
     }
 
     // Entity
     public get displayName() { return this._metadata.displayName; }
     public readonly type = EntityType.Crasher;
+    public get active() { return this._node.position.y === 0 && this._node.isEnabled(); }
     public get size() { return this._metadata.size; }
     public get mass() { return this.size * this.size; }
     public get damage() { return this._metadata.damage; }
@@ -47,13 +47,13 @@ export class BaseCrasher implements Crasher, Collider {
     public get width() { return this.size; }
     public get height() { return this.size; }
 
-    public update(deltaTime: number, world: World, player: Player, onDestroyed: (entity: Entity) => void): void {
+    public update(deltaTime: number, player: Player, onDestroy: (entity: Entity) => void): void {
         if (ApplyGravity(deltaTime, this._node.position, this.velocity)) {
             return;
         }
 
         ApplyMovement(deltaTime, this._node.position, this.velocity);
-        ApplyWallClamp(this._node.position, this.size, world.size);
+        ApplyWallClamp(this._node.position, this.size, this._world.size);
 
         const direction = TmpVectors.Vector3[0];
         const speed = this._chase(deltaTime, player, direction) ? this._metadata.speed : IDLE_MOVEMENT_SPEED;
@@ -66,7 +66,7 @@ export class BaseCrasher implements Crasher, Collider {
         this._shadow.update();
 
         this._health.update(deltaTime, (entity) => {
-            onDestroyed(entity);
+            onDestroy(entity);
             this._node.dispose();
         });
     }
@@ -100,6 +100,6 @@ export class BaseCrasher implements Crasher, Collider {
             ApplyCollisionForce(this, other);
         }
 
-        return 1;
+        return 0.5;
     }
 }

@@ -4,7 +4,6 @@ import { Barrel } from "../barrel";
 import { Entity } from "../entity";
 import { BarrelCrasherMetadata } from "../metadata";
 import { Player } from "../player";
-import { Sources } from "../sources";
 import { World } from "../world";
 import { BaseCrasher } from "./baseCrasher";
 
@@ -14,20 +13,16 @@ export abstract class BarrelCrasher extends BaseCrasher {
     protected _reloadTime = 0;
     protected _recoil = new Vector3();
 
-    protected override get _metadata(): BarrelCrasherMetadata {
-        return this._node.metadata;
-    }
+    public constructor(world: World, node: TransformNode) {
+        super(world, node);
 
-    public constructor(sources: Sources, node: TransformNode) {
-        super(sources, node);
-
-        this._barrels = this._metadata.barrels.map((metadata) => {
+        this._barrels = (this._metadata as BarrelCrasherMetadata).barrels.map((metadata) => {
             const mesh = node.getChildMeshes().find((mesh) => mesh.name === metadata.mesh)!;
             return new Barrel(mesh, metadata);
         });
     }
 
-    public override update(deltaTime: number, world: World, player: Player, onDestroyed: (entity: Entity) => void): void {
+    public override update(deltaTime: number, player: Player, onDestroy: (entity: Entity) => void): void {
         for (const barrel of this._barrels) {
             barrel.update(deltaTime);
         }
@@ -37,6 +32,6 @@ export abstract class BarrelCrasher extends BaseCrasher {
         this.velocity.subtractInPlace(this._recoil);
         this._recoil.setAll(0);
 
-        super.update(deltaTime, world, player, onDestroyed);
+        return super.update(deltaTime, player, onDestroy);
     }
 }

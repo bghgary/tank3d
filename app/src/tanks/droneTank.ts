@@ -50,9 +50,9 @@ export abstract class DroneTank extends BarrelTank {
         super.shoot();
     }
 
-    public override update(deltaTime: number, onDestroyed: (entity: Entity) => void): void {
+    public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
         this._drones.update(deltaTime, this._target, this._radius);
-        super.update(deltaTime, onDestroyed);
+        super.update(deltaTime, onDestroy);
     }
 
     public override setUpgrades(upgrades: Readonly<TankProperties>): void {
