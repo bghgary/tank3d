@@ -1,4 +1,3 @@
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TankProperties } from "./tanks/playerTank";
 
 export interface DisplayNameMetadata {
@@ -16,11 +15,9 @@ export interface ProjectileMetadata {
 }
 
 export interface BarrelMetadata {
-    size: number;
+    nodeName: string;
+    diameter: number;
     length: number;
-    offset: Vector3;
-    forward: Vector3;
-    mesh: string;
 }
 
 export interface ShapeMetadata extends DisplayNameMetadata, SizeMetadata {
@@ -49,7 +46,22 @@ export interface DroneCrasherMetadata extends BarrelCrasherMetadata {
     drone: Readonly<ProjectileMetadata>;
 }
 
-export interface TankMetadata extends DisplayNameMetadata, SizeMetadata {
+export interface BossTankMetadata {
+    nodeName: string;
+    reload: number;
+    barrels: Array<Readonly<BarrelMetadata>>;
+    bullet: Readonly<ProjectileMetadata>;
+}
+
+export interface BossMetadata extends DisplayNameMetadata, SizeMetadata {
+    speed: number;
+    health: number;
+    damage: number;
+    points: number;
+    tanks: Array<Readonly<BossTankMetadata>>;
+}
+
+export interface PlayerTankMetadata extends DisplayNameMetadata, SizeMetadata {
     shieldSize: number;
     barrels: Array<Readonly<BarrelMetadata>>;
     multiplier: Partial<Readonly<TankProperties>>;

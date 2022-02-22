@@ -14,10 +14,7 @@ export abstract class BarrelTank extends PlayerTank {
     protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
-        this._barrels = this._metadata.barrels.map((metadata) => {
-            const mesh = node.getChildMeshes().find((mesh) => mesh.name === metadata.mesh)!;
-            return new Barrel(mesh, metadata);
-        });
+        this._barrels = this._metadata.barrels.map((metadata) => new Barrel(node, metadata));
     }
 
     public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {

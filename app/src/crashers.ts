@@ -27,7 +27,7 @@ export class Crashers {
         this._world = world;
         this._maxCount = maxCount;
 
-        this._root = new TransformNode("crashers", world.scene);
+        this._root = new TransformNode("crashers", this._world.scene);
 
         this._world.collisions.register({
             [Symbol.iterator]: this._getCollidableEntities.bind(this)
@@ -117,7 +117,7 @@ export class Crashers {
 
     private *_getCollidableEntities(): Iterator<BaseCrasher> {
         for (const crasher of this._crashers) {
-            if (crasher.position.y === 0) {
+            if (crasher.active) {
                 yield crasher;
             }
         }

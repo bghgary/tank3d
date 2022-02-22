@@ -27,7 +27,7 @@ export abstract class DroneTank extends BarrelTank {
         };
 
         this._drones = new Drones(world, node.parent as TransformNode, this._droneMetadata);
-        this._createDroneNode = (parent) => world.sources.create(world.sources.drone.tank, parent);
+        this._createDroneNode = (parent) => this._world.sources.create(this._world.sources.drone.tank, parent);
         this._target.copyFrom(world.pointerPosition);
     }
 

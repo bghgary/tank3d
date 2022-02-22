@@ -16,6 +16,7 @@ import { CreateGridMaterial } from "./materials/gridMaterial";
 import { Container } from "@babylonjs/gui/2D/controls/container";
 import { Control, TextBlock } from "@babylonjs/gui";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { Bosses } from "./bosses";
 
 declare const VERSION: string;
 declare const DEV_BUILD: boolean;
@@ -37,8 +38,9 @@ export class World {
         this.bullets = new Bullets(this);
         this.uiContainer = AdvancedDynamicTexture.CreateFullscreenUI("Fullscreen").rootContainer;
 
-        const shapes = new Shapes(this, 200);
-        const crashers = new Crashers(this, 100);
+        const shapes = new Shapes(this, 0);
+        const crashers = new Crashers(this, 0);
+        const bosses = new Bosses(this);
         const player = new Player(this, shapes, crashers);
 
         const ground = this._createGround();
@@ -103,6 +105,7 @@ export class World {
                 shapes.update(deltaTime);
                 player.update(deltaTime);
                 crashers.update(deltaTime, player);
+                bosses.update(deltaTime, player);
 
                 this.collisions.update(deltaTime);
             }

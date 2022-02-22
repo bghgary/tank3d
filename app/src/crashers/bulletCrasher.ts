@@ -14,7 +14,7 @@ export class BulletCrasher extends BarrelCrasher {
     public constructor(world: World, node: TransformNode) {
         super(world, node);
 
-        this._createBulletNode = (parent) => world.sources.create(world.sources.bullet.crasher, parent);
+        this._createBulletNode = (parent) => this._world.sources.create(this._world.sources.bullet.crasher, parent);
     }
 
     protected override _chase(deltaTime: number, player: Player, direction: Vector3): boolean {

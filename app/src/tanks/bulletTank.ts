@@ -1,21 +1,18 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Barrel } from "../barrel";
-import { Bullets } from "../bullets";
 import { ProjectileMetadata } from "../metadata";
 import { World } from "../world";
 import { BarrelTank } from "./barrelTank";
 import { ProjectileType, PlayerTank, TankProperties } from "./playerTank";
 
 export class BulletTank extends BarrelTank {
-    protected readonly _bullets: Bullets;
     protected readonly _createBulletNode: (parent: TransformNode) => TransformNode;
     protected readonly _bulletMetadata: ProjectileMetadata;
 
     protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
-        this._bullets = world.bullets;
-        this._createBulletNode = (parent) => world.sources.create(world.sources.bullet.tank, parent);
+        this._createBulletNode = (parent) => this._world.sources.create(this._world.sources.bullet.tank, parent);
         this._bulletMetadata = {
             speed: this._properties.projectileSpeed,
             damage: this._properties.projectileDamage,
@@ -43,7 +40,7 @@ export class BulletTank extends BarrelTank {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const bullet = barrel.shootBullet(this._bullets, this, this._bulletMetadata, this._createBulletNode);
+        const bullet = barrel.shootBullet(this._world.bullets, this, this._bulletMetadata, this._createBulletNode);
         this._recoil.x += bullet.velocity.x * bullet.mass;
         this._recoil.z += bullet.velocity.z * bullet.mass;
     }

@@ -18,7 +18,7 @@ export class DroneCrasher extends BarrelCrasher {
         super(world, node);
 
         this._drones = new Drones(world, node.parent as TransformNode, (node.metadata as DroneCrasherMetadata).drone);
-        this._createDroneNode = (parent) => world.sources.create(world.sources.drone.crasher, parent);
+        this._createDroneNode = (parent) => this._world.sources.create(this._world.sources.drone.crasher, parent);
     }
 
     public override update(deltaTime: number, player: Player, onDestroy: (entity: Entity) => void): void {

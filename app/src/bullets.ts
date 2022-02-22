@@ -21,19 +21,16 @@ export class Bullets {
 
     public constructor(world: World) {
         this._world = world;
-        this._root = new TransformNode("bullets", world.scene);
+        this._root = new TransformNode("bullets", this._world.scene);
         this._world.collisions.register(this._bullets);
     }
 
-    public add(owner: Entity, barrelMetadata: Readonly<BarrelMetadata>, bulletMetadata: Readonly<ProjectileMetadata>, createNode: (parent: TransformNode) => TransformNode): Bullet {
-        const size = barrelMetadata.size * 0.75;
+    public add(owner: Entity, barrelNode: TransformNode, barrelMetadata: Readonly<BarrelMetadata>, bulletMetadata: Readonly<ProjectileMetadata>, createNode: (parent: TransformNode) => TransformNode): Bullet {
+        const size = barrelMetadata.diameter * 0.75;
 
-        const forward = TmpVectors.Vector3[0];
-        barrelMetadata.forward.rotateByQuaternionToRef(owner.rotation, forward);
-
+        const forward = barrelNode.forward;
         const position = TmpVectors.Vector3[1];
-        barrelMetadata.forward.scaleToRef(barrelMetadata.length + size * 0.5, position).addInPlace(barrelMetadata.offset);
-        position.rotateByQuaternionToRef(owner.rotation, position).addInPlace(owner.position);
+        forward.scaleToRef(barrelMetadata.length + size * 0.5, position).addInPlace(barrelNode.absolutePosition);
 
         const initialSpeed = Math.max(Vector3.Dot(owner.velocity, forward) + bulletMetadata.speed, 0.1);
 

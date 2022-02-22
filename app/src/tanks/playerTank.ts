@@ -5,7 +5,7 @@ import { Collider } from "../collisions";
 import { ApplyCollisionForce, ApplyWallClamp } from "../common";
 import { Entity, EntityType } from "../entity";
 import { Health } from "../health";
-import { TankMetadata } from "../metadata";
+import { PlayerTankMetadata } from "../metadata";
 import { Shadow } from "../shadow";
 import { Shield } from "../shield";
 import { World } from "../world";
@@ -66,7 +66,7 @@ function multiply(properties: Readonly<TankProperties>, value: Partial<Readonly<
 export abstract class PlayerTank implements Entity, Collider {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
-    protected readonly _metadata: Readonly<TankMetadata>;
+    protected readonly _metadata: Readonly<PlayerTankMetadata>;
     protected readonly _shield: Shield;
     protected readonly _health: Health;
     protected readonly _shadow: Shadow;
@@ -100,9 +100,9 @@ export abstract class PlayerTank implements Entity, Collider {
 
             previousTank.dispose();
         } else {
-            this._shield = new Shield(world.sources, node);
-            this._health = new Health(world.sources, this._node, this._properties.maxHealth, this._properties.healthRegen);
-            this._shadow = new Shadow(world.sources, this._node);
+            this._shield = new Shield(this._world.sources, node);
+            this._health = new Health(this._world.sources, this._node, this._properties.maxHealth, this._properties.healthRegen);
+            this._shadow = new Shadow(this._world.sources, this._node);
         }
 
         this._collisionToken = this._world.collisions.register([this]);
@@ -201,7 +201,7 @@ export abstract class PlayerTank implements Entity, Collider {
 
     public reset(): void {
         this._health.reset();
-        this.position.setAll(0);
+        this._node.position.setAll(0);
         this.velocity.setAll(0);
         this._node.setEnabled(true);
         this._shield.enabled = true;

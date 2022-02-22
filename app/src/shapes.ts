@@ -27,7 +27,7 @@ export class Shapes {
 
     public constructor(world: World, maxCount: number) {
         this._world = world;
-        this._root = new TransformNode("shapes", world.scene);
+        this._root = new TransformNode("shapes", this._world.scene);
 
         for (let index = 0; index < maxCount; ++index) {
             this._shapes.add(this._createShape(0));
@@ -139,30 +139,30 @@ class ShapeImpl implements Shape, Collider {
 
     public update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
         if (ApplyGravity(deltaTime, this._node.position, this.velocity)) {
-            return;
+            this._shadow.update();
+        } else {
+            ApplyMovement(deltaTime, this._node.position, this.velocity);
+            ApplyWallBounce(this._node.position, this.velocity, this.size, this._world.size);
+
+            const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
+            if (oldSpeed > 0) {
+                const decayFactor = Math.exp(-deltaTime * 2);
+                const targetSpeed = IDLE_MOVEMENT_SPEED / this.mass;
+                const newSpeed = targetSpeed - (targetSpeed - oldSpeed) * decayFactor;
+                const speedFactor = newSpeed / oldSpeed;
+                this.velocity.x *= speedFactor;
+                this.velocity.z *= speedFactor;
+            }
+
+            this._node.addRotation(0, this.rotationVelocity * deltaTime, 0);
+
+            this._shadow.update();
+
+            this._health.update(deltaTime, (entity) => {
+                onDestroy(entity);
+                this._node.dispose();
+            });
         }
-
-        ApplyMovement(deltaTime, this._node.position, this.velocity);
-        ApplyWallBounce(this._node.position, this.velocity, this.size, this._world.size);
-
-        const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
-        if (oldSpeed > 0) {
-            const decayFactor = Math.exp(-deltaTime * 2);
-            const targetSpeed = IDLE_MOVEMENT_SPEED / this.mass;
-            const newSpeed = targetSpeed - (targetSpeed - oldSpeed) * decayFactor;
-            const speedFactor = newSpeed / oldSpeed;
-            this.velocity.x *= speedFactor;
-            this.velocity.z *= speedFactor;
-        }
-
-        this._node.addRotation(0, this.rotationVelocity * deltaTime, 0);
-
-        this._shadow.update();
-
-        this._health.update(deltaTime, (entity) => {
-            onDestroy(entity);
-            this._node.dispose();
-        });
     }
 
     public onCollide(other: Entity): number {

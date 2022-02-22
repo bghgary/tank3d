@@ -24,7 +24,7 @@ export class Drones {
     public constructor(world: World, parent: TransformNode, metadata: Readonly<ProjectileMetadata>) {
         this._world = world;
 
-        this._root = new TransformNode("drones", world.scene);
+        this._root = new TransformNode("drones", this._world.scene);
         this._root.parent = parent;
 
         this._metadata = metadata;
@@ -41,15 +41,12 @@ export class Drones {
         return this._drones.size;
     }
 
-    public add(owner: Entity, barrelMetadata: Readonly<BarrelMetadata>, createNode: (parent: TransformNode) => TransformNode): Drone {
-        const size = barrelMetadata.size * 0.75;
+    public add(owner: Entity, barrelNode: TransformNode, barrelMetadata: Readonly<BarrelMetadata>, createNode: (parent: TransformNode) => TransformNode): Drone {
+        const size = barrelMetadata.diameter * 0.75;
 
-        const forward = TmpVectors.Vector3[0];
-        barrelMetadata.forward.rotateByQuaternionToRef(owner.rotation, forward);
-
+        const forward = barrelNode.forward;
         const position = TmpVectors.Vector3[1];
-        barrelMetadata.forward.scaleToRef(barrelMetadata.length + size * 0.5, position).addInPlace(barrelMetadata.offset);
-        position.rotateByQuaternionToRef(owner.rotation, position).addInPlace(owner.position);
+        forward.scaleToRef(barrelMetadata.length + size * 0.5, position).addInPlace(barrelNode.absolutePosition);
 
         const initialSpeed = Math.max(Vector3.Dot(owner.velocity, forward) + this._metadata.speed, 0.1);
 
@@ -112,7 +109,7 @@ class DroneImpl implements Drone, Collider {
         ApplyMovement(deltaTime, this._node.position, this.velocity);
 
         const direction = TmpVectors.Vector3[0];
-        target.subtractToRef(this.position, direction);
+        target.subtractToRef(this._node.position, direction);
         const distance = direction.length();
         direction.scaleInPlace(1 / distance);
 
@@ -120,13 +117,13 @@ class DroneImpl implements Drone, Collider {
             const position = TmpVectors.Vector3[1];
             direction.scaleToRef(-radius, position).addInPlace(target);
             position.addInPlaceFromFloats(-direction.z, direction.y, direction.x);
-            position.subtractToRef(this.position, direction).normalize();
+            position.subtractToRef(this._node.position, direction).normalize();
         }
 
         const directionDecayFactor = Math.exp(-deltaTime * 10);
         direction.x = direction.x - (direction.x - this._node.forward.x) * directionDecayFactor;
         direction.z = direction.z - (direction.z - this._node.forward.z) * directionDecayFactor;
-        this._node.setDirection(direction);
+        this._node.setDirection(direction.normalize());
 
         const speed = this._metadata.speed * Math.min(distance, 1);
         const targetVelocityX = this._node.forward.x * speed;

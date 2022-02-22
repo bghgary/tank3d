@@ -70,30 +70,30 @@ export class Player {
     public constructor(world: World, shapes: Shapes, crashers: Crashers) {
         this._world = world;
 
-        this._root = new TransformNode("player", world.scene);
-        this._tank = new EvolutionRootNode.Tank(world, this._root);
+        this._root = new TransformNode("player", this._world.scene);
+        this._tank = new EvolutionRootNode.Tank(this._world, this._root);
 
         const bottomPanel = new StackPanel("bottomPanel");
         bottomPanel.adaptWidthToChildren = true;
         bottomPanel.spacing = 10;
         bottomPanel.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
         bottomPanel.topInPixels = -36;
-        world.uiContainer.addControl(bottomPanel);
+        this._world.uiContainer.addControl(bottomPanel);
 
         this._score = new Score(bottomPanel);
         this._level = new Level(bottomPanel, this._score, this._tank.displayName);
 
-        this._upgrades = new Upgrades(world, this._level);
+        this._upgrades = new Upgrades(this._world, this._level);
         this._upgrades.onUpgradeObservable.add(() => this._setTankUpgrades());
 
-        this._evolutions = new Evolutions(world, this._level);
+        this._evolutions = new Evolutions(this._world, this._level);
         this._evolutions.onEvolveObservable.add((evolutionNode) => this._updateTank(evolutionNode));
 
-        this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), world.scene);
+        this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), this._world.scene);
         this._camera.lowerRadiusLimit = 2;
 
-        world.scene.onKeyboardObservable.add((data) => {
-            if (world.paused) {
+        this._world.scene.onKeyboardObservable.add((data) => {
+            if (this._world.paused) {
                 return;
             }
 
@@ -130,8 +130,8 @@ export class Player {
             }
         });
 
-        world.scene.onPointerObservable.add((data) => {
-            if (world.paused) {
+        this._world.scene.onPointerObservable.add((data) => {
+            if (this._world.paused) {
                 return;
             }
 
@@ -146,7 +146,7 @@ export class Player {
             }
         });
 
-        world.onPausedStateChangedObservable.add((paused) => {
+        this._world.onPausedStateChangedObservable.add((paused) => {
             if (paused) {
                 this._camera.attachControl();
             } else {
