@@ -34,9 +34,10 @@ export class Health {
 
     public setParent(parent: TransformNode): void {
         const size = (parent.metadata as Readonly<SizeMetadata>).size;
+        const height = (parent.metadata as Readonly<SizeMetadata>).height;
 
         this._node.parent = parent;
-        this._node.position.y = size * 0.9;
+        this._node.position.y = (height || size) * 0.9;
         this._node.scaling.x = size;
 
         this._size = size;

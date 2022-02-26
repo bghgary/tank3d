@@ -6,6 +6,7 @@ export interface DisplayNameMetadata {
 
 export interface SizeMetadata {
     size: number;
+    height?: number;
 }
 
 export interface ProjectileMetadata {

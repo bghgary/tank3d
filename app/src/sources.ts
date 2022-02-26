@@ -594,6 +594,7 @@ export class Sources {
         const metadata: Readonly<BossMetadata> = {
             displayName: "Keeper",
             size: 4,
+            height: 2,
             speed: 1,
             health: 1000,
             damage: 40,
