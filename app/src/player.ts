@@ -19,6 +19,7 @@ import { Control } from "@babylonjs/gui/2D/controls/control";
 import { EvolutionNode, EvolutionRootNode } from "./evolutions";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { decayVector3ToRef } from "./math";
+import { Bosses } from "./bosses";
 
 declare const DEV_BUILD: boolean;
 
@@ -68,7 +69,7 @@ export class Player {
 
     private _tank: PlayerTank;
 
-    public constructor(world: World, shapes: Shapes, crashers: Crashers) {
+    public constructor(world: World, shapes: Shapes, crashers: Crashers, bosses: Bosses) {
         this._world = world;
 
         this._root = new TransformNode("player", this._world.scene);
@@ -169,6 +170,7 @@ export class Player {
 
         shapes.onShapeDestroyedObservable.add(({shape, other}) => handleEntityDestroyed(shape, other));
         crashers.onCrasherDestroyedObservable.add(({crasher, other}) => handleEntityDestroyed(crasher, other));
+        bosses.onBossDestroyedObservable.add(({boss, other}) => handleEntityDestroyed(boss, other));
     }
 
     public get position(): Vector3 {

@@ -41,7 +41,7 @@ export class World {
         const shapes = new Shapes(this, 0);
         const crashers = new Crashers(this, 0);
         const bosses = new Bosses(this);
-        const player = new Player(this, shapes, crashers);
+        const player = new Player(this, shapes, crashers, bosses);
 
         const ground = this._createGround();
 

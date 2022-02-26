@@ -1,4 +1,5 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Observable } from "@babylonjs/core/Misc/observable";
 import { KeeperBoss } from "./bosses/keeperBoss";
 import { Entity } from "./entity";
 import { Player } from "./player";
@@ -30,10 +31,13 @@ export class Bosses {
         this._bosses.add(new KeeperBoss(this._world, node));
     }
 
+    public onBossDestroyedObservable = new Observable<{ boss: Boss, other: Entity }>();
+
     public update(deltaTime: number, player: Player): void {
         for (const boss of this._bosses) {
             boss.update(deltaTime, player, (entity) => {
                 this._bosses.delete(boss);
+                this.onBossDestroyedObservable.notifyObservers({ boss: boss, other: entity });
             });
         }
     }
