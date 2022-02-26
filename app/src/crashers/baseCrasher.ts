@@ -1,4 +1,4 @@
-import { TmpVectors, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Collider } from "../collisions";
 import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallClamp } from "../common";
@@ -9,6 +9,7 @@ import { Player } from "../player";
 import { Shadow } from "../shadow";
 import { World } from "../world";
 import { Crasher } from "../crashers";
+import { decayVector3ToRef, TmpVector3 } from "../math";
 
 const IDLE_MOVEMENT_SPEED = 1;
 const IDLE_ROTATION_SPEED = 1;
@@ -54,13 +55,10 @@ export class BaseCrasher implements Crasher, Collider {
             ApplyMovement(deltaTime, this._node.position, this.velocity);
             ApplyWallClamp(this._node.position, this.size, this._world.size);
 
-            const direction = TmpVectors.Vector3[0];
+            const direction = TmpVector3[0];
             const speed = this._chase(deltaTime, player, direction) ? this._metadata.speed : IDLE_MOVEMENT_SPEED;
-            const decayFactor = Math.exp(-deltaTime * 2);
-            const targetVelocityX = this._node.forward.x * speed;
-            const targetVelocityZ = this._node.forward.z * speed;
-            this.velocity.x = targetVelocityX - (targetVelocityX - this.velocity.x) * decayFactor;
-            this.velocity.z = targetVelocityZ - (targetVelocityZ - this.velocity.z) * decayFactor;
+            const targetVelocity = TmpVector3[1].copyFrom(this._node.forward).scaleInPlace(speed);
+            decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
 
             this._shadow.update();
 
@@ -77,9 +75,7 @@ export class BaseCrasher implements Crasher, Collider {
             const distanceSquared = direction.lengthSquared();
             if (distanceSquared < CHASE_DISTANCE * CHASE_DISTANCE) {
                 direction.normalizeFromLength(Math.sqrt(distanceSquared));
-                const directionDecayFactor = Math.exp(-deltaTime * 10);
-                direction.x = direction.x - (direction.x - this._node.forward.x) * directionDecayFactor;
-                direction.z = direction.z - (direction.z - this._node.forward.z) * directionDecayFactor;
+                decayVector3ToRef(this._node.forward, direction, deltaTime, 10, direction);
                 this._node.setDirection(direction.normalize());
                 return true;
             }

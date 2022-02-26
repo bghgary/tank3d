@@ -1,5 +1,6 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { ApplyRecoil } from "../common";
 import { Drones } from "../drones";
 import { Entity } from "../entity";
 import { BarrelCrasherMetadata, DroneCrasherMetadata } from "../metadata";
@@ -44,8 +45,7 @@ export class DroneCrasher extends BarrelCrasher {
             if (angle < CHASE_ANGLE) {
                 for (const barrel of this._barrels) {
                     const drone = barrel.shootDrone(this._drones, this, this._createDroneNode);
-                    this._recoil.x += drone.velocity.x * drone.mass;
-                    this._recoil.z += drone.velocity.z * drone.mass;
+                    ApplyRecoil(this._recoil, drone);
                 }
 
                 this._reloadTime = (this._metadata as BarrelCrasherMetadata).reload;

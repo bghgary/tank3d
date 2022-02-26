@@ -2,9 +2,10 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { Collider } from "../collisions";
-import { ApplyCollisionForce, ApplyWallClamp } from "../common";
+import { ApplyCollisionForce, ApplyMovement, ApplyWallClamp } from "../common";
 import { Entity, EntityType } from "../entity";
 import { Health } from "../health";
+import { decayVector3ToRef, TmpVector3 } from "../math";
 import { PlayerTankMetadata } from "../metadata";
 import { Shadow } from "../shadow";
 import { Shield } from "../shield";
@@ -155,24 +156,16 @@ export abstract class PlayerTank implements Entity, Collider {
     }
 
     public move(deltaTime: number, x: number, z: number, limit: number): void {
-        const decayFactor = Math.exp(-deltaTime * 2);
-
+        const targetVelocity = TmpVector3[0].setAll(0);
         if (x !== 0 || z !== 0) {
             const moveFactor = this._properties.moveSpeed / Math.sqrt(x * x + z * z);
-            x *= moveFactor;
-            z *= moveFactor;
-
-            this.velocity.x = x - (x - this.velocity.x) * decayFactor;
-            this.velocity.z = z - (z - this.velocity.z) * decayFactor;
-
+            targetVelocity.set(x * moveFactor, 0, z * moveFactor);
             this._shield.enabled = false;
-        } else {
-            this.velocity.x *= decayFactor;
-            this.velocity.z *= decayFactor;
         }
 
-        this._node.position.x += this.velocity.x * deltaTime;
-        this._node.position.z += this.velocity.z * deltaTime;
+        decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
+
+        ApplyMovement(deltaTime, this._node.position, this.velocity);
         ApplyWallClamp(this._node.position, this.size, limit);
     }
 

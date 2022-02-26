@@ -1,8 +1,9 @@
-import { TmpVectors, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Collider } from "./collisions";
 import { ApplyCollisionForce, ApplyMovement } from "./common";
 import { Entity, EntityType } from "./entity";
+import { decayVector3ToRef, TmpVector3 } from "./math";
 import { BarrelMetadata, ProjectileMetadata } from "./metadata";
 import { Shadow } from "./shadow";
 import { Sources } from "./sources";
@@ -29,7 +30,7 @@ export class Bullets {
         const size = barrelMetadata.diameter * 0.75;
 
         const forward = barrelNode.forward;
-        const position = TmpVectors.Vector3[1];
+        const position = TmpVector3[0];
         forward.scaleToRef(barrelMetadata.length + size * 0.5, position).addInPlace(barrelNode.absolutePosition);
 
         const initialSpeed = Math.max(Vector3.Dot(owner.velocity, forward) + bulletMetadata.speed, 0.1);
@@ -40,7 +41,7 @@ export class Bullets {
         const bullet = new BulletImpl(owner, node, bulletMetadata, this._world.sources, size);
         bullet.position.copyFrom(position);
         bullet.velocity.copyFrom(forward).scaleInPlace(initialSpeed);
-        bullet.targetSpeed = bulletMetadata.speed;
+        bullet.targetVelocity.copyFrom(forward).scaleInPlace(bulletMetadata.speed);
         bullet.time = 0;
         this._bullets.add(bullet);
 
@@ -90,20 +91,13 @@ class BulletImpl implements Bullet, Collider {
 
     public readonly owner: Entity;
 
-    public targetSpeed = 0;
+    public targetVelocity = new Vector3();
     public time = 0;
 
     public update(deltaTime: number, onDestroy: () => void): void {
         ApplyMovement(deltaTime, this._node.position, this.velocity);
 
-        const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
-        if (oldSpeed > 0) {
-            const decayFactor = Math.exp(-deltaTime * 2);
-            const newSpeed = this.targetSpeed - (this.targetSpeed - oldSpeed) * decayFactor;
-            const speedFactor = newSpeed / oldSpeed;
-            this.velocity.x *= speedFactor;
-            this.velocity.z *= speedFactor;
-        }
+        decayVector3ToRef(this.velocity, this.targetVelocity, deltaTime, 2, this.velocity);
 
         this._shadow.update();
 
@@ -124,8 +118,8 @@ class BulletImpl implements Bullet, Collider {
             return 1;
         }
 
-        ApplyCollisionForce(this, other);
+        ApplyCollisionForce(this, other, 2);
         this._health -= other.damage;
-        return 0.2;
+        return 0.1;
     }
 }

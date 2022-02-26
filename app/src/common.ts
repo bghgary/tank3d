@@ -1,4 +1,3 @@
-import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Entity } from "./entity";
 
@@ -8,21 +7,18 @@ export function ApplyCollisionForce(target: Entity, other: Entity, strength = 1)
     const position = target.position;
     const velocity = target.velocity;
     const dx = position.x - other.position.x;
+    const dy = position.y - other.position.y;
     const dz = position.z - other.position.z;
-    if (dx === 0 && dz === 0) {
-        const randomAngle = Scalar.RandomRange(0, Scalar.TwoPi);
-        const speed = target.size * 60;
-        velocity.x = Math.cos(randomAngle) * speed;
-        velocity.y = Math.sin(randomAngle) * speed;
-    } else {
-        const factor = strength * other.mass / (target.mass + other.mass) / Math.sqrt(dx * dx + dz * dz);
-        velocity.x += dx * factor;
-        velocity.z += dz * factor;
-    }
+    const length = Math.max(Math.sqrt(dx * dx + dy * dy + dz * dz), 0.01);
+    const factor = strength * other.mass / (target.mass + other.mass) / length;
+    velocity.x += dx * factor;
+    velocity.y += dy * factor;
+    velocity.z += dz * factor;
 }
 
-export function ApplyMovement(deltaTime: number, position: Vector3, velocity: Vector3): void {
+export function ApplyMovement(deltaTime: number, position: Vector3, velocity: Readonly<Vector3>): void {
     position.x += velocity.x * deltaTime;
+    position.y += velocity.y * deltaTime;
     position.z += velocity.z * deltaTime;
 }
 
@@ -75,4 +71,10 @@ export function ApplyWallClamp(position: Vector3, size: number, wallLimit: numbe
     } else if (position.z < -limit) {
         position.z = -limit;
     }
+}
+
+export function ApplyRecoil(recoil: Vector3, entity: Entity): void {
+    recoil.x += entity.velocity.x * entity.mass;
+    recoil.y += entity.velocity.y * entity.mass;
+    recoil.z += entity.velocity.z * entity.mass;
 }

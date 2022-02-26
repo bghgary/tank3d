@@ -1,5 +1,6 @@
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { decayScalar } from "./math";
 import { PlayerTankMetadata } from "./metadata";
 import { Sources } from "./sources";
 
@@ -40,10 +41,9 @@ export class Shield {
 
     public update(deltaTime: number): void {
         if (this._mesh.isEnabled()) {
-        const decayFactor = Math.exp(-deltaTime * 5);
-        this._mesh.visibility = this._targetVisibility - (this._targetVisibility - this._mesh.visibility) * decayFactor;
-        if (this._targetVisibility === 0 && this._mesh.visibility < 0.001) {
-            this._mesh.setEnabled(false);
+            this._mesh.visibility = decayScalar(this._mesh.visibility, this._targetVisibility, deltaTime, 5);
+            if (this._targetVisibility === 0 && this._mesh.visibility < 0.001) {
+                this._mesh.setEnabled(false);
             }
         }
     }

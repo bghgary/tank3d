@@ -1,10 +1,11 @@
-import { TmpVectors, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { Collider } from "./collisions";
 import { ApplyCollisionForce, ApplyMovement } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
+import { decayVector3ToRef, TmpVector3 } from "./math";
 import { BarrelMetadata, ProjectileMetadata } from "./metadata";
 import { Shadow } from "./shadow";
 import { Sources } from "./sources";
@@ -45,7 +46,7 @@ export class Drones {
         const size = barrelMetadata.diameter * 0.75;
 
         const forward = barrelNode.forward;
-        const position = TmpVectors.Vector3[1];
+        const position = TmpVector3[0];
         forward.scaleToRef(barrelMetadata.length + size * 0.5, position).addInPlace(barrelNode.absolutePosition);
 
         const initialSpeed = Math.max(Vector3.Dot(owner.velocity, forward) + this._metadata.speed, 0.1);
@@ -108,29 +109,25 @@ class DroneImpl implements Drone, Collider {
     public update(deltaTime: number, target: Vector3, radius: number, onDestroy: () => void): void {
         ApplyMovement(deltaTime, this._node.position, this.velocity);
 
-        const direction = TmpVectors.Vector3[0];
+        const direction = TmpVector3[0];
         target.subtractToRef(this._node.position, direction);
         const distance = direction.length();
         direction.scaleInPlace(1 / distance);
 
         if (radius > 0) {
-            const position = TmpVectors.Vector3[1];
+            const position = TmpVector3[1];
             direction.scaleToRef(-radius, position).addInPlace(target);
             position.addInPlaceFromFloats(-direction.z, direction.y, direction.x);
             position.subtractToRef(this._node.position, direction).normalize();
         }
 
-        const directionDecayFactor = Math.exp(-deltaTime * 10);
-        direction.x = direction.x - (direction.x - this._node.forward.x) * directionDecayFactor;
-        direction.z = direction.z - (direction.z - this._node.forward.z) * directionDecayFactor;
+        const forward = this._node.forward;
+        decayVector3ToRef(forward, direction, deltaTime, 10, direction);
         this._node.setDirection(direction.normalize());
 
         const speed = this._metadata.speed * Math.min(distance, 1);
-        const targetVelocityX = this._node.forward.x * speed;
-        const targetVelocityZ = this._node.forward.z * speed;
-        const velocityDecayFactor = Math.exp(-deltaTime * 2);
-        this.velocity.x = targetVelocityX - (targetVelocityX - this.velocity.x) * velocityDecayFactor;
-        this.velocity.z = targetVelocityZ - (targetVelocityZ - this.velocity.z) * velocityDecayFactor;
+        const targetVelocity = TmpVector3[2].copyFrom(forward).scaleInPlace(speed);
+        decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
 
         this._shadow.update();
 

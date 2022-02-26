@@ -1,10 +1,11 @@
-import { TmpVectors, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Boss } from "../bosses";
 import { Collider } from "../collisions";
 import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallClamp } from "../common";
 import { Entity, EntityType } from "../entity";
 import { Health } from "../health";
+import { decayVector3ToRef, TmpVector3 } from "../math";
 import { BossMetadata } from "../metadata";
 import { Player } from "../player";
 import { Shadow } from "../shadow";
@@ -59,14 +60,12 @@ export class KeeperBoss implements Boss, Collider {
             ApplyWallClamp(this._node.position, this.size, this._world.size);
 
             if (player.active) {
-                const targetVelocity = TmpVectors.Vector3[0];
+                const targetVelocity = TmpVector3[0];
                 player.position.subtractToRef(this._node.position, targetVelocity);
                 const distance = targetVelocity.length();
                 const inRange = distance < CHASE_DISTANCE;
-                const decayFactor = Math.exp(-deltaTime * 2);
                 targetVelocity.scaleInPlace(inRange ? this._metadata.speed / distance : 0);
-                this.velocity.x = targetVelocity.x - (targetVelocity.x - this.velocity.x) * decayFactor;
-                this.velocity.z = targetVelocity.z - (targetVelocity.z - this.velocity.z) * decayFactor;
+                decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
 
                 for (const tank of this._tanks) {
                     tank.update(deltaTime, inRange, player);

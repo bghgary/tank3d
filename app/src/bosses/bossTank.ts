@@ -1,7 +1,8 @@
-import { TmpVectors, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Barrel } from "../barrel";
 import { Entity } from "../entity";
+import { decayQuaternionToRef, decayVector3ToRef, QuaternionIdentity, TmpMatrix, TmpVector3 } from "../math";
 import { BossTankMetadata } from "../metadata";
 import { Player } from "../player";
 import { World } from "../world";
@@ -38,32 +39,27 @@ export class BossTank {
 
         if (!player.active || !inRange || !this._shoot(deltaTime, player)) {
             const rotation = this._node.rotationQuaternion!;
-            const decayFactor = Math.exp(-deltaTime * 2);
-            rotation.x = 0 - (0 - rotation.x) * decayFactor;
-            rotation.y = 0 - (0 - rotation.y) * decayFactor;
-            rotation.z = 0 - (0 - rotation.z) * decayFactor;
-            rotation.w = 1 - (1 - rotation.w) * decayFactor;
+            decayQuaternionToRef(rotation, QuaternionIdentity, deltaTime, 2, rotation);
             rotation.normalize();
         }
     }
 
     private _shoot(deltaTime: number, player: Player): boolean {
-        const playerDirection = TmpVectors.Vector3[0];
+        const playerDirection = TmpVector3[0];
         player.position.subtractToRef(this._node.absolutePosition, playerDirection).normalize();
 
         const parent = this._node.parent! as TransformNode;
         const tankAngle = Math.acos(Vector3.Dot(parent.forward, playerDirection));
         if (tankAngle < MAX_TANK_ANGLE) {
-            const direction = TmpVectors.Vector3[1].setAll(0);
-            const decayFactor = Math.exp(-deltaTime * 20);
-            direction.x = playerDirection.x - (playerDirection.x - this._node.forward.x) * decayFactor;
-            direction.z = playerDirection.z - (playerDirection.z - this._node.forward.z) * decayFactor;
-            const invWorldMatrix = TmpVectors.Matrix[0];
+            const forward = this._node.forward;
+            const direction = TmpVector3[1].setAll(0);
+            decayVector3ToRef(forward, playerDirection, deltaTime, 20, direction);
+            const invWorldMatrix = TmpMatrix[0];
             parent.getWorldMatrix().invertToRef(invWorldMatrix);
             Vector3.TransformNormalToRef(direction, invWorldMatrix, direction);
             this._node.setDirection(direction.normalize());
 
-            const angle = Math.acos(Vector3.Dot(playerDirection, this._node.forward));
+            const angle = Math.acos(Vector3.Dot(playerDirection, forward));
             if (this._reloadTime === 0 && angle < SHOOT_ANGLE) {
                 for (const barrel of this._barrels) {
                     barrel.shootBullet(this._world.bullets, this._owner, this._metadata.bullet, this._createBulletNode);

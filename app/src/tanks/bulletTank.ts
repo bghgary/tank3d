@@ -1,5 +1,6 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Barrel } from "../barrel";
+import { ApplyRecoil } from "../common";
 import { ProjectileMetadata } from "../metadata";
 import { World } from "../world";
 import { BarrelTank } from "./barrelTank";
@@ -41,8 +42,7 @@ export class BulletTank extends BarrelTank {
 
     protected _shootFrom(barrel: Barrel): void {
         const bullet = barrel.shootBullet(this._world.bullets, this, this._bulletMetadata, this._createBulletNode);
-        this._recoil.x += bullet.velocity.x * bullet.mass;
-        this._recoil.z += bullet.velocity.z * bullet.mass;
+        ApplyRecoil(this._recoil, bullet);
     }
 
     protected _updateBulletMetadata(): void {

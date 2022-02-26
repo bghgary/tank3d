@@ -2,6 +2,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Bullet, Bullets } from "./bullets";
 import { Drone, Drones } from "./drones";
 import { Entity } from "./entity";
+import { decayScalar } from "./math";
 import { BarrelMetadata, ProjectileMetadata } from "./metadata";
 
 export class Barrel {
@@ -24,7 +25,6 @@ export class Barrel {
     }
 
     public update(deltaTime: number) {
-        const decayFactor = Math.exp(-deltaTime * 4);
-        this._node.scaling.z = 1 - (1 - this._node.scaling.z) * decayFactor;
+        this._node.scaling.z = decayScalar(this._node.scaling.z, 1, deltaTime, 4);
     }
 }

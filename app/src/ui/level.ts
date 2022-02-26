@@ -3,6 +3,7 @@ import { Bar } from "./bar";
 import { Score } from "./score";
 import { Theme } from "./theme";
 import { Container } from "@babylonjs/gui/2D/controls/container";
+import { decayScalar } from "../math";
 
 const MIN_BAR_VALUE = 0.07;
 
@@ -126,10 +127,10 @@ export class Level {
     }
 
     public update(deltaTime: number): void {
-        const decayFactor = Math.exp(-deltaTime * 5);
         const previousBar = this._currentValue;
+
         const targetBar = (this._currentLevel < this._targetLevel ? 1 : this._targetValue);
-        this._currentValue = targetBar - (targetBar - this._currentValue) * decayFactor;
+        this._currentValue = decayScalar(this._currentValue, targetBar, deltaTime, 5);
         if (targetBar - this._currentValue < 0.001) {
             this._currentValue = targetBar;
             if (this._currentValue === 1 && this._currentLevel < this._targetLevel) {
@@ -138,6 +139,7 @@ export class Level {
                 this._updateText();
             }
         }
+
         if (this._currentValue !== previousBar) {
             this._updateValue();
         }

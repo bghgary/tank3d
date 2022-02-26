@@ -1,6 +1,7 @@
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { Container } from "@babylonjs/gui/2D/controls/container";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
+import { decayScalar } from "../math";
 
 export class Score {
     private _current = 0;
@@ -17,9 +18,8 @@ export class Score {
     }
 
     public update(deltaTime: number): void {
-        const decayFactor = Math.exp(-deltaTime * 5);
         const before = Math.round(this._current);
-        this._current = this._target - (this._target - this._current) * decayFactor;
+        this._current = decayScalar(this._current, this._target, deltaTime, 5);
         const after = Math.round(this._current);
         if (before !== after) {
             this._textBlock.text = this._text;

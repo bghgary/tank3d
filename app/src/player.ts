@@ -18,6 +18,7 @@ import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { EvolutionNode, EvolutionRootNode } from "./evolutions";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { decayVector3ToRef } from "./math";
 
 declare const DEV_BUILD: boolean;
 
@@ -200,11 +201,8 @@ export class Player {
     }
 
     private _updateCamera(deltaTime: number): void {
-        const decayFactor = Math.exp(-deltaTime * 4);
-        const position = this._tank.position;
         const target = this._camera.target;
-        target.x = position.x - (position.x - target.x) * decayFactor;
-        target.z = position.z - (position.z - target.z) * decayFactor;
+        decayVector3ToRef(this._tank.position, target, deltaTime, 4, target);
     }
 
     private _onTankDestroyed(entity: Entity): void {

@@ -6,6 +6,7 @@ import { Collider } from "./collisions";
 import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallBounce } from "./common";
 import { Entity, EntityType } from "./entity";
 import { Health } from "./health";
+import { decayScalar } from "./math";
 import { ShapeMetadata } from "./metadata";
 import { Shadow } from "./shadow";
 import { World } from "./world";
@@ -144,15 +145,10 @@ class ShapeImpl implements Shape, Collider {
             ApplyMovement(deltaTime, this._node.position, this.velocity);
             ApplyWallBounce(this._node.position, this.velocity, this.size, this._world.size);
 
-            const oldSpeed = Math.sqrt(this.velocity.x * this.velocity.x + this.velocity.z * this.velocity.z);
-            if (oldSpeed > 0) {
-                const decayFactor = Math.exp(-deltaTime * 2);
-                const targetSpeed = IDLE_MOVEMENT_SPEED / this.mass;
-                const newSpeed = targetSpeed - (targetSpeed - oldSpeed) * decayFactor;
-                const speedFactor = newSpeed / oldSpeed;
-                this.velocity.x *= speedFactor;
-                this.velocity.z *= speedFactor;
-            }
+            const oldSpeed = this.velocity.length();
+            const targetSpeed = IDLE_MOVEMENT_SPEED / this.mass;
+            const newSpeed = decayScalar(oldSpeed, targetSpeed, deltaTime, 2);
+            this.velocity.scaleInPlace(newSpeed / Math.max(oldSpeed, 0.01));
 
             this._node.addRotation(0, this.rotationVelocity * deltaTime, 0);
 

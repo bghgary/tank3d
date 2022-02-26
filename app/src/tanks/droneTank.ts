@@ -1,6 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Barrel } from "../barrel";
+import { ApplyRecoil } from "../common";
 import { Drones } from "../drones";
 import { Entity } from "../entity";
 import { ProjectileMetadata } from "../metadata";
@@ -62,8 +63,7 @@ export abstract class DroneTank extends BarrelTank {
 
     protected _shootFrom(barrel: Barrel): void {
         const drone = barrel.shootDrone(this._drones, this, this._createDroneNode);
-        this._recoil.x += drone.velocity.x * drone.mass;
-        this._recoil.z += drone.velocity.z * drone.mass;
+        ApplyRecoil(this._recoil, drone);
     }
 
     protected _updateDroneMetadata(): void {
