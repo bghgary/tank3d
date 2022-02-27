@@ -17,6 +17,7 @@ import { Control } from "@babylonjs/gui/2D/controls/control";
 import { EvolutionNode, EvolutionRootNode } from "./evolutions";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { decayVector3ToRef } from "./math";
+import { Observable } from "@babylonjs/core/Misc/observable";
 
 declare const DEV_BUILD: boolean;
 
@@ -80,7 +81,9 @@ export class Player {
         this._world.uiContainer.addControl(bottomPanel);
 
         this._score = new Score(bottomPanel);
+
         this._level = new Level(bottomPanel, this._score, this._tank.displayName);
+        this._level.onChangedObservable.add((value) => this.onLevelChangedObservable.notifyObservers(value));
 
         this._upgrades = new Upgrades(this._world, this._level);
         this._upgrades.onUpgradeObservable.add(() => this._setTankUpgrades());
@@ -98,7 +101,14 @@ export class Player {
 
             // Cheat shortcut for testing
             if (data.type === KeyboardEventTypes.KEYUP && data.event.ctrlKey && data.event.shiftKey && data.event.altKey && data.event.code === "KeyG") {
-                this._score.add(10000);
+                const score = this._score.value;
+                if (score < 731) {
+                    this._score.add(731 - score);
+                } else if (score < 2958) {
+                    this._score.add(2958 - score);
+                } else {
+                    this._score.add(10000 - score);
+                }
             }
 
             const command = KeyMapping.get(data.event.code);
@@ -174,6 +184,14 @@ export class Player {
         return this._tank.active;
     }
 
+    public get level(): number {
+        return this._level.value;
+    }
+
+    public readonly onLevelChangedObservable = new Observable<number>();
+
+    public readonly onDestroyedObservable = new Observable<void>();
+
     public update(deltaTime: number): void {
         this._tank.rotate(deltaTime);
 
@@ -214,6 +232,8 @@ export class Player {
             const z = Scalar.RandomRange(-limit, limit);
             this._tank.position.set(x, 0, z);
             this._tank.velocity.set(0, 0, 0);
+
+            this.onDestroyedObservable.notifyObservers();
         });
     }
 

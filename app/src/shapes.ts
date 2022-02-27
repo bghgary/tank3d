@@ -1,7 +1,6 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Observable } from "@babylonjs/core/Misc/observable";
 import { Collider } from "./collisions";
 import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallBounce } from "./common";
 import { Entity, EntityType } from "./entity";
@@ -38,8 +37,6 @@ export class Shapes {
             [Symbol.iterator]: this._getCollidableEntities.bind(this)
         });
     }
-
-    public onShapeDestroyedObservable = new Observable<{ shape: Shape, other: Entity }>();
 
     public update(deltaTime: number): void {
         for (const shape of this._shapes) {

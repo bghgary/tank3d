@@ -128,7 +128,7 @@ export class DirectorTank extends DroneTank {
     }
 
     private _updateAutoRotateSpeed(): void {
-        this._autoRotateSpeed = this._properties.projectileSpeed * 0.5 / (this._circleRadius);
+        this._autoRotateSpeed = this._properties.projectileSpeed * 0.5 / this._circleRadius;
     }
 
     public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {

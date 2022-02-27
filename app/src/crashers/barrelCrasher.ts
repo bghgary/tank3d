@@ -13,7 +13,7 @@ export abstract class BarrelCrasher extends BaseCrasher {
     protected _reloadTime = 0;
     protected _recoil = new Vector3();
 
-    public constructor(world: World, node: TransformNode) {
+    protected constructor(world: World, node: TransformNode) {
         super(world, node);
 
         this._barrels = (this._metadata as BarrelCrasherMetadata).barrels.map((metadata) => new Barrel(node, metadata));

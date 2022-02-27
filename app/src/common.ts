@@ -8,8 +8,8 @@ export function ApplyCollisionForce(target: Entity, other: Entity, strength = 1)
     const velocity = target.velocity;
     const dx = position.x - other.position.x;
     const dz = position.z - other.position.z;
-    const length = Math.max(Math.sqrt(dx * dx + dz * dz), 0.01);
-    const factor = strength * other.mass / (target.mass + other.mass) / length;
+    const length = Math.sqrt(dx * dx + dz * dz);
+    const factor = strength * other.mass / (target.mass + other.mass) / Math.max(length, 0.01);
     velocity.x += dx * factor;
     velocity.z += dz * factor;
 }

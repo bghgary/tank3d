@@ -154,7 +154,7 @@ export class Level {
         return this._targetLevel;
     }
 
-    public onChangedObservable = new Observable<number>();
+    public readonly onChangedObservable = new Observable<number>();
 
     private _updateValue(): void {
         this._bar.value = this._currentValue;

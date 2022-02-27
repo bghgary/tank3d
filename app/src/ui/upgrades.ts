@@ -121,7 +121,7 @@ export class Upgrades {
         return this._barButtons.get(type)!.value;
     }
 
-    public onUpgradeObservable = new Observable<UpgradeType>();
+    public readonly onUpgradeObservable = new Observable<UpgradeType>();
 
     private _update(): void {
         const level = this._level.value;

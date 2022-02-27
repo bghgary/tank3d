@@ -30,14 +30,14 @@ export class BossTank {
         this._createBulletNode = (parent) => this._world.sources.create(this._world.sources.bullet.boss, parent);
     }
 
-    public update(deltaTime: number, inRange: boolean, player: Player): void {
+    public update(deltaTime: number, active: boolean, player: Player): void {
         for (const barrel of this._barrels) {
             barrel.update(deltaTime);
         }
 
         this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
 
-        if (!player.active || !inRange || !this._shoot(deltaTime, player)) {
+        if (!active || !this._shoot(deltaTime, player)) {
             const rotation = this._node.rotationQuaternion!;
             decayQuaternionToRef(rotation, QuaternionIdentity, deltaTime, 2, rotation);
             rotation.normalize();
@@ -50,28 +50,28 @@ export class BossTank {
 
         const parent = this._node.parent! as TransformNode;
         const tankAngle = Math.acos(Vector3.Dot(parent.forward, playerDirection));
-        if (tankAngle < MAX_TANK_ANGLE) {
-            const forward = this._node.forward;
-            const direction = TmpVector3[1].setAll(0);
-            decayVector3ToRef(forward, playerDirection, deltaTime, 20, direction);
-            const invWorldMatrix = TmpMatrix[0];
-            parent.getWorldMatrix().invertToRef(invWorldMatrix);
-            Vector3.TransformNormalToRef(direction, invWorldMatrix, direction);
-            this._node.setDirection(direction.normalize());
-
-            const angle = Math.acos(Vector3.Dot(playerDirection, forward));
-            if (this._reloadTime === 0 && angle < SHOOT_ANGLE) {
-                for (const barrel of this._barrels) {
-                    barrel.shootBullet(this._world.bullets, this._owner, this._metadata.bullet, this._createBulletNode);
-                }
-
-                this._reloadTime = this._metadata.reload;
-            }
-
-            return true;
+        if (tankAngle >= MAX_TANK_ANGLE) {
+            return false;
         }
 
-        return false;
+        const forward = this._node.forward;
+        const direction = TmpVector3[1].setAll(0);
+        decayVector3ToRef(forward, playerDirection, deltaTime, 20, direction);
+        const invWorldMatrix = TmpMatrix[0];
+        parent.getWorldMatrix().invertToRef(invWorldMatrix);
+        Vector3.TransformNormalToRef(direction, invWorldMatrix, direction);
+        this._node.setDirection(direction.normalize());
+
+        const angle = Math.acos(Vector3.Dot(playerDirection, forward));
+        if (this._reloadTime === 0 && angle < SHOOT_ANGLE) {
+            for (const barrel of this._barrels) {
+                barrel.shootBullet(this._world.bullets, this._owner, this._metadata.bullet, this._createBulletNode);
+            }
+
+            this._reloadTime = this._metadata.reload;
+        }
+
+        return true;
     }
 }
 

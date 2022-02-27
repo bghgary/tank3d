@@ -112,7 +112,7 @@ class DroneImpl implements Drone, Collider {
         const direction = TmpVector3[0];
         target.subtractToRef(this._node.position, direction);
         const distance = direction.length();
-        direction.scaleInPlace(1 / distance);
+        direction.scaleInPlace(1 / Math.max(distance, 0.01));
 
         if (radius > 0) {
             const position = TmpVector3[1];

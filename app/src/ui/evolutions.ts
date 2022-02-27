@@ -130,5 +130,5 @@ export class Evolutions {
         }
     }
 
-    public onEvolveObservable = new Observable<EvolutionNode>();
+    public readonly onEvolveObservable = new Observable<EvolutionNode>();
 }

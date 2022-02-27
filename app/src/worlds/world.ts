@@ -13,6 +13,7 @@ import { Container } from "@babylonjs/gui/2D/controls/container";
 import { Control, TextBlock } from "@babylonjs/gui";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Entity } from "../entity";
+import { CreateGridMaterial } from "../materials/gridMaterial";
 
 declare const VERSION: string;
 declare const DEV_BUILD: boolean;
@@ -26,7 +27,7 @@ export abstract class World {
     private _suspended = false;
     private _paused = false;
 
-    public constructor(engine: Engine, size: number) {
+    protected constructor(engine: Engine, size: number) {
         this.size = size;
         this.scene = new Scene(engine);
         this.sources = new Sources(this);
@@ -130,15 +131,23 @@ export abstract class World {
         }
     }
 
-    public onPausedStateChangedObservable = new Observable<boolean>();
+    public readonly onPausedStateChangedObservable = new Observable<boolean>();
 
-    public onEnemyDestroyedObservable = new Observable<[Entity, Entity & { points: number }]>();
+    public readonly onEnemyDestroyedObservable = new Observable<[Entity, Entity & { points: number }]>();
 
     protected abstract _update(deltaTime: number): void;
 
-    protected _createGround(): Mesh {
+    private _createGround(): Mesh {
         const ground = MeshBuilder.CreateGround("ground", { width: 1000, height: 1000 }, this.scene);
         ground.visibility = 0;
+
+        const grid = MeshBuilder.CreateGround("grid", { width: 1000, height: 1000 }, this.scene);
+        grid.position.y = -1;
+        grid.doNotSyncBoundingInfo = true;
+        grid.alwaysSelectAsActiveMesh = true;
+        grid.material = CreateGridMaterial(this.scene, this.size);
+        grid.parent = ground;
+
         return ground;
     }
 }
