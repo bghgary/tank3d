@@ -20,7 +20,6 @@ export function decayScalar(from: number, to: number, deltaTime: number, factor:
 export function decayVector3ToRef(from: Readonly<Vector3>, to: Readonly<Vector3>, deltaTime: number, factor: number, result: Vector3): Vector3 {
     const decayFactor = Math.exp(-deltaTime * factor);
     result.x = to.x - (to.x - from.x) * decayFactor;
-    result.y = to.y - (to.y - from.y) * decayFactor;
     result.z = to.z - (to.z - from.z) * decayFactor;
     return result;
 }
