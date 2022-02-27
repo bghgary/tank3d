@@ -5,7 +5,7 @@ import { Entity } from "../entity";
 import { decayQuaternionToRef, decayVector3ToRef, QuaternionIdentity, TmpMatrix, TmpVector3 } from "../math";
 import { BossTankMetadata } from "../metadata";
 import { Player } from "../player";
-import { World } from "../world";
+import { World } from "../worlds/world";
 
 const MAX_TANK_ANGLE = 0.5 * Math.PI;
 const SHOOT_ANGLE = 0.02 * Math.PI;

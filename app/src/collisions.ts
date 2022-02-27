@@ -2,7 +2,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { IDisposable } from "@babylonjs/core/scene";
 import Quadtree from "@timohausmann/quadtree-js";
 import { Entity } from "./entity";
-import { World } from "./world";
+import { World } from "./worlds/world";
 
 export interface Collider extends Quadtree.Rect {
     readonly size: number;

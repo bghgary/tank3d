@@ -1,6 +1,6 @@
 import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
-import { World } from "./world";
+import { World } from "./worlds/world";
 
 export class Message {
     private _world: World;

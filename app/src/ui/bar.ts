@@ -5,7 +5,7 @@ import { Container } from "@babylonjs/gui/2D/controls/container";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { Rectangle } from "@babylonjs/gui/2D/controls/rectangle";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { isHierarchyEnabled, KeyInfo, registerKeyboard } from "./common";
 
 const CORNER_RADIUS = 15;

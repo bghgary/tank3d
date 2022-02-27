@@ -4,12 +4,10 @@ import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 import { PointerEventTypes } from "@babylonjs/core/Events/pointerEvents";
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Crashers } from "./crashers";
 import { Entity } from "./entity";
 import { Message } from "./message";
-import { Shapes } from "./shapes";
 import { PlayerTank } from "./tanks/playerTank";
-import { World } from "./world";
+import { World } from "./worlds/world";
 import { Level } from "./ui/level";
 import { Score } from "./ui/score";
 import { Upgrades, UpgradeType } from "./ui/upgrades";
@@ -19,7 +17,6 @@ import { Control } from "@babylonjs/gui/2D/controls/control";
 import { EvolutionNode, EvolutionRootNode } from "./evolutions";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { decayVector3ToRef } from "./math";
-import { Bosses } from "./bosses";
 
 declare const DEV_BUILD: boolean;
 
@@ -69,7 +66,7 @@ export class Player {
 
     private _tank: PlayerTank;
 
-    public constructor(world: World, shapes: Shapes, crashers: Crashers, bosses: Bosses) {
+    public constructor(world: World) {
         this._world = world;
 
         this._root = new TransformNode("player", this._world.scene);
@@ -162,15 +159,11 @@ export class Player {
             }
         });
 
-        const handleEntityDestroyed = (target: { points: number }, other: Entity): void => {
-            if (other === this._tank || other.owner === this._tank) {
+        world.onEnemyDestroyedObservable.add(([source, target]) => {
+            if (source === this._tank || source.owner === this._tank) {
                 this._score.add(target.points);
             }
-        };
-
-        shapes.onShapeDestroyedObservable.add(({shape, other}) => handleEntityDestroyed(shape, other));
-        crashers.onCrasherDestroyedObservable.add(({crasher, other}) => handleEntityDestroyed(crasher, other));
-        bosses.onBossDestroyedObservable.add(({boss, other}) => handleEntityDestroyed(boss, other));
+        });
     }
 
     public get position(): Vector3 {

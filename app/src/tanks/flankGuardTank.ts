@@ -1,6 +1,6 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "../sources";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { BulletTank } from "./bulletTank";
 import { PlayerTank } from "./playerTank";
 

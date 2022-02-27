@@ -2,7 +2,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Barrel } from "../barrel";
 import { Entity } from "../entity";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { PlayerTank } from "./playerTank";
 
 export abstract class BarrelTank extends PlayerTank {

@@ -5,7 +5,7 @@ import { Nullable } from "@babylonjs/core/types";
 import { Collider } from "../collisions";
 import { Entity, EntityType } from "../entity";
 import { Sources } from "../sources";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { DroneTank } from "./droneTank";
 import { PlayerTank } from "./playerTank";
 

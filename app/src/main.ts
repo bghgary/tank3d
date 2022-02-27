@@ -1,10 +1,10 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
-import { World } from "./world";
+import { StandardWorld } from "./worlds/standardWorld";
 
 export function initialize(canvas: HTMLCanvasElement): void {
     const engine = new Engine(canvas);
 
-    const world = new World(engine);
+    const world = new StandardWorld(engine);
 
     window.addEventListener("resize", () => {
         engine.resize();

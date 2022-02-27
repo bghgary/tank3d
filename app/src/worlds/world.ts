@@ -1,9 +1,6 @@
-import { Player } from "./player";
-import { Shapes } from "./shapes";
-import { Collisions } from "./collisions";
-import { Sources } from "./sources";
-import { Crashers } from "./crashers";
-import { Bullets } from "./bullets";
+import { Collisions } from "../collisions";
+import { Sources } from "../sources";
+import { Bullets } from "../bullets";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
 import { AdvancedDynamicTexture } from "@babylonjs/gui/2D/advancedDynamicTexture";
@@ -12,11 +9,10 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { KeyboardEventTypes } from "@babylonjs/core/Events/keyboardEvents";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
-import { CreateGridMaterial } from "./materials/gridMaterial";
 import { Container } from "@babylonjs/gui/2D/controls/container";
 import { Control, TextBlock } from "@babylonjs/gui";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
-import { Bosses } from "./bosses";
+import { Entity } from "../entity";
 
 declare const VERSION: string;
 declare const DEV_BUILD: boolean;
@@ -25,23 +21,18 @@ function now(): number {
     return performance.now() * 0.001;
 }
 
-export class World {
+export abstract class World {
     private _previousTime = 0;
     private _suspended = false;
     private _paused = false;
 
-    public constructor(engine: Engine, size = 100) {
+    public constructor(engine: Engine, size: number) {
         this.size = size;
         this.scene = new Scene(engine);
         this.sources = new Sources(this);
         this.collisions = new Collisions(this);
         this.bullets = new Bullets(this);
         this.uiContainer = AdvancedDynamicTexture.CreateFullscreenUI("Fullscreen").rootContainer;
-
-        const shapes = new Shapes(this, 0);
-        const crashers = new Crashers(this, 0);
-        const bosses = new Bosses(this);
-        const player = new Player(this, shapes, crashers, bosses);
 
         const ground = this._createGround();
 
@@ -101,12 +92,7 @@ export class World {
                 }
 
                 this.bullets.update(deltaTime);
-
-                shapes.update(deltaTime);
-                player.update(deltaTime);
-                crashers.update(deltaTime, player);
-                bosses.update(deltaTime, player);
-
+                this._update(deltaTime);
                 this.collisions.update(deltaTime);
             }
 
@@ -146,17 +132,13 @@ export class World {
 
     public onPausedStateChangedObservable = new Observable<boolean>();
 
-    private _createGround(): Mesh {
+    public onEnemyDestroyedObservable = new Observable<[Entity, Entity & { points: number }]>();
+
+    protected abstract _update(deltaTime: number): void;
+
+    protected _createGround(): Mesh {
         const ground = MeshBuilder.CreateGround("ground", { width: 1000, height: 1000 }, this.scene);
         ground.visibility = 0;
-
-        const grid = MeshBuilder.CreateGround("grid", { width: 1000, height: 1000 }, this.scene);
-        grid.position.y = -1;
-        grid.doNotSyncBoundingInfo = true;
-        grid.alwaysSelectAsActiveMesh = true;
-        grid.material = CreateGridMaterial(this.scene, this.size);
-        grid.parent = ground;
-
         return ground;
     }
 }

@@ -1,6 +1,6 @@
 import { Button } from "@babylonjs/gui/2D/controls/button";
 import { Container } from "@babylonjs/gui/2D/controls/container";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { Control } from "@babylonjs/gui/2D/controls/control";

@@ -3,7 +3,7 @@ import { Nullable } from "@babylonjs/core/types";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
 import { EvolutionNode, EvolutionRootNode } from "../evolutions";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { Level } from "./level";
 import { ImageButton } from "./image";
 import { Theme } from "./theme";

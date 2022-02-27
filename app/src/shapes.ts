@@ -9,7 +9,7 @@ import { Health } from "./health";
 import { decayScalar } from "./math";
 import { ShapeMetadata } from "./metadata";
 import { Shadow } from "./shadow";
-import { World } from "./world";
+import { World } from "./worlds/world";
 
 const IDLE_ROTATION_SPEED = 0.15;
 const IDLE_MOVEMENT_SPEED = 0.05;
@@ -43,9 +43,9 @@ export class Shapes {
 
     public update(deltaTime: number): void {
         for (const shape of this._shapes) {
-            shape.update(deltaTime, (entity) => {
+            shape.update(deltaTime, (source) => {
                 this._shapes.delete(shape);
-                this.onShapeDestroyedObservable.notifyObservers({ shape: shape, other: entity });
+                this._world.onEnemyDestroyedObservable.notifyObservers([source, shape]);
                 this._spawns.add({ time: SPAWN_TIME });
             });
         }
@@ -138,7 +138,7 @@ class ShapeImpl implements Shape, Collider {
 
     public rotationVelocity = 0;
 
-    public update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
+    public update(deltaTime: number, onDestroy: (source: Entity) => void): void {
         if (ApplyGravity(deltaTime, this._node.position, this.velocity)) {
             this._shadow.update();
         } else {
@@ -154,8 +154,8 @@ class ShapeImpl implements Shape, Collider {
 
             this._shadow.update();
 
-            this._health.update(deltaTime, (entity) => {
-                onDestroy(entity);
+            this._health.update(deltaTime, (source) => {
+                onDestroy(source);
                 this._node.dispose();
             });
         }

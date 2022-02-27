@@ -4,7 +4,7 @@ import { Barrel } from "../barrel";
 import { Entity } from "../entity";
 import { BarrelCrasherMetadata } from "../metadata";
 import { Player } from "../player";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { BaseCrasher } from "./baseCrasher";
 
 export abstract class BarrelCrasher extends BaseCrasher {

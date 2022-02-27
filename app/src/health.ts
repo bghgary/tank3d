@@ -63,7 +63,7 @@ export class Health {
         this._regenSpeed = regenSpeed;
     }
 
-    public update(deltaTime: number, onZero: (entity: Entity) => void): void {
+    public update(deltaTime: number, onZero: (source: Entity) => void): void {
         if (this._target < this._current) {
             this._node.setEnabled(true);
             this._current = Math.max(this._current - this._speed * deltaTime, Math.max(this._target, 0));

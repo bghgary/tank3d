@@ -5,7 +5,7 @@ import { Drones } from "../drones";
 import { Entity } from "../entity";
 import { BarrelCrasherMetadata, DroneCrasherMetadata } from "../metadata";
 import { Player } from "../player";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { BarrelCrasher } from "./barrelCrasher";
 
 const CHASE_ANGLE = 0.02 * Math.PI;

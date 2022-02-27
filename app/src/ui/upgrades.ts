@@ -3,7 +3,7 @@ import { Control } from "@babylonjs/gui/2D/controls/control";
 import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { ProjectileType } from "../tanks/playerTank";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { BarButton } from "./bar";
 import { Level } from "./level";
 import { Theme } from "./theme";

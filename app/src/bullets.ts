@@ -7,7 +7,7 @@ import { decayVector3ToRef, TmpVector3 } from "./math";
 import { BarrelMetadata, ProjectileMetadata } from "./metadata";
 import { Shadow } from "./shadow";
 import { Sources } from "./sources";
-import { World } from "./world";
+import { World } from "./worlds/world";
 
 const MAX_DURATION = 3;
 

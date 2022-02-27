@@ -7,7 +7,7 @@ import { Health } from "../health";
 import { CrasherMetadata } from "../metadata";
 import { Player } from "../player";
 import { Shadow } from "../shadow";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { Crasher } from "../crashers";
 import { decayVector3ToRef, TmpVector3 } from "../math";
 
@@ -48,7 +48,7 @@ export class BaseCrasher implements Crasher, Collider {
     public get width() { return this.size; }
     public get height() { return this.size; }
 
-    public update(deltaTime: number, player: Player, onDestroy: (entity: Entity) => void): void {
+    public update(deltaTime: number, player: Player, onDestroy: (source: Entity) => void): void {
         if (ApplyGravity(deltaTime, this._node.position, this.velocity)) {
             this._shadow.update();
         } else {
@@ -62,8 +62,8 @@ export class BaseCrasher implements Crasher, Collider {
 
             this._shadow.update();
 
-            this._health.update(deltaTime, (entity) => {
-                onDestroy(entity);
+            this._health.update(deltaTime, (source) => {
+                onDestroy(source);
                 this._node.dispose();
             });
         }

@@ -2,7 +2,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Barrel } from "../barrel";
 import { ApplyRecoil } from "../common";
 import { ProjectileMetadata } from "../metadata";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { ProjectileType, PlayerTank, TankProperties } from "./playerTank";
 

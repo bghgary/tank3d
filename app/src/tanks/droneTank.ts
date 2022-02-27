@@ -5,7 +5,7 @@ import { ApplyRecoil } from "../common";
 import { Drones } from "../drones";
 import { Entity } from "../entity";
 import { ProjectileMetadata } from "../metadata";
-import { World } from "../world";
+import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { ProjectileType, PlayerTank, TankProperties } from "./playerTank";
 

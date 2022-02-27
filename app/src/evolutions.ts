@@ -4,7 +4,7 @@ import { PounderTank } from "./tanks/pounderTank";
 import { SniperTank } from "./tanks/sniperTank";
 import { PlayerTank } from "./tanks/playerTank";
 import { TwinTank } from "./tanks/twinTank";
-import { World } from "./world";
+import { World } from "./worlds/world";
 import { Sources } from "./sources";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DirectorTank } from "./tanks/directorTank";

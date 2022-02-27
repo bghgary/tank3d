@@ -1,10 +1,9 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Quaternion } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Observable } from "@babylonjs/core/Misc/observable";
 import { Entity } from "./entity";
 import { Player } from "./player";
-import { World } from "./world";
+import { World } from "./worlds/world";
 import { BaseCrasher } from "./crashers/baseCrasher";
 import { BulletCrasher } from "./crashers/bulletCrasher";
 import { DroneCrasher } from "./crashers/droneCrasher";
@@ -34,13 +33,11 @@ export class Crashers {
         });
     }
 
-    public onCrasherDestroyedObservable = new Observable<{ crasher: Crasher, other: Entity }>();
-
     public update(deltaTime: number, player: Player): void {
         for (const crasher of this._crashers) {
-            crasher.update(deltaTime, player, (entity) => {
+            crasher.update(deltaTime, player, (source) => {
                 this._crashers.delete(crasher);
-                this.onCrasherDestroyedObservable.notifyObservers({ crasher: crasher, other: entity });
+                this._world.onEnemyDestroyedObservable.notifyObservers([source, crasher]);
             });
         }
 

@@ -9,7 +9,7 @@ import { decayVector3ToRef, TmpVector3 } from "../math";
 import { PlayerTankMetadata } from "../metadata";
 import { Shadow } from "../shadow";
 import { Shield } from "../shield";
-import { World } from "../world";
+import { World } from "../worlds/world";
 
 export const enum ProjectileType {
     Bullet,
@@ -173,15 +173,15 @@ export abstract class PlayerTank implements Entity, Collider {
         this._shield.enabled = false;
     }
 
-    public update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
+    public update(deltaTime: number, onDestroy: (source: Entity) => void): void {
         if (this._autoShoot && this.inBounds) {
             this.shoot();
         }
 
         this._shield.update(deltaTime);
 
-        this._health.update(deltaTime, (entity) => {
-            onDestroy(entity);
+        this._health.update(deltaTime, (source) => {
+            onDestroy(source);
             this._node.setEnabled(false);
         });
     }

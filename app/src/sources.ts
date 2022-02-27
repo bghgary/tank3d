@@ -9,7 +9,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Scene } from "@babylonjs/core/scene";
 import { CreateShadowMaterial } from "./materials/shadowMaterial";
 import { BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, ShapeMetadata, SizeMetadata, PlayerTankMetadata, BossMetadata } from "./metadata";
-import { World } from "./world";
+import { World } from "./worlds/world";
 
 const CRASHER_SPEED = 5;
 const CRASHER_PROJECTILE_RELOAD = 0.5;
