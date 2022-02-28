@@ -1,4 +1,5 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
+import { Quaternion } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { BaseBoss } from "./bosses/baseBoss";
 import { KeeperBoss } from "./bosses/keeperBoss";
@@ -35,6 +36,7 @@ export class Bosses {
         const x = Scalar.RandomRange(-limit, limit);
         const z = Scalar.RandomRange(-limit, limit);
         boss.position.set(x, DROP_HEIGHT, z);
+        Quaternion.FromEulerAnglesToRef(0, Scalar.RandomRange(0, Math.PI), 0, boss.rotation);
         this._bosses.add(boss);
         return boss;
     }

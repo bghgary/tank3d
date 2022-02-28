@@ -2,7 +2,6 @@ import { Engine } from "@babylonjs/core/Engines/engine";
 import { Nullable } from "@babylonjs/core/types";
 import { Boss, Bosses } from "../bosses";
 import { Crashers } from "../crashers";
-import { Player } from "../player";
 import { Shapes } from "../shapes";
 import { World } from "./world";
 
@@ -10,7 +9,6 @@ export class BoxWorld extends World {
     private readonly _shapes: Shapes;
     private readonly _crashers: Crashers;
     private readonly _bosses: Bosses;
-    private readonly _player: Player;
 
     private _keeperBoss?: Nullable<Boss>;
 
@@ -20,7 +18,6 @@ export class BoxWorld extends World {
         this._shapes = new Shapes(this, 200);
         this._crashers = new Crashers(this, 100);
         this._bosses = new Bosses(this);
-        this._player = new Player(this);
 
         this.onEnemyDestroyedObservable.add(([_, target]) => {
             if (target === this._keeperBoss) {

@@ -2,8 +2,10 @@ import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
 import { RenderTargetTexture } from "@babylonjs/core/Materials/Textures/renderTargetTexture";
 import { Color4 } from "@babylonjs/core/Maths/math.color";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
+import { Minimap } from "./minimap";
 
 const CAPTURE_POSITION_Y = 1000;
 
@@ -14,19 +16,19 @@ export async function captureScreenshotAsync(node: TransformNode, width: number,
     await scene.whenReadyAsync();
 
     const camera = new ArcRotateCamera("screenshot", -Math.PI / 2, Math.PI / 3.5, 3, new Vector3(0, CAPTURE_POSITION_Y - 0.15, 0), scene, false);
-    scene.activeCamera = camera;
+    scene.activeCameras!.push(camera);
     scene.render();
 
     const texture = new RenderTargetTexture("screenshot", { width, height }, scene, false, false);
     texture.clearColor = new Color4(0, 0, 0, 0);
-    texture.renderList = node.getChildMeshes();
+    texture.renderList = node.getChildMeshes(false, (node) => (node as AbstractMesh).layerMask !== Minimap.LayerMask);
     texture.render(true);
 
-    const pixels = await texture.readPixels()!;
-    const result = await Tools.DumpDataAsync(width, height, pixels, "image/png", undefined, true) as string;
-
-    texture.dispose();
     camera.dispose();
 
-    return result;
+    const pixels = await texture.readPixels()!;
+
+    texture.dispose();
+
+    return await Tools.DumpDataAsync(width, height, pixels, "image/png", undefined, true) as string;
 }

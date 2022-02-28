@@ -9,6 +9,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Scene } from "@babylonjs/core/scene";
 import { CreateShadowMaterial } from "./materials/shadowMaterial";
 import { BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, ShapeMetadata, SizeMetadata, PlayerTankMetadata, BossMetadata } from "./metadata";
+import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
 const CRASHER_SPEED = 5;
@@ -20,6 +21,8 @@ const CRASHER_PROJECTILE_HEALTH = 8;
 const MEGA_CRASHER_HEALTH = 300;
 const MEGA_CRASHER_DAMAGE = 50;
 const MEGA_CRASHER_POINTS = 100;
+
+const MARKER_MAGNIFICATION = 5;
 
 function createBarrel(name: string, size: { muzzle: number, base: number } | number, length: number, scene: Scene): Mesh {
     if (typeof size === "number") {
@@ -50,6 +53,27 @@ function createTetrahedronBody(name: string, size: number, scene: Scene): Mesh {
 
 function createSphereBody(name: string, size: number, scene: Scene): Mesh {
     return MeshBuilder.CreateSphere(name, { segments: 16 * size }, scene);
+}
+
+function createTriangleMarker(name: string, size: number, scene: Scene): Mesh {
+    const marker = MeshBuilder.CreateDisc(name, { tessellation: 3 }, scene);
+    marker.rotation.x = Math.PI / 2;
+    marker.rotation.z = Math.PI / 2;
+    marker.scaling.x = 1.5;
+    marker.scaling.scaleInPlace(size * MARKER_MAGNIFICATION);
+    marker.bakeCurrentTransformIntoVertices();
+    marker.layerMask = Minimap.LayerMask;
+    return marker;
+}
+
+function createSquareMarker(name: string, size: number, scene: Scene): Mesh {
+    const marker = MeshBuilder.CreateDisc(name, { tessellation: 4 }, scene);
+    marker.rotation.x = Math.PI / 2;
+    marker.rotation.z = Math.PI / 4;
+    marker.scaling.scaleInPlace(size * MARKER_MAGNIFICATION);
+    marker.bakeCurrentTransformIntoVertices();
+    marker.layerMask = Minimap.LayerMask;
+    return marker;
 }
 
 export class Sources {
@@ -210,42 +234,51 @@ export class Sources {
         }
     }
 
-    private _createMaterial(name: string, r: number, g: number, b: number, unlit = false): Material {
+    private _createMaterial(name: string, r: number, g: number, b: number): Material {
         const material = new StandardMaterial(name, this._scene);
-        if (unlit) {
-            material.emissiveColor.set(r, g, b);
-            material.disableLighting = true;
-        } else {
-            material.diffuseColor.set(r, g, b);
-        }
+        material.diffuseColor.set(r, g, b);
         return material;
     }
 
     private _createClone(source: Mesh, parent?: TransformNode): Mesh {
         const clone = source.clone(source.name, parent);
-        clone.rotationQuaternion = clone.rotationQuaternion || Quaternion.FromEulerVector(clone.rotation);
+        this._initRotation(clone);
         this._initMesh(clone);
+        clone.id = source.id;
         return clone;
     }
 
     private _createInstance(source: Mesh, parent?: TransformNode): InstancedMesh {
         const instance = source.createInstance(source.name);
-        instance.rotationQuaternion = instance.rotationQuaternion || Quaternion.FromEulerVector(instance.rotation);
+        this._initRotation(instance);
         this._initMesh(instance);
+        instance.id = source.id;
+        instance.layerMask = source.layerMask;
         instance.metadata = source.metadata;
         instance.parent = parent || null;
         return instance;
     }
 
     private _instantiateHeirarchy(source: TransformNode, parent?: TransformNode): TransformNode {
-        const instance = source.instantiateHierarchy(parent, undefined, (source, clone) => clone.name = source.name)!;
-        instance.rotationQuaternion = instance.rotationQuaternion || Quaternion.FromEulerVector(instance.rotation);
+        const instance = source.instantiateHierarchy(parent, undefined, (source, target) => {
+            target.id = source.id;
+            target.name = source.name;
+            if ((target as AbstractMesh).layerMask && (source as AbstractMesh).layerMask) {
+                (target as AbstractMesh).layerMask = (source as AbstractMesh).layerMask;
+            }
+        })!;
+        this._initRotation(instance);
         for (const mesh of instance.getChildMeshes()) {
             this._initMesh(mesh);
         }
+        instance.id = source.id;
         instance.name = source.name;
         instance.parent = parent || null;
         return instance;
+    }
+
+    private _initRotation(transformNode: TransformNode): void {
+        transformNode.rotationQuaternion = transformNode.rotationQuaternion || Quaternion.FromEulerVector(transformNode.rotation);
     }
 
     private _initMesh(mesh: AbstractMesh): void {
@@ -572,7 +605,6 @@ export class Sources {
     private _createKeeperBossSource(parent: TransformNode): TransformNode {
         const bodyWidth = 3;
         const bodyHeight = 1.3;
-        const bodyDepth = 3;
 
         const barrelDiameter = 0.55;
         const barrelLength = 0.75;
@@ -611,22 +643,22 @@ export class Sources {
         source.metadata = metadata;
         source.parent = parent;
 
-        const body = MeshBuilder.CreateBox("body", { width: bodyWidth, height: bodyHeight, depth: bodyDepth }, this._scene);
+        const body = MeshBuilder.CreateBox("body", { width: bodyWidth, height: bodyHeight, depth: bodyWidth }, this._scene);
         body.material = this._materials.orange;
         body.parent = source;
 
         const angle = Math.PI * 0.25;
         const tankTransforms = [{
-            position: new Vector3(bodyWidth, 0, bodyDepth).scaleInPlace(0.5),
+            position: new Vector3(bodyWidth, 0, bodyWidth).scaleInPlace(0.5),
             rotation: Quaternion.FromEulerAngles(0, angle, 0),
         }, {
-            position: new Vector3(bodyWidth, 0, -bodyDepth).scaleInPlace(0.5),
+            position: new Vector3(bodyWidth, 0, -bodyWidth).scaleInPlace(0.5),
             rotation: Quaternion.FromEulerAngles(0, angle * 3, 0),
         }, {
-            position: new Vector3(-bodyWidth, 0, -bodyDepth).scaleInPlace(0.5),
+            position: new Vector3(-bodyWidth, 0, -bodyWidth).scaleInPlace(0.5),
             rotation: Quaternion.FromEulerAngles(0, angle * 5, 0),
         }, {
-            position: new Vector3(-bodyWidth, 0, bodyDepth).scaleInPlace(0.5),
+            position: new Vector3(-bodyWidth, 0, bodyWidth).scaleInPlace(0.5),
             rotation: Quaternion.FromEulerAngles(0, angle * 7, 0),
         }];
 
@@ -651,6 +683,10 @@ export class Sources {
             barrel.material = this._materials.gray;
             barrel.parent = tank;
         }
+
+        const marker = createSquareMarker("marker", bodyWidth, this._scene);
+        marker.material = this._materials.orange;
+        marker.parent = source;
 
         return source;
     }
@@ -682,6 +718,10 @@ export class Sources {
         const barrel = createBarrel("barrel", barrelDiameter, barrelLength, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
+
+        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
 
         return source;
     }
@@ -716,6 +756,10 @@ export class Sources {
         const barrel = createBarrel("barrel", barrelDiameter, barrelLength, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
+
+        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
 
         return source;
     }
@@ -761,6 +805,10 @@ export class Sources {
         barrelR.material = this._materials.gray;
         barrelR.parent = source;
 
+        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
+
         return source;
     }
 
@@ -802,6 +850,10 @@ export class Sources {
         barrelB.material = this._materials.gray;
         barrelB.parent = source;
 
+        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
+
         return source;
     }
 
@@ -837,6 +889,10 @@ export class Sources {
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
+        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
+
         return source;
     }
 
@@ -870,6 +926,10 @@ export class Sources {
         const barrel = createBarrel("barrel", barrelDiameter, barrelLength, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
+
+        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
 
         return source;
     }

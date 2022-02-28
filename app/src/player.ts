@@ -93,6 +93,7 @@ export class Player {
 
         this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), this._world.scene);
         this._camera.lowerRadiusLimit = 2;
+        this._world.scene.activeCameras = [this._camera];
 
         this._world.scene.onKeyboardObservable.add((data) => {
             if (this._world.paused) {

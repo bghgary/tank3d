@@ -14,6 +14,9 @@ import { Control, TextBlock } from "@babylonjs/gui";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Entity } from "../entity";
 import { CreateGridMaterial } from "../materials/gridMaterial";
+import { Minimap } from "../minimap";
+import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
+import { Player } from "../player";
 
 declare const VERSION: string;
 declare const DEV_BUILD: boolean;
@@ -27,6 +30,8 @@ export abstract class World {
     private _suspended = false;
     private _paused = false;
 
+    protected readonly _player: Player;
+
     protected constructor(engine: Engine, size: number) {
         this.size = size;
         this.scene = new Scene(engine);
@@ -35,9 +40,12 @@ export abstract class World {
         this.bullets = new Bullets(this);
         this.uiContainer = AdvancedDynamicTexture.CreateFullscreenUI("Fullscreen").rootContainer;
 
+        this._player = new Player(this);
+
         const ground = this._createGround();
 
-        new HemisphericLight("light", new Vector3(0.1, 1, -0.5), this.scene);
+        const light = new HemisphericLight("light", new Vector3(0.1, 1, -0.5), this.scene);
+        light.excludeWithLayerMask = Minimap.LayerMask;
 
         const versionTextBlock = new TextBlock("version", VERSION);
         versionTextBlock.resizeToFit = true;
@@ -49,6 +57,8 @@ export abstract class World {
         versionTextBlock.color = "gray";
         versionTextBlock.shadowBlur = 4;
         this.uiContainer.addControl(versionTextBlock);
+
+        const minimap = new Minimap(this);
 
         this.scene.onKeyboardObservable.add((data) => {
             if (data.type === KeyboardEventTypes.KEYUP && data.event.ctrlKey && data.event.shiftKey && data.event.altKey) {
@@ -81,13 +91,17 @@ export abstract class World {
 
         this._previousTime = now();
 
+        // HACK: This seems like a bug. `scene.pick` below should be using the scene.activeCamera,
+        // but it has been temporarily set to the other camera for rendering.
+        const playerCamera = this.scene.activeCamera;
+
         const renderLoop = () => {
             const currentTime = now();
             const deltaTime = Math.min(currentTime - this._previousTime);
             this._previousTime = currentTime;
 
             if (!this._suspended && !this._paused) {
-                const pickInfo = this.scene.pick(pointerOffsetX, pointerOffsetY, (mesh) => mesh === ground);
+                const pickInfo = this.scene.pick(pointerOffsetX, pointerOffsetY, (mesh) => mesh === ground, undefined, playerCamera);
                 if (pickInfo && pickInfo.pickedPoint) {
                     this.pointerPosition.copyFrom(pickInfo.pickedPoint);
                 }
@@ -97,6 +111,7 @@ export abstract class World {
                 this.collisions.update(deltaTime);
             }
 
+            minimap.update();
             this.scene.render(this._paused);
         };
 
@@ -148,6 +163,22 @@ export abstract class World {
         grid.material = CreateGridMaterial(this.scene, this.size);
         grid.parent = ground;
 
+        const minimap = MeshBuilder.CreateGround("minimap", { width: 1000, height: 1000 }, this.scene);
+        minimap.position.y = -1;
+        minimap.doNotSyncBoundingInfo = true;
+        minimap.alwaysSelectAsActiveMesh = true;
+        minimap.material = this._createMinimapMaterial();
+        minimap.visibility = 0.5;
+        minimap.layerMask = Minimap.LayerMask;
+        minimap.parent = ground;
+
         return ground;
+    }
+
+    private _createMinimapMaterial(): StandardMaterial {
+        const material = new StandardMaterial("minimap", this.scene);
+        material.emissiveColor.set(0.06, 0.06, 0.06);
+        material.disableLighting = true;
+        return material;
     }
 }
