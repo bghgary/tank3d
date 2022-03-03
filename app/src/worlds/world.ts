@@ -95,6 +95,9 @@ export abstract class World {
         // but it has been temporarily set to the other camera for rendering.
         const playerCamera = this.scene.activeCamera;
 
+        // HACK: This is necessary for the UI buttons to work.
+        this.scene.cameraToUseForPointers = this.scene.activeCamera;
+
         const renderLoop = () => {
             const currentTime = now();
             const deltaTime = Math.min(currentTime - this._previousTime);
