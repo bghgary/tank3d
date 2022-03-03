@@ -6,7 +6,7 @@ import { BaseBoss } from "./baseBoss";
 import { BossTank } from "./bossTank";
 
 const IDLE_ROTATION_SPEED = 0.4;
-const CHASE_DISTANCE = 15;
+const CHASE_DISTANCE = 20;
 
 export class KeeperBoss extends BaseBoss {
     protected readonly _tanks: Array<BossTank>;

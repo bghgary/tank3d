@@ -22,7 +22,7 @@ const MEGA_CRASHER_HEALTH = 300;
 const MEGA_CRASHER_DAMAGE = 50;
 const MEGA_CRASHER_POINTS = 100;
 
-const MARKER_MAGNIFICATION = 5;
+const MARKER_MAGNIFICATION = 3;
 
 function createBarrel(name: string, size: { muzzle: number, base: number } | number, length: number, scene: Scene): Mesh {
     if (typeof size === "number") {
@@ -55,21 +55,29 @@ function createSphereBody(name: string, size: number, scene: Scene): Mesh {
     return MeshBuilder.CreateSphere(name, { segments: 16 * size }, scene);
 }
 
-function createTriangleMarker(name: string, size: number, scene: Scene): Mesh {
-    const marker = MeshBuilder.CreateDisc(name, { tessellation: 3 }, scene);
+// function createTriangleMarker(name: string, size: number, scene: Scene): Mesh {
+//     const marker = MeshBuilder.CreateDisc(name, { tessellation: 3 }, scene);
+//     marker.rotation.x = Math.PI / 2;
+//     marker.rotation.z = Math.PI / 2;
+//     marker.scaling.scaleInPlace(size * MARKER_MAGNIFICATION);
+//     marker.bakeCurrentTransformIntoVertices();
+//     marker.layerMask = Minimap.LayerMask;
+//     return marker;
+// }
+
+function createSquareMarker(name: string, size: number, scene: Scene): Mesh {
+    const marker = MeshBuilder.CreateDisc(name, { tessellation: 4 }, scene);
     marker.rotation.x = Math.PI / 2;
-    marker.rotation.z = Math.PI / 2;
-    marker.scaling.x = 1.5;
+    marker.rotation.z = Math.PI / 4;
     marker.scaling.scaleInPlace(size * MARKER_MAGNIFICATION);
     marker.bakeCurrentTransformIntoVertices();
     marker.layerMask = Minimap.LayerMask;
     return marker;
 }
 
-function createSquareMarker(name: string, size: number, scene: Scene): Mesh {
-    const marker = MeshBuilder.CreateDisc(name, { tessellation: 4 }, scene);
+function createCircleMarker(name: string, size: number, scene: Scene): Mesh {
+    const marker = MeshBuilder.CreateDisc(name, { tessellation: 16 * size }, scene);
     marker.rotation.x = Math.PI / 2;
-    marker.rotation.z = Math.PI / 4;
     marker.scaling.scaleInPlace(size * MARKER_MAGNIFICATION);
     marker.bakeCurrentTransformIntoVertices();
     marker.layerMask = Minimap.LayerMask;
@@ -617,9 +625,9 @@ export class Sources {
                 length: barrelLength,
             }],
             bullet: {
-                speed: 5,
+                speed: 8,
                 damage: 20,
-                health: 20,
+                health: 100,
             },
         };
 
@@ -628,9 +636,9 @@ export class Sources {
             size: 4,
             height: 2,
             speed: 1,
-            health: 1000,
+            health: 2000,
             damage: 40,
-            points: 500,
+            points: 300,
             tanks: [
                 { nodeName: "tank0", ...tank },
                 { nodeName: "tank1", ...tank },
@@ -719,7 +727,7 @@ export class Sources {
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
         marker.material = this._materials.blue;
         marker.parent = source;
 
@@ -757,7 +765,7 @@ export class Sources {
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
         marker.material = this._materials.blue;
         marker.parent = source;
 
@@ -805,7 +813,7 @@ export class Sources {
         barrelR.material = this._materials.gray;
         barrelR.parent = source;
 
-        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
         marker.material = this._materials.blue;
         marker.parent = source;
 
@@ -850,7 +858,7 @@ export class Sources {
         barrelB.material = this._materials.gray;
         barrelB.parent = source;
 
-        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
         marker.material = this._materials.blue;
         marker.parent = source;
 
@@ -889,7 +897,7 @@ export class Sources {
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
         marker.material = this._materials.blue;
         marker.parent = source;
 
@@ -927,7 +935,7 @@ export class Sources {
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createTriangleMarker("marker", metadata.size, this._scene);
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
         marker.material = this._materials.blue;
         marker.parent = source;
 

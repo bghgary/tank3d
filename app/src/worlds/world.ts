@@ -58,7 +58,7 @@ export abstract class World {
         versionTextBlock.shadowBlur = 4;
         this.uiContainer.addControl(versionTextBlock);
 
-        const minimap = new Minimap(this);
+        new Minimap(this);
 
         this.scene.onKeyboardObservable.add((data) => {
             if (data.type === KeyboardEventTypes.KEYUP && data.event.ctrlKey && data.event.shiftKey && data.event.altKey) {
@@ -114,7 +114,6 @@ export abstract class World {
                 this.collisions.update(deltaTime);
             }
 
-            minimap.update();
             this.scene.render(this._paused);
         };
 
