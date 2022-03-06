@@ -161,6 +161,7 @@ class ShapeImpl implements Shape, Collider {
     public onCollide(other: Entity): number {
         if (other.type === EntityType.Shape) {
             ApplyCollisionForce(this, other);
+            this.rotationVelocity = -this.rotationVelocity;
             return 0;
         }
 

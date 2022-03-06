@@ -10,7 +10,7 @@ export const TmpMatrix: [Matrix] = [
     new Matrix(),
 ];
 
-export const QuaternionIdentity = Quaternion.Identity();
+export const QuaternionIdentity: Readonly<Quaternion> = Quaternion.Identity();
 
 export function decayScalar(from: number, to: number, deltaTime: number, factor: number): number {
     const decayFactor = Math.exp(-deltaTime * factor);

@@ -14,6 +14,7 @@ import { World } from "../worlds/world";
 export const enum ProjectileType {
     Bullet,
     Drone,
+    Trap,
 }
 
 export interface TankProperties {

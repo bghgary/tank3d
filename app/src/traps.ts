@@ -9,54 +9,54 @@ import { Shadow } from "./shadow";
 import { Sources } from "./sources";
 import { World } from "./worlds/world";
 
-const MAX_DURATION = 3;
+const MAX_DURATION = 24;
 
-export interface Bullet extends Entity {
+export interface Trap extends Entity {
     readonly owner: Entity;
 }
 
-export class Bullets {
+export class Traps {
     private readonly _world: World;
     private readonly _root: TransformNode;
-    private readonly _bullets = new Set<BulletImpl>();
+    private readonly _traps = new Set<TrapImpl>();
 
     public constructor(world: World) {
         this._world = world;
-        this._root = new TransformNode("bullets", this._world.scene);
-        this._world.collisions.register(this._bullets);
+        this._root = new TransformNode("traps", this._world.scene);
+        this._world.collisions.register(this._traps);
     }
 
-    public add(owner: Entity, barrelNode: TransformNode, barrelMetadata: Readonly<BarrelMetadata>, bulletMetadata: Readonly<ProjectileMetadata>, createNode: (parent: TransformNode) => TransformNode): Bullet {
-        const size = barrelMetadata.diameter * 0.75;
+    public add(owner: Entity, barrelNode: TransformNode, barrelMetadata: Readonly<BarrelMetadata>, trapMetadata: Readonly<ProjectileMetadata>, createNode: (parent: TransformNode) => TransformNode): Trap {
+        const size = barrelMetadata.diameter * 0.9;
 
         const forward = barrelNode.forward;
         const position = TmpVector3[0];
         forward.scaleToRef(barrelMetadata.length + size * 0.5, position).addInPlace(barrelNode.absolutePosition);
 
-        const initialSpeed = Math.max(Vector3.Dot(owner.velocity, forward) + bulletMetadata.speed, 0.1);
+        const initialSpeed = Vector3.Dot(owner.velocity, forward) + trapMetadata.speed;
 
         const node = createNode(this._root);
         node.scaling.setAll(size);
 
-        const bullet = new BulletImpl(owner, node, bulletMetadata, this._world.sources, size);
-        bullet.position.copyFrom(position);
-        bullet.velocity.copyFrom(forward).scaleInPlace(initialSpeed);
-        bullet.targetVelocity.copyFrom(forward).scaleInPlace(bulletMetadata.speed);
-        this._bullets.add(bullet);
+        const trap = new TrapImpl(owner, node, trapMetadata, this._world.sources, size);
+        trap.position.copyFrom(position);
+        trap.rotation.copyFrom(owner.rotation);
+        trap.velocity.copyFrom(forward).scaleInPlace(initialSpeed);
+        this._traps.add(trap);
 
-        return bullet;
+        return trap;
     }
 
     public update(deltaTime: number): void {
-        for (const bullet of this._bullets) {
-            bullet.update(deltaTime, () => {
-                this._bullets.delete(bullet);
+        for (const trap of this._traps) {
+            trap.update(deltaTime, () => {
+                this._traps.delete(trap);
             });
         }
     }
 }
 
-class BulletImpl implements Bullet, Collider {
+class TrapImpl implements Trap, Collider {
     private readonly _node: TransformNode;
     private readonly _metadata: Readonly<ProjectileMetadata>;
     private readonly _shadow: Shadow;
@@ -72,9 +72,9 @@ class BulletImpl implements Bullet, Collider {
         this.size = size;
     }
 
-    // Bullet
+    // Trap
     public get displayName() { return this.owner.displayName; }
-    public readonly type = EntityType.Bullet;
+    public readonly type = EntityType.Trap;
     public get active() { return this._node.isEnabled(); }
     public readonly size: number;
     public get mass() { return this.size * this.size; }
@@ -91,12 +91,10 @@ class BulletImpl implements Bullet, Collider {
 
     public readonly owner: Entity;
 
-    public targetVelocity = new Vector3();
-
     public update(deltaTime: number, onDestroy: () => void): void {
         ApplyMovement(deltaTime, this._node.position, this.velocity);
 
-        decayVector3ToRef(this.velocity, this.targetVelocity, deltaTime, 2, this.velocity);
+        decayVector3ToRef(this.velocity, Vector3.ZeroReadOnly, deltaTime, 2, this.velocity);
 
         this._shadow.update();
 
@@ -114,7 +112,8 @@ class BulletImpl implements Bullet, Collider {
 
     public onCollide(other: Entity): number {
         if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
-            return 1;
+            ApplyCollisionForce(this, other);
+            return 0;
         }
 
         ApplyCollisionForce(this, other, 2);

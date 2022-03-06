@@ -17,6 +17,7 @@ import { CreateGridMaterial } from "../materials/gridMaterial";
 import { Minimap } from "../minimap";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Player } from "../player";
+import { Traps } from "../traps";
 
 declare const VERSION: string;
 declare const DEV_BUILD: boolean;
@@ -38,6 +39,7 @@ export abstract class World {
         this.sources = new Sources(this);
         this.collisions = new Collisions(this);
         this.bullets = new Bullets(this);
+        this.traps = new Traps(this);
         this.uiContainer = AdvancedDynamicTexture.CreateFullscreenUI("Fullscreen").rootContainer;
 
         this._player = new Player(this);
@@ -110,6 +112,7 @@ export abstract class World {
                 }
 
                 this.bullets.update(deltaTime);
+                this.traps.update(deltaTime);
                 this._update(deltaTime);
                 this.collisions.update(deltaTime);
             }
@@ -125,6 +128,7 @@ export abstract class World {
     public readonly sources: Sources;
     public readonly collisions: Collisions;
     public readonly bullets: Bullets;
+    public readonly traps: Traps;
     public readonly uiContainer: Container;
     public readonly pointerPosition = new Vector3();
 

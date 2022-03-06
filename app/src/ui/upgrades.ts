@@ -33,6 +33,7 @@ export const enum UpgradeType {
 const ProjectileName = new Map([
     [ProjectileType.Bullet, "Bullet"],
     [ProjectileType.Drone, "Drone"],
+    [ProjectileType.Trap, "Trap"],
 ]);
 
 export class Upgrades {

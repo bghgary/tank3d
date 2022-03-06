@@ -4,6 +4,7 @@ import { Drone, Drones } from "./drones";
 import { Entity } from "./entity";
 import { decayScalar } from "./math";
 import { BarrelMetadata, ProjectileMetadata } from "./metadata";
+import { Trap, Traps } from "./traps";
 
 export class Barrel {
     private readonly _node: TransformNode;
@@ -22,6 +23,11 @@ export class Barrel {
     public shootDrone(drones: Drones, owner: Entity, createNode: (parent: TransformNode) => TransformNode): Drone {
         this._node.scaling.z = 0.9;
         return drones.add(owner, this._node, this._metadata, createNode);
+    }
+
+    public shootTrap(traps: Traps, owner: Entity, trapMetadata: Readonly<ProjectileMetadata>, createNode: (parent: TransformNode) => TransformNode): Trap {
+        this._node.scaling.z = 0.9;
+        return traps.add(owner, this._node, this._metadata, trapMetadata, createNode);
     }
 
     public update(deltaTime: number) {
