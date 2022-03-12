@@ -63,15 +63,22 @@ export abstract class World {
         new Minimap(this);
 
         this.scene.onKeyboardObservable.add((data) => {
-            if (data.type === KeyboardEventTypes.KEYUP && data.event.ctrlKey && data.event.shiftKey && data.event.altKey) {
-                if (DEV_BUILD && data.event.code === "KeyI") {
-                    import("@babylonjs/inspector").then(() => {
-                        if (this.scene.debugLayer.isVisible()) {
-                            this.scene.debugLayer.hide();
-                        } else {
-                            this.scene.debugLayer.show();
-                        }
-                    });
+            if (DEV_BUILD) {
+                if (data.type === KeyboardEventTypes.KEYUP && data.event.ctrlKey && data.event.shiftKey && data.event.altKey) {
+                    if (data.event.code === "KeyI") {
+                        // HACK: Make the gizmos render on the correct camera.
+                        import("@babylonjs/core/Rendering/utilityLayerRenderer").then(({UtilityLayerRenderer}) => {
+                            UtilityLayerRenderer.DefaultUtilityLayer.setRenderCamera(this.scene.activeCameras![0]!);
+                        });
+
+                        import("@babylonjs/inspector").then(() => {
+                            if (this.scene.debugLayer.isVisible()) {
+                                this.scene.debugLayer.hide();
+                            } else {
+                                this.scene.debugLayer.show();
+                            }
+                        });
+                    }
                 }
             }
 
@@ -95,7 +102,7 @@ export abstract class World {
 
         // HACK: This seems like a bug. `scene.pick` below should be using the scene.activeCamera,
         // but it has been temporarily set to the other camera for rendering.
-        const playerCamera = this.scene.activeCamera;
+        const playerCamera = this.scene.activeCamera!;
 
         // HACK: This is necessary for the UI buttons to work.
         this.scene.cameraToUseForPointers = this.scene.activeCamera;
