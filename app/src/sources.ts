@@ -6,6 +6,7 @@ import { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Tools } from "@babylonjs/core/Misc/tools";
 import { Scene } from "@babylonjs/core/scene";
 import { CreateShadowMaterial } from "./materials/shadowMaterial";
 import { BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, ShapeMetadata, SizeMetadata, PlayerTankMetadata, BossMetadata } from "./metadata";
@@ -109,7 +110,7 @@ function createPrism(name: string, size: number, scene: Scene): Mesh {
     const path = [ new Vector3(0, 0, -0.3), new Vector3(0, 0, 0.3) ];
     const mesh = MeshBuilder.ExtrudeShape(name, { shape: shape, path: path, cap: Mesh.CAP_ALL }, scene);
     mesh.rotation.x = Math.PI / 2;
-    mesh.scaling.scaleInPlace(size);
+    mesh.scaling.scaleInPlace(size * 1.2);
     mesh.bakeCurrentTransformIntoVertices();
     return mesh;
 }
@@ -206,6 +207,7 @@ export class Sources {
         readonly pounder: TransformNode;
         readonly director: TransformNode;
         readonly trapper: TransformNode;
+        readonly machineGun: TransformNode;
     };
 
     public constructor(world: World) {
@@ -290,6 +292,7 @@ export class Sources {
             pounder: this._createPounderTankSource(tanks),
             director: this._createDirectorTankSource(tanks),
             trapper: this._createTrapperTankSource(tanks),
+            machineGun: this._createMachineGunTankSource(tanks),
         };
     }
 
@@ -1053,6 +1056,47 @@ export class Sources {
         };
 
         const source = new TransformNode("trapper", this._scene);
+        source.metadata = metadata;
+        source.parent = parent;
+
+        const body = createSphere("body", metadata.size, this._scene);
+        body.material = this._materials.blue;
+        body.parent = source;
+
+        const barrel = createBarrel("barrel", barrelProperties, this._scene);
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
+
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
+
+        return source;
+    }
+
+    private _createMachineGunTankSource(parent: TransformNode): TransformNode {
+        const barrelProperties = {
+            base: { diameter: 0.45, length: 0.4 },
+            muzzle: { diameter: 0.6, length: 0.35 },
+        };
+
+        const metadata: Readonly<PlayerTankMetadata> = {
+            displayName: "Machine Gun",
+            size: 1,
+            shieldSize: 1.75,
+            barrels: [{
+                nodeName: "barrel",
+                diameter: barrelProperties.base.diameter,
+                length: barrelProperties.base.length + barrelProperties.muzzle.length,
+                variance: Tools.ToRadians(15),
+            }],
+            multiplier: {
+                projectileHealth: 0.5,
+                reloadTime: 0.6,
+            },
+        };
+
+        const source = new TransformNode("machineGun", this._scene);
         source.metadata = metadata;
         source.parent = parent;
 

@@ -1,6 +1,6 @@
 import { Collisions } from "../collisions";
 import { Sources } from "../sources";
-import { Bullets } from "../bullets";
+import { Bullets } from "../projectiles/bullets";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
 import { AdvancedDynamicTexture } from "@babylonjs/gui/2D/advancedDynamicTexture";
@@ -17,7 +17,7 @@ import { CreateGridMaterial } from "../materials/gridMaterial";
 import { Minimap } from "../minimap";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Player } from "../player";
-import { Traps } from "../traps";
+import { Traps } from "../projectiles/traps";
 
 declare const VERSION: string;
 declare const DEV_BUILD: boolean;

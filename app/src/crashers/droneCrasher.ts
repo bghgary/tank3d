@@ -1,7 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { ApplyRecoil } from "../common";
-import { Drones } from "../drones";
+import { Drones } from "../projectiles/drones";
 import { Entity } from "../entity";
 import { BarrelCrasherMetadata, DroneCrasherMetadata } from "../metadata";
 import { Player } from "../player";

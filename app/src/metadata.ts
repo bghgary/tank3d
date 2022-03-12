@@ -19,6 +19,7 @@ export interface BarrelMetadata {
     nodeName: string;
     diameter: number;
     length: number;
+    variance?: number;
 }
 
 export interface ShapeMetadata extends DisplayNameMetadata, SizeMetadata {

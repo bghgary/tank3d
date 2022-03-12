@@ -1,10 +1,11 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Bullet, Bullets } from "./bullets";
-import { Drone, Drones } from "./drones";
+import { Drones } from "./projectiles/drones";
 import { Entity } from "./entity";
 import { decayScalar } from "./math";
 import { BarrelMetadata, ProjectileMetadata } from "./metadata";
-import { Trap, Traps } from "./traps";
+import { Projectile } from "./projectiles/projectiles";
+import { Bullets } from "./projectiles/bullets";
+import { Traps } from "./projectiles/traps";
 
 export class Barrel {
     private readonly _node: TransformNode;
@@ -15,17 +16,17 @@ export class Barrel {
         this._metadata = metadata;
     }
 
-    public shootBullet(bullets: Bullets, owner: Entity, bulletMetadata: Readonly<ProjectileMetadata>, createNode: (parent: TransformNode) => TransformNode): Bullet {
+    public shootBullet(bullets: Bullets, owner: Entity, bulletMetadata: Readonly<ProjectileMetadata>, createNode: (parent: TransformNode) => TransformNode): Projectile {
         this._node.scaling.z = 0.9;
         return bullets.add(owner, this._node, this._metadata, bulletMetadata, createNode);
     }
 
-    public shootDrone(drones: Drones, owner: Entity, createNode: (parent: TransformNode) => TransformNode): Drone {
+    public shootDrone(drones: Drones, owner: Entity, createNode: (parent: TransformNode) => TransformNode): Projectile {
         this._node.scaling.z = 0.9;
         return drones.add(owner, this._node, this._metadata, createNode);
     }
 
-    public shootTrap(traps: Traps, owner: Entity, trapMetadata: Readonly<ProjectileMetadata>, createNode: (parent: TransformNode) => TransformNode): Trap {
+    public shootTrap(traps: Traps, owner: Entity, trapMetadata: Readonly<ProjectileMetadata>, createNode: (parent: TransformNode) => TransformNode): Projectile {
         this._node.scaling.z = 0.9;
         return traps.add(owner, this._node, this._metadata, trapMetadata, createNode);
     }

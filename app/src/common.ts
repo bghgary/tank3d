@@ -1,4 +1,6 @@
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Scalar } from "@babylonjs/core/Maths/math.scalar";
+import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Tools } from "@babylonjs/core/Misc/tools";
 import { Entity } from "./entity";
 
 const GRAVITY = 9.8;
@@ -73,4 +75,10 @@ export function ApplyWallClamp(position: Vector3, size: number, wallLimit: numbe
 export function ApplyRecoil(recoil: Vector3, entity: Entity): void {
     recoil.x += entity.velocity.x * entity.mass;
     recoil.z += entity.velocity.z * entity.mass;
+}
+
+export function ApplyVariance(forward: Readonly<Vector3>, variance = Tools.ToRadians(2), result: Vector3): Vector3 {
+    const angle = Scalar.RandomRange(-variance, variance);
+    forward.rotateByQuaternionToRef(Quaternion.FromEulerAngles(0, angle, 0), result);
+    return result;
 }

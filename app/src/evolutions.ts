@@ -9,6 +9,7 @@ import { Sources } from "./sources";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DirectorTank } from "./tanks/directorTank";
 import { TrapperTank } from "./tanks/trapperTank";
+import { MachineGunTank } from "./tanks/machineGunTank";
 
 interface TankConstructor {
     prototype: PlayerTank;
@@ -40,6 +41,9 @@ export const EvolutionRootNode: EvolutionNode = {
         children: []
     }, {
         Tank: TrapperTank,
+        children: []
+    }, {
+        Tank: MachineGunTank,
         children: []
     }],
 };
