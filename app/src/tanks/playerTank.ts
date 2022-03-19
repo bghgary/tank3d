@@ -2,25 +2,20 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { Collider } from "../collisions";
-import { ApplyCollisionForce, ApplyMovement, ApplyWallClamp } from "../common";
+import { applyCollisionForce, applyMovement, applyWallClamp } from "../common";
 import { Entity, EntityType } from "../entity";
-import { Health } from "../health";
+import { Health } from "../components/health";
 import { decayVector3ToRef, TmpVector3 } from "../math";
 import { PlayerTankMetadata } from "../metadata";
-import { Shadow } from "../shadow";
-import { Shield } from "../shield";
+import { Shadow } from "../components/shadow";
+import { Shield } from "../components/shield";
 import { World } from "../worlds/world";
-
-export const enum ProjectileType {
-    Bullet,
-    Drone,
-    Trap,
-}
+import { WeaponType } from "../components/weapon";
 
 export interface TankProperties {
-    projectileSpeed: number;
-    projectileDamage: number;
-    projectileHealth: number;
+    weaponSpeed: number;
+    weaponDamage: number;
+    weaponHealth: number;
     reloadTime: number;
     healthRegen: number;
     maxHealth: number;
@@ -29,9 +24,9 @@ export interface TankProperties {
 }
 
 const BaseProperties: Readonly<TankProperties> = {
-    projectileSpeed: 5,
-    projectileDamage: 6,
-    projectileHealth: 10,
+    weaponSpeed: 5,
+    weaponDamage: 6,
+    weaponHealth: 10,
     reloadTime: 0.5,
     healthRegen: 0,
     maxHealth: 100,
@@ -41,34 +36,34 @@ const BaseProperties: Readonly<TankProperties> = {
 
 function add(properties: Readonly<TankProperties>, value: Partial<Readonly<TankProperties>>): TankProperties {
     return {
-        projectileSpeed:  properties.projectileSpeed  + (value.projectileSpeed  || 0),
-        projectileDamage: properties.projectileDamage + (value.projectileDamage || 0),
-        projectileHealth: properties.projectileHealth + (value.projectileHealth || 0),
-        reloadTime:       properties.reloadTime       + (value.reloadTime       || 0),
-        healthRegen:      properties.healthRegen      + (value.healthRegen      || 0),
-        maxHealth:        properties.maxHealth        + (value.maxHealth        || 0),
-        moveSpeed:        properties.moveSpeed        + (value.moveSpeed        || 0),
-        bodyDamage:       properties.bodyDamage       + (value.bodyDamage       || 0),
+        weaponSpeed:  properties.weaponSpeed  + (value.weaponSpeed  || 0),
+        weaponDamage: properties.weaponDamage + (value.weaponDamage || 0),
+        weaponHealth: properties.weaponHealth + (value.weaponHealth || 0),
+        reloadTime:   properties.reloadTime   + (value.reloadTime   || 0),
+        healthRegen:  properties.healthRegen  + (value.healthRegen  || 0),
+        maxHealth:    properties.maxHealth    + (value.maxHealth    || 0),
+        moveSpeed:    properties.moveSpeed    + (value.moveSpeed    || 0),
+        bodyDamage:   properties.bodyDamage   + (value.bodyDamage   || 0),
     };
 }
 
 function multiply(properties: Readonly<TankProperties>, value: Partial<Readonly<TankProperties>>): TankProperties {
     return {
-        projectileSpeed:  properties.projectileSpeed  * (value.projectileSpeed  || 1),
-        projectileDamage: properties.projectileDamage * (value.projectileDamage || 1),
-        projectileHealth: properties.projectileHealth * (value.projectileHealth || 1),
-        reloadTime:       properties.reloadTime       * (value.reloadTime       || 1),
-        healthRegen:      properties.healthRegen      * (value.healthRegen      || 1),
-        maxHealth:        properties.maxHealth        * (value.maxHealth        || 1),
-        moveSpeed:        properties.moveSpeed        * (value.moveSpeed        || 1),
-        bodyDamage:       properties.bodyDamage       * (value.bodyDamage       || 1),
+        weaponSpeed:  properties.weaponSpeed  * (value.weaponSpeed  || 1),
+        weaponDamage: properties.weaponDamage * (value.weaponDamage || 1),
+        weaponHealth: properties.weaponHealth * (value.weaponHealth || 1),
+        reloadTime:   properties.reloadTime   * (value.reloadTime   || 1),
+        healthRegen:  properties.healthRegen  * (value.healthRegen  || 1),
+        maxHealth:    properties.maxHealth    * (value.maxHealth    || 1),
+        moveSpeed:    properties.moveSpeed    * (value.moveSpeed    || 1),
+        bodyDamage:   properties.bodyDamage   * (value.bodyDamage   || 1),
     };
 }
 
 export abstract class PlayerTank implements Entity, Collider {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
-    protected readonly _metadata: Readonly<PlayerTankMetadata>;
+    protected readonly _metadata: PlayerTankMetadata;
     protected readonly _shield: Shield;
     protected readonly _health: Health;
     protected readonly _shadow: Shadow;
@@ -122,6 +117,7 @@ export abstract class PlayerTank implements Entity, Collider {
     public get size() { return this._shield.enabled ? this._shield.size : this._metadata.size; }
     public readonly mass = 2;
     public get damage() { return this._shield.enabled ? 0 : this._properties.bodyDamage; }
+    public readonly damageTime = 1;
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
@@ -132,7 +128,7 @@ export abstract class PlayerTank implements Entity, Collider {
     public get width() { return this.size; }
     public get height() { return this.size; }
 
-    public abstract readonly projectileType: ProjectileType;
+    public abstract readonly weaponType: WeaponType;
 
     public get inBounds(): boolean {
         const limit = (this._world.size + this._metadata.size) * 0.5;
@@ -166,8 +162,8 @@ export abstract class PlayerTank implements Entity, Collider {
 
         decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
 
-        ApplyMovement(deltaTime, this._node.position, this.velocity);
-        ApplyWallClamp(this._node.position, this.size, limit);
+        applyMovement(deltaTime, this._node.position, this.velocity);
+        applyWallClamp(this._node.position, this.size, limit);
     }
 
     public shoot(): void {
@@ -204,13 +200,17 @@ export abstract class PlayerTank implements Entity, Collider {
     }
 
     public onCollide(other: Entity): number {
+        if (other.owner === this && (other.type === EntityType.Lance || other.type === EntityType.Bullet)) {
+            return 0;
+        }
+
         if (this._shield.enabled || other.owner === this) {
-            ApplyCollisionForce(this, other);
+            applyCollisionForce(this, other);
             return 0;
         }
 
         this._health.takeDamage(other);
-        ApplyCollisionForce(this, other);
-        return 1;
+        applyCollisionForce(this, other);
+        return other.damageTime;
     }
 }

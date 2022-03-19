@@ -1,27 +1,28 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Barrel } from "../barrel";
-import { ApplyRecoil } from "../common";
-import { ProjectileMetadata } from "../metadata";
+import { Barrel } from "../components/barrel";
+import { applyRecoil } from "../common";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
-import { ProjectileType, PlayerTank, TankProperties } from "./playerTank";
+import { PlayerTank, TankProperties } from "./playerTank";
+import { WeaponProperties, WeaponType } from "../components/weapon";
 
 export class BulletTank extends BarrelTank {
     protected readonly _createBulletNode: (parent: TransformNode) => TransformNode;
-    protected readonly _bulletMetadata: ProjectileMetadata;
+    protected readonly _bulletProperites: WeaponProperties;
 
     protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
         this._createBulletNode = (parent) => this._world.sources.create(this._world.sources.bullet.tank, parent);
-        this._bulletMetadata = {
-            speed: this._properties.projectileSpeed,
-            damage: this._properties.projectileDamage,
-            health: this._properties.projectileHealth,
+        this._bulletProperites = {
+            speed: this._properties.weaponSpeed,
+            damage: this._properties.weaponDamage,
+            damageTime: 0.2,
+            health: this._properties.weaponHealth,
         };
     }
 
-    public override readonly projectileType = ProjectileType.Bullet;
+    public override readonly weaponType = WeaponType.Bullet;
 
     public override shoot(): void {
         if (this._reloadTime === 0) {
@@ -37,17 +38,17 @@ export class BulletTank extends BarrelTank {
 
     public override setUpgrades(upgrades: Readonly<TankProperties>): void {
         super.setUpgrades(upgrades);
-        this._updateBulletMetadata();
+        this._updateBulletProperties();
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const bullet = barrel.shootBullet(this._world.bullets, this, this._bulletMetadata, this._createBulletNode);
-        ApplyRecoil(this._recoil, bullet);
+        const bullet = barrel.shootBullet(this._world.bullets, this, this._createBulletNode, this._bulletProperites);
+        applyRecoil(this._recoil, bullet);
     }
 
-    protected _updateBulletMetadata(): void {
-        this._bulletMetadata.speed = this._properties.projectileSpeed;
-        this._bulletMetadata.damage = this._properties.projectileDamage;
-        this._bulletMetadata.health = this._properties.projectileHealth;
+    protected _updateBulletProperties(): void {
+        this._bulletProperites.speed = this._properties.weaponSpeed;
+        this._bulletProperites.damage = this._properties.weaponDamage;
+        this._bulletProperites.health = this._properties.weaponHealth;
     }
 }

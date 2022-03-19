@@ -2,18 +2,18 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Boss } from "../bosses";
 import { Collider } from "../collisions";
-import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallClamp } from "../common";
+import { applyCollisionForce, applyGravity, applyMovement, applyWallClamp } from "../common";
 import { Entity, EntityType } from "../entity";
-import { Health } from "../health";
+import { Health } from "../components/health";
 import { BossMetadata } from "../metadata";
 import { Player } from "../player";
-import { Shadow } from "../shadow";
+import { Shadow } from "../components/shadow";
 import { World } from "../worlds/world";
 
 export abstract class BaseBoss implements Boss, Collider {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
-    protected readonly _metadata: Readonly<BossMetadata>;
+    protected readonly _metadata: BossMetadata;
     protected readonly _health: Health;
     protected readonly _shadow: Shadow;
 
@@ -32,6 +32,7 @@ export abstract class BaseBoss implements Boss, Collider {
     public get size() { return this._metadata.size; }
     public get mass() { return this.size * this.size; }
     public get damage() { return this._metadata.damage; }
+    public readonly damageTime = 1;
     public get points() { return this._metadata.points; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
@@ -44,11 +45,11 @@ export abstract class BaseBoss implements Boss, Collider {
     public get height() { return this.size; }
 
     public update(deltaTime: number, player: Player, onDestroy: (source: Entity) => void): void {
-        if (ApplyGravity(deltaTime, this._node.position, this.velocity)) {
+        if (applyGravity(deltaTime, this._node.position, this.velocity)) {
             this._shadow.update();
         } else {
-            ApplyMovement(deltaTime, this._node.position, this.velocity);
-            ApplyWallClamp(this._node.position, this.size, this._world.size);
+            applyMovement(deltaTime, this._node.position, this.velocity);
+            applyWallClamp(this._node.position, this.size, this._world.size);
 
             this._update(deltaTime, player);
 
@@ -66,14 +67,14 @@ export abstract class BaseBoss implements Boss, Collider {
     public onCollide(other: Entity): number {
         if (other.type === EntityType.Boss || (other.owner && other.owner.type === EntityType.Boss)) {
             if (other.type !== EntityType.Bullet) {
-                ApplyCollisionForce(this, other);
+                applyCollisionForce(this, other);
                 return 0;
             }
         } else {
             this._health.takeDamage(other);
-            ApplyCollisionForce(this, other);
+            applyCollisionForce(this, other);
         }
 
-        return 0.5;
+        return other.damageTime;
     }
 }

@@ -13,7 +13,7 @@ import { Container } from "@babylonjs/gui/2D/controls/container";
 import { Control, TextBlock } from "@babylonjs/gui";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { Entity } from "../entity";
-import { CreateGridMaterial } from "../materials/gridMaterial";
+import { createGridMaterial } from "../materials/gridMaterial";
 import { Minimap } from "../minimap";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Player } from "../player";
@@ -173,7 +173,7 @@ export abstract class World {
         grid.position.y = -1;
         grid.doNotSyncBoundingInfo = true;
         grid.alwaysSelectAsActiveMesh = true;
-        grid.material = CreateGridMaterial(this.scene, this.size);
+        grid.material = createGridMaterial(this.scene, this.size);
         grid.parent = ground;
 
         const minimap = MeshBuilder.CreateGround("minimap", { width: 1000, height: 1000 }, this.scene);

@@ -1,6 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Barrel } from "../barrel";
+import { findNode } from "../common";
+import { Barrel } from "../components/barrel";
 import { Entity } from "../entity";
 import { World } from "../worlds/world";
 import { PlayerTank } from "./playerTank";
@@ -14,7 +15,7 @@ export abstract class BarrelTank extends PlayerTank {
     protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
-        this._barrels = this._metadata.barrels.map((metadata) => new Barrel(node, metadata));
+        this._barrels = this._metadata.barrels!.map((name) => new Barrel(findNode(node, name)));
     }
 
     public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {

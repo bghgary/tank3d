@@ -5,8 +5,9 @@ import { Entity } from "./entity";
 import { World } from "./worlds/world";
 
 export interface Collider extends Quadtree.Rect {
+    readonly active: boolean;
+    readonly position: Readonly<Vector3>;
     readonly size: number;
-    readonly position: Vector3;
     onCollide(other: Entity): number;
 }
 
@@ -58,7 +59,9 @@ export class Collisions {
 
         for (const entry of this._entries.values()) {
             for (const collider of entry.colliders) {
-                this._quadtree.insert(collider);
+                if (collider.active) {
+                    this._quadtree.insert(collider);
+                }
             }
         }
 

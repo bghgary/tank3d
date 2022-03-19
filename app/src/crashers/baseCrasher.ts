@@ -1,12 +1,12 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Collider } from "../collisions";
-import { ApplyCollisionForce, ApplyGravity, ApplyMovement, ApplyWallClamp } from "../common";
+import { applyCollisionForce, applyGravity, applyMovement, applyWallClamp } from "../common";
 import { Entity, EntityType } from "../entity";
-import { Health } from "../health";
+import { Health } from "../components/health";
 import { CrasherMetadata } from "../metadata";
 import { Player } from "../player";
-import { Shadow } from "../shadow";
+import { Shadow } from "../components/shadow";
 import { World } from "../worlds/world";
 import { Crasher } from "../crashers";
 import { decayVector3ToRef, TmpVector3 } from "../math";
@@ -18,7 +18,7 @@ const CHASE_DISTANCE = 15;
 export class BaseCrasher implements Crasher, Collider {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
-    protected readonly _metadata: Readonly<CrasherMetadata>;
+    protected readonly _metadata: CrasherMetadata;
     protected readonly _health: Health;
     protected readonly _shadow: Shadow;
 
@@ -37,6 +37,7 @@ export class BaseCrasher implements Crasher, Collider {
     public get size() { return this._metadata.size; }
     public get mass() { return this.size * this.size; }
     public get damage() { return this._metadata.damage; }
+    public readonly damageTime = 1;
     public get points() { return this._metadata.points; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
@@ -49,11 +50,11 @@ export class BaseCrasher implements Crasher, Collider {
     public get height() { return this.size; }
 
     public update(deltaTime: number, player: Player, onDestroy: (source: Entity) => void): void {
-        if (ApplyGravity(deltaTime, this._node.position, this.velocity)) {
+        if (applyGravity(deltaTime, this._node.position, this.velocity)) {
             this._shadow.update();
         } else {
-            ApplyMovement(deltaTime, this._node.position, this.velocity);
-            ApplyWallClamp(this._node.position, this.size, this._world.size);
+            applyMovement(deltaTime, this._node.position, this.velocity);
+            applyWallClamp(this._node.position, this.size, this._world.size);
 
             const direction = TmpVector3[0];
             const speed = this._chase(deltaTime, player, direction) ? this._metadata.speed : IDLE_MOVEMENT_SPEED;
@@ -88,14 +89,14 @@ export class BaseCrasher implements Crasher, Collider {
     public onCollide(other: Entity): number {
         if (other.type === EntityType.Crasher || (other.owner && other.owner.type === EntityType.Crasher)) {
             if (other.type !== EntityType.Bullet) {
-                ApplyCollisionForce(this, other);
+                applyCollisionForce(this, other);
                 return 0;
             }
         } else {
             this._health.takeDamage(other);
-            ApplyCollisionForce(this, other);
+            applyCollisionForce(this, other);
         }
 
-        return 0.5;
+        return other.damageTime;
     }
 }

@@ -1,6 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Barrel } from "../barrel";
+import { findNode } from "../common";
+import { Barrel } from "../components/barrel";
 import { Entity } from "../entity";
 import { decayQuaternionToRef, decayVector3ToRef, QuaternionIdentity, TmpMatrix, TmpVector3 } from "../math";
 import { BossTankMetadata } from "../metadata";
@@ -13,19 +14,19 @@ const SHOOT_ANGLE = 0.02 * Math.PI;
 export class BossTank {
     private readonly _world: World;
     private readonly _owner: Entity;
-    private readonly _metadata: BossTankMetadata;
     private readonly _node: TransformNode;
+    private readonly _metadata: BossTankMetadata;
     private readonly _barrels: Array<Barrel>;
     private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
 
     private _reloadTime = 0;
 
-    public constructor(world: World, owner: Entity, metadata: BossTankMetadata, node: TransformNode) {
+    public constructor(world: World, owner: Entity, node: TransformNode) {
         this._world = world;
         this._owner = owner;
-        this._metadata = metadata;
-        this._node = node.getChildren((node) => node.name === this._metadata.nodeName, false)[0] as TransformNode;
-        this._barrels = this._metadata.barrels.map((metadata) => new Barrel(this._node, metadata));
+        this._node = node;
+        this._metadata = this._node.metadata;
+        this._barrels = this._metadata.barrels.map((name) => new Barrel(findNode(this._node, name)));
 
         this._createBulletNode = (parent) => this._world.sources.create(this._world.sources.bullet.boss, parent);
     }
@@ -65,7 +66,7 @@ export class BossTank {
         const angle = Math.acos(Vector3.Dot(playerDirection, forward));
         if (this._reloadTime === 0 && angle < SHOOT_ANGLE) {
             for (const barrel of this._barrels) {
-                barrel.shootBullet(this._world.bullets, this._owner, this._metadata.bullet, this._createBulletNode);
+                barrel.shootBullet(this._world.bullets, this._owner, this._createBulletNode, this._metadata.bullet);
             }
 
             this._reloadTime = this._metadata.reload;
@@ -74,4 +75,3 @@ export class BossTank {
         return true;
     }
 }
-

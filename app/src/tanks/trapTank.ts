@@ -1,27 +1,28 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Barrel } from "../barrel";
-import { ApplyRecoil } from "../common";
-import { ProjectileMetadata } from "../metadata";
+import { Barrel } from "../components/barrel";
+import { applyRecoil } from "../common";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
-import { ProjectileType, PlayerTank, TankProperties } from "./playerTank";
+import { PlayerTank, TankProperties } from "./playerTank";
+import { WeaponProperties, WeaponType } from "../components/weapon";
 
 export class TrapTank extends BarrelTank {
     protected readonly _createTrapNode: (parent: TransformNode) => TransformNode;
-    protected readonly _trapMetadata: ProjectileMetadata;
+    protected readonly _trapProperties: WeaponProperties;
 
     protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
         this._createTrapNode = (parent) => this._world.sources.create(this._world.sources.trap.tank, parent);
-        this._trapMetadata = {
-            speed: this._properties.projectileSpeed,
-            damage: this._properties.projectileDamage,
-            health: this._properties.projectileHealth,
+        this._trapProperties = {
+            speed: this._properties.weaponSpeed,
+            damage: this._properties.weaponDamage,
+            damageTime: 0.2,
+            health: this._properties.weaponHealth,
         };
     }
 
-    public override readonly projectileType = ProjectileType.Trap;
+    public override readonly weaponType = WeaponType.Trap;
 
     public override shoot(): void {
         if (this._reloadTime === 0) {
@@ -37,17 +38,17 @@ export class TrapTank extends BarrelTank {
 
     public override setUpgrades(upgrades: Readonly<TankProperties>): void {
         super.setUpgrades(upgrades);
-        this._updateTrapMetadata();
+        this._updateTrapProperties();
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const trap = barrel.shootTrap(this._world.traps, this, this._trapMetadata, this._createTrapNode);
-        ApplyRecoil(this._recoil, trap);
+        const trap = barrel.shootTrap(this._world.traps, this, this._createTrapNode, this._trapProperties);
+        applyRecoil(this._recoil, trap);
     }
 
-    protected _updateTrapMetadata(): void {
-        this._trapMetadata.speed = this._properties.projectileSpeed;
-        this._trapMetadata.damage = this._properties.projectileDamage;
-        this._trapMetadata.health = this._properties.projectileHealth;
+    protected _updateTrapProperties(): void {
+        this._trapProperties.speed = this._properties.weaponSpeed;
+        this._trapProperties.damage = this._properties.weaponDamage;
+        this._trapProperties.health = this._properties.weaponHealth;
     }
 }

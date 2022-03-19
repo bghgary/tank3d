@@ -22,6 +22,7 @@ class TargetCollider implements Collider {
     }
 
     // Collider
+    public readonly active = true;
     public get position() { return this._parent.position; }
     public readonly size: number;
     public get x() { return this._parent.position.x - this.size * 0.5; }
@@ -81,7 +82,7 @@ export class DirectorTank extends DroneTank {
             }
 
             this._radius = 0;
-            this._droneMetadata.speed = this._properties.projectileSpeed;
+            this._droneProperties.speed = this._properties.weaponSpeed;
 
             if (this._autoShoot) {
                 this._target.copyFrom(this._world.pointerPosition);
@@ -93,7 +94,7 @@ export class DirectorTank extends DroneTank {
             this._defendTime = Math.max(this._defendTime - deltaTime, 0);
             if (this._defendTime === 0) {
                 this._radius = this._circleRadius;
-                this._droneMetadata.speed = this._properties.projectileSpeed * 0.5;
+                this._droneProperties.speed = this._properties.weaponSpeed * 0.5;
 
                 this._target.copyFrom(this._node.position);
                 this._targetDistanceSquared = Number.MAX_VALUE;
@@ -103,7 +104,7 @@ export class DirectorTank extends DroneTank {
                 this._targetCollisionToken = this._world.collisions.register([new TargetCollider(this, TARGET_RADIUS, (other) => {
                     if (this.inBounds && other.type !== EntityType.Bullet && other !== this && other.owner !== this) {
                         this._radius = 0;
-                        this._droneMetadata.speed = this._properties.projectileSpeed;
+                        this._droneProperties.speed = this._properties.weaponSpeed;
 
                         const distanceSquared =
                             (other.type === EntityType.Shape ? TARGET_RADIUS * TARGET_RADIUS : 0) +
@@ -122,13 +123,13 @@ export class DirectorTank extends DroneTank {
         super.update(deltaTime, onDestroy);
     }
 
-    protected override _updateDroneMetadata(): void {
-        super._updateDroneMetadata();
+    protected override _updateDroneProperties(): void {
+        super._updateDroneProperties();
         this._updateAutoRotateSpeed();
     }
 
     private _updateAutoRotateSpeed(): void {
-        this._autoRotateSpeed = this._properties.projectileSpeed * 0.5 / this._circleRadius;
+        this._autoRotateSpeed = this._properties.weaponSpeed * 0.5 / this._circleRadius;
     }
 
     public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {

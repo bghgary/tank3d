@@ -1,13 +1,13 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { ApplyCollisionForce, ApplyMovement } from "../common";
+import { applyCollisionForce, applyMovement } from "../common";
 import { Entity, EntityType } from "../entity";
 import { decayVector3ToRef } from "../math";
-import { BarrelMetadata, ProjectileMetadata } from "../metadata";
 import { Projectile, Projectiles } from "./projectiles";
-import { Shadow } from "../shadow";
+import { Shadow } from "../components/shadow";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
+import { WeaponProperties } from "../components/weapon";
 
 const MAX_DURATION = 3;
 
@@ -20,8 +20,8 @@ export class Bullets extends Projectiles {
         this._bullets = bullets;
     }
 
-    public add(owner: Entity, barrelNode: TransformNode, barrelMetadata: Readonly<BarrelMetadata>, bulletMetadata: Readonly<ProjectileMetadata>, createNode: (parent: TransformNode) => TransformNode): Projectile {
-        const bullet = new Bullet(owner, barrelNode, barrelMetadata, createNode(this._root), bulletMetadata, this._world.sources);
+    public add(owner: Entity, barrelNode: TransformNode, createNode: (parent: TransformNode) => TransformNode, bulletProperties: Readonly<WeaponProperties>): Projectile {
+        const bullet = new Bullet(owner, barrelNode, createNode(this._root), bulletProperties, this._world.sources);
         this._bullets.add(bullet);
         return bullet;
     }
@@ -41,18 +41,17 @@ class Bullet extends Projectile {
     private _health: number;
     private _time = MAX_DURATION;
 
-    public constructor(owner: Entity, barrelNode: TransformNode, barrelMetadata: Readonly<BarrelMetadata>, bulletNode: TransformNode, bulletMetadata: Readonly<ProjectileMetadata>, sources: Sources) {
-        super(owner, barrelNode, barrelMetadata, bulletNode, bulletMetadata);
-        this._targetVelocity.copyFrom(this.velocity).scaleInPlace(bulletMetadata.speed / this.velocity.length());
-        console.log(`targetVelocity ${this._targetVelocity.x} ${this._targetVelocity.y} ${this._targetVelocity.z}`);
+    public constructor(owner: Entity, barrelNode: TransformNode, bulletNode: TransformNode, bulletProperties: Readonly<WeaponProperties>, sources: Sources) {
+        super(owner, barrelNode, bulletNode, bulletProperties);
+        this._targetVelocity.copyFrom(this.velocity).scaleInPlace(bulletProperties.speed / this.velocity.length());
         this._shadow = new Shadow(sources, this._node);
-        this._health = this._metadata.health;
+        this._health = this._properties.health;
     }
 
     public type = EntityType.Bullet;
 
     public update(deltaTime: number, onDestroy: () => void): void {
-        ApplyMovement(deltaTime, this._node.position, this.velocity);
+        applyMovement(deltaTime, this._node.position, this.velocity);
 
         decayVector3ToRef(this.velocity, this._targetVelocity, deltaTime, 2, this.velocity);
 
@@ -75,8 +74,8 @@ class Bullet extends Projectile {
             return 1;
         }
 
-        ApplyCollisionForce(this, other, 2);
+        applyCollisionForce(this, other, 2);
         this._health -= other.damage;
-        return 0.1;
+        return other.damageTime;
     }
 }

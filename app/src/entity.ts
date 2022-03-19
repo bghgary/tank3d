@@ -4,6 +4,7 @@ export const enum EntityType {
     Bullet,
     Drone,
     Trap,
+    Lance,
     Shape,
     Crasher,
     Boss,
@@ -17,6 +18,7 @@ export interface Entity {
     readonly size: number;
     readonly mass: number;
     readonly damage: number;
+    readonly damageTime: number;
     readonly position: Vector3;
     readonly rotation: Quaternion;
     readonly velocity: Vector3;

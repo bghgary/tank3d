@@ -1,70 +1,67 @@
+import { WeaponProperties } from "./components/weapon";
 import { TankProperties } from "./tanks/playerTank";
 
 export interface DisplayNameMetadata {
-    displayName: string;
+    readonly displayName: string;
 }
 
 export interface SizeMetadata {
-    size: number;
-    height?: number;
-}
-
-export interface ProjectileMetadata {
-    speed: number;
-    damage: number;
-    health: number;
+    readonly size: number;
+    readonly height?: number;
 }
 
 export interface BarrelMetadata {
-    nodeName: string;
-    diameter: number;
-    length: number;
-    variance?: number;
+    readonly diameter: number;
+    readonly length: number;
+    readonly variance?: number;
+}
+
+export interface LanceMetadata {
+    readonly diameter: number;
 }
 
 export interface ShapeMetadata extends DisplayNameMetadata, SizeMetadata {
-    health: number;
-    damage: number;
-    points: number;
+    readonly health: number;
+    readonly damage: number;
+    readonly points: number;
 }
 
 export interface CrasherMetadata extends DisplayNameMetadata, SizeMetadata {
-    speed: number;
-    health: number;
-    damage: number;
-    points: number;
+    readonly speed: number;
+    readonly health: number;
+    readonly damage: number;
+    readonly points: number;
 }
 
 export interface BarrelCrasherMetadata extends CrasherMetadata {
-    reload: number;
-    barrels: Array<Readonly<BarrelMetadata>>;
+    readonly reload: number;
+    readonly barrels: Array<string>;
 }
 
 export interface BulletCrasherMetadata extends BarrelCrasherMetadata {
-    bullet: Readonly<ProjectileMetadata>;
+    readonly bullet: Readonly<WeaponProperties>;
 }
 
 export interface DroneCrasherMetadata extends BarrelCrasherMetadata {
-    drone: Readonly<ProjectileMetadata>;
+    readonly drone: Readonly<WeaponProperties>;
 }
 
 export interface BossTankMetadata {
-    nodeName: string;
-    reload: number;
-    barrels: Array<Readonly<BarrelMetadata>>;
-    bullet: Readonly<ProjectileMetadata>;
+    readonly reload: number;
+    readonly barrels: Array<string>;
+    readonly bullet: Readonly<WeaponProperties>;
 }
 
 export interface BossMetadata extends DisplayNameMetadata, SizeMetadata {
-    speed: number;
-    health: number;
-    damage: number;
-    points: number;
-    tanks: Array<Readonly<BossTankMetadata>>;
+    readonly speed: number;
+    readonly health: number;
+    readonly damage: number;
+    readonly points: number;
+    readonly tanks: Array<string>;
 }
 
 export interface PlayerTankMetadata extends DisplayNameMetadata, SizeMetadata {
-    shieldSize: number;
-    barrels: Array<Readonly<BarrelMetadata>>;
-    multiplier: Partial<Readonly<TankProperties>>;
+    readonly barrels?: Array<string>;
+    readonly lances?: Array<string>;
+    readonly multiplier: Partial<TankProperties>;
 }

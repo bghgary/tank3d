@@ -20,13 +20,8 @@ export class Bosses {
 
     public constructor(world: World) {
         this._world = world;
-
         this._root = new TransformNode("bosses", this._world.scene);
-
-        this._world.collisions.register({
-            [Symbol.iterator]: this._getCollidableEntities.bind(this)
-        });
-
+        this._world.collisions.register(this._bosses);
     }
 
     public addKeeper(): Boss {
@@ -47,14 +42,6 @@ export class Bosses {
                 this._bosses.delete(boss);
                 this._world.onEnemyDestroyedObservable.notifyObservers([source, boss]);
             });
-        }
-    }
-
-    private *_getCollidableEntities(): Iterator<BaseBoss> {
-        for (const boss of this._bosses) {
-            if (boss.active) {
-                yield boss;
-            }
         }
     }
 }

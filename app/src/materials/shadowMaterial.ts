@@ -35,7 +35,7 @@ void main(void) {
     gl_FragColor = vec4(0.0, 0.0, 0.0, value);
 }`;
 
-export function CreateShadowMaterial(scene: Scene): ShaderMaterial {
+export function createShadowMaterial(scene: Scene): ShaderMaterial {
     const material = new ShaderMaterial("shadow", scene, "shadow", { uniforms: ["viewProjection", "world"] });
     material.disableDepthWrite = true;
     material.needAlphaBlending = () => true;

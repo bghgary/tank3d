@@ -25,12 +25,8 @@ export class Crashers {
     public constructor(world: World, maxCount: number) {
         this._world = world;
         this._maxCount = maxCount;
-
         this._root = new TransformNode("crashers", this._world.scene);
-
-        this._world.collisions.register({
-            [Symbol.iterator]: this._getCollidableEntities.bind(this)
-        });
+        this._world.collisions.register(this._crashers);
     }
 
     public update(deltaTime: number, player: Player): void {
@@ -109,14 +105,6 @@ export class Crashers {
             const z = Scalar.RandomRange(-limit, limit);
             const rotation = Scalar.RandomRange(0, Scalar.TwoPi);
             this._addCrasher(crasher, x, z, rotation);
-        }
-    }
-
-    private *_getCollidableEntities(): Iterator<BaseCrasher> {
-        for (const crasher of this._crashers) {
-            if (crasher.active) {
-                yield crasher;
-            }
         }
     }
 }

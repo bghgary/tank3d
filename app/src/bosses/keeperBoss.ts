@@ -1,4 +1,5 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { findNode as findNode } from "../common";
 import { decayVector3ToRef, TmpVector3 } from "../math";
 import { Player } from "../player";
 import { World } from "../worlds/world";
@@ -13,7 +14,7 @@ export class KeeperBoss extends BaseBoss {
 
     public constructor(world: World, node: TransformNode) {
         super(world, node);
-        this._tanks = this._metadata.tanks.map((metadata) => new BossTank(this._world, this, metadata, this._node));
+        this._tanks = this._metadata.tanks.map((name) => new BossTank(this._world, this, findNode(this._node, name)));
     }
 
     protected _update(deltaTime: number, player: Player): void {

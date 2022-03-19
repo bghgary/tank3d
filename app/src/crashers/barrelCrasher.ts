@@ -1,6 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Barrel } from "../barrel";
+import { findNode } from "../common";
+import { Barrel } from "../components/barrel";
 import { Entity } from "../entity";
 import { BarrelCrasherMetadata } from "../metadata";
 import { Player } from "../player";
@@ -16,7 +17,7 @@ export abstract class BarrelCrasher extends BaseCrasher {
     protected constructor(world: World, node: TransformNode) {
         super(world, node);
 
-        this._barrels = (this._metadata as BarrelCrasherMetadata).barrels.map((metadata) => new Barrel(node, metadata));
+        this._barrels = (this._metadata as BarrelCrasherMetadata).barrels.map((name) => new Barrel(findNode(node, name)));
     }
 
     public override update(deltaTime: number, player: Player, onDestroy: (entity: Entity) => void): void {

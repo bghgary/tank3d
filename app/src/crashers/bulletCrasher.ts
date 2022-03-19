@@ -1,7 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Barrel } from "../barrel";
-import { ApplyRecoil } from "../common";
+import { Barrel } from "../components/barrel";
+import { applyRecoil } from "../common";
 import { BulletCrasherMetadata } from "../metadata";
 import { Player } from "../player";
 import { World } from "../worlds/world";
@@ -40,7 +40,7 @@ export class BulletCrasher extends BarrelCrasher {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const bullet = barrel.shootBullet(this._world.bullets, this, (this._metadata as BulletCrasherMetadata).bullet, this._createBulletNode);
-        ApplyRecoil(this._recoil, bullet);
+        const bullet = barrel.shootBullet(this._world.bullets, this, this._createBulletNode, (this._metadata as BulletCrasherMetadata).bullet);
+        applyRecoil(this._recoil, bullet);
     }
 }

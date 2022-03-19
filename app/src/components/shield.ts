@@ -1,10 +1,11 @@
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { decayScalar } from "./math";
-import { PlayerTankMetadata } from "./metadata";
-import { Sources } from "./sources";
+import { decayScalar } from "../math";
+import { PlayerTankMetadata } from "../metadata";
+import { Sources } from "../sources";
 
 const MAX_VISIBLITY = 0.2;
+const SCALE = 1.2;
 
 export class Shield {
     private readonly _mesh: Mesh;
@@ -12,14 +13,14 @@ export class Shield {
 
     public constructor(sources: Sources, parent: TransformNode) {
         this._mesh = sources.createShield(parent);
-        this._mesh.scaling.setAll((parent.metadata as PlayerTankMetadata).shieldSize);
+        this._mesh.scaling.setAll((parent.metadata as PlayerTankMetadata).size * SCALE);
         this._mesh.visibility = MAX_VISIBLITY;
         this.enabled = true;
     }
 
     public setParent(parent: TransformNode): void {
         this._mesh.parent = parent;
-        this._mesh.scaling.setAll((parent.metadata as PlayerTankMetadata).shieldSize);
+        this._mesh.scaling.setAll((parent.metadata as PlayerTankMetadata).size * SCALE);
     }
 
     public get size(): number {

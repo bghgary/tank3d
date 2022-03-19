@@ -8,8 +8,8 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import { Scene } from "@babylonjs/core/scene";
-import { CreateShadowMaterial } from "./materials/shadowMaterial";
-import { BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, ShapeMetadata, SizeMetadata, PlayerTankMetadata, BossMetadata } from "./metadata";
+import { createShadowMaterial } from "./materials/shadowMaterial";
+import { BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, ShapeMetadata, SizeMetadata, PlayerTankMetadata, BossMetadata, BarrelMetadata, BossTankMetadata, LanceMetadata } from "./metadata";
 import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
@@ -34,11 +34,18 @@ interface BarrelProperties {
         diameter: number;
         length: number;
     };
+    variance?: number;
 }
 
 function createBarrel(name: string, properties: BarrelProperties, scene: Scene): Mesh {
     const base = properties.base;
     const muzzle = properties.muzzle;
+
+    const metadata: BarrelMetadata = {
+        diameter: muzzle ? muzzle.diameter : base.diameter,
+        length: muzzle ? muzzle.length + base.length : base.length,
+        variance: properties.variance,
+    };
 
     const barrelBase = base.length ? (() => {
         const mesh = MeshBuilder.CreateCylinder(name, {
@@ -72,16 +79,48 @@ function createBarrel(name: string, properties: BarrelProperties, scene: Scene):
     if (barrelBase && barrelMuzzle) {
         const barrel = Mesh.MergeMeshes([barrelBase, barrelMuzzle], true)!;
         barrel.name = name;
+        barrel.metadata = metadata;
         return barrel;
     } else if (barrelBase) {
+        barrelBase.metadata = metadata;
         return barrelBase;
     } else {
+        barrelMuzzle!.metadata = metadata;
         return barrelMuzzle!;
     }
 }
 
 function createSimpleBarrel(name: string, diameter: number, length: number, scene: Scene): Mesh {
     return createBarrel(name, { base: { diameter: diameter, length: length } }, scene);
+}
+
+function createLance(name: string, diameter: number, length: number, scene: Scene): Mesh {
+    const metadata: LanceMetadata = {
+        diameter: diameter
+    };
+
+    const mesh = MeshBuilder.CreateCylinder(name, {
+        tessellation: Math.round(36 * diameter),
+        cap: Mesh.NO_CAP,
+        height: length,
+        diameterBottom: diameter,
+        diameterTop: 0,
+    }, scene);
+    mesh.position.z = length / 2;
+    mesh.rotation.x = Math.PI / 2;
+    mesh.bakeCurrentTransformIntoVertices();
+    mesh.position.z = 0.4;
+    mesh.metadata = metadata;
+
+    const midpoint = new TransformNode("midpoint", scene);
+    midpoint.position.z = length / 2;
+    midpoint.parent = mesh;
+
+    const endpoint = new TransformNode("endpoint", scene);
+    endpoint.position.z = length;
+    endpoint.parent = mesh;
+
+    return mesh;
 }
 
 function createTetrahedron(name: string, size: number, scene: Scene): Mesh {
@@ -208,6 +247,7 @@ export class Sources {
         readonly director: TransformNode;
         readonly trapper: TransformNode;
         readonly machineGun: TransformNode;
+        readonly lancer: TransformNode;
     };
 
     public constructor(world: World) {
@@ -224,7 +264,7 @@ export class Sources {
             pink: this._createMaterial("pink", 1, 0.5, 0.75),
             purple: this._createMaterial("purple", 0.5, 0.2, 1),
             yellow: this._createMaterial("yellow", 0.9, 0.9, 0),
-            shadow: CreateShadowMaterial(this._scene),
+            shadow: createShadowMaterial(this._scene),
         }
 
         const adornments = new TransformNode("adornments", this._scene);
@@ -293,6 +333,7 @@ export class Sources {
             director: this._createDirectorTankSource(tanks),
             trapper: this._createTrapperTankSource(tanks),
             machineGun: this._createMachineGunTankSource(tanks),
+            lancer: this._createLancerTankSource(tanks),
         };
     }
 
@@ -345,6 +386,7 @@ export class Sources {
         const instance = source.instantiateHierarchy(parent, undefined, (source, target) => {
             target.id = source.id;
             target.name = source.name;
+            target.metadata = source.metadata;
             if ((target as AbstractMesh).layerMask && (source as AbstractMesh).layerMask) {
                 (target as AbstractMesh).layerMask = (source as AbstractMesh).layerMask;
             }
@@ -391,7 +433,7 @@ export class Sources {
     }
 
     private _createBulletSource(parent: TransformNode, name: string, segments: number, material: Material): Mesh {
-        const metadata: Readonly<SizeMetadata> = {
+        const metadata: SizeMetadata = {
             size: 1,
         };
 
@@ -403,7 +445,7 @@ export class Sources {
     }
 
     private _createDroneSource(parent: TransformNode, name: string, material: Material): Mesh {
-        const metadata: Readonly<SizeMetadata> = {
+        const metadata: SizeMetadata = {
             size: 1,
         };
 
@@ -415,7 +457,7 @@ export class Sources {
     }
 
     private _createTrapSource(parent: TransformNode, name: string, material: Material): Mesh {
-        const metadata: Readonly<SizeMetadata> = {
+        const metadata: SizeMetadata = {
             size: 1,
         };
 
@@ -427,7 +469,7 @@ export class Sources {
     }
 
     private _createCubeShapeSource(parent: TransformNode): Mesh {
-        const metadata: Readonly<ShapeMetadata> = {
+        const metadata: ShapeMetadata = {
             displayName: "Cube",
             size: 0.6,
             health: 10,
@@ -446,7 +488,7 @@ export class Sources {
     }
 
     private _createTetrahedronShapeSource(parent: TransformNode): Mesh {
-        const metadata: Readonly<ShapeMetadata> = {
+        const metadata: ShapeMetadata = {
             displayName: "Tetrahedron",
             size: 0.75,
             health: 30,
@@ -465,7 +507,7 @@ export class Sources {
     }
 
     private _createDodecahedronShapeSource(parent: TransformNode): Mesh {
-        const metadata: Readonly<ShapeMetadata> = {
+        const metadata: ShapeMetadata = {
             displayName: "Dodecahedron",
             size: 1,
             health: 125,
@@ -483,7 +525,7 @@ export class Sources {
     }
 
     private _createGoldberg11ShapeSource(parent: TransformNode): Mesh {
-        const metadata: Readonly<ShapeMetadata> = {
+        const metadata: ShapeMetadata = {
             displayName: "Truncated Isocahedron",
             size: 1.62,
             health: 250,
@@ -499,7 +541,7 @@ export class Sources {
     }
 
     private _createSmallCrasherSource(parent: TransformNode): Mesh {
-        const metadata: Readonly<CrasherMetadata> = {
+        const metadata: CrasherMetadata = {
             displayName: "Small Crasher",
             size: 0.5,
             speed: CRASHER_SPEED,
@@ -516,7 +558,7 @@ export class Sources {
     }
 
     private _createBigCrasherSource(parent: TransformNode): Mesh {
-        const metadata: Readonly<CrasherMetadata> = {
+        const metadata: CrasherMetadata = {
             displayName: "Big Crasher",
             size: 0.7,
             speed: CRASHER_SPEED,
@@ -533,7 +575,7 @@ export class Sources {
     }
 
     private _createShooterCrasherSource(parent: TransformNode): TransformNode {
-        const metadata: Readonly<BulletCrasherMetadata> = {
+        const metadata: BulletCrasherMetadata = {
             displayName: "Shooter Crasher",
             size: 0.7,
             speed: CRASHER_SPEED * 1.1,
@@ -541,14 +583,11 @@ export class Sources {
             damage: 30,
             points: 50,
             reload: CRASHER_PROJECTILE_RELOAD,
-            barrels: [{
-                nodeName: "barrel",
-                diameter: 0.2,
-                length: 0.5,
-            }],
+            barrels: ["barrel"],
             bullet: {
                 speed: CRASHER_PROJECTILE_SPEED,
                 damage: CRASHER_PROJECTILE_DAMAGE,
+                damageTime: 0.2,
                 health: CRASHER_PROJECTILE_HEALTH,
             },
         };
@@ -561,8 +600,7 @@ export class Sources {
         body.material = this._materials.pink;
         body.parent = source;
 
-        const barrelMetadata = metadata.barrels[0]!;
-        const barrel = createSimpleBarrel("barrel", barrelMetadata.diameter, barrelMetadata.length, this._scene);
+        const barrel = createSimpleBarrel("barrel", 0.2, 0.5, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
@@ -570,7 +608,7 @@ export class Sources {
     }
 
     private _createDestroyerCrasherSource(parent: TransformNode): TransformNode {
-        const metadata: Readonly<BulletCrasherMetadata> = {
+        const metadata: BulletCrasherMetadata = {
             displayName: "Destroyer Crasher",
             size: 1.4,
             speed: CRASHER_SPEED * 0.6,
@@ -578,14 +616,11 @@ export class Sources {
             damage: MEGA_CRASHER_DAMAGE,
             points: MEGA_CRASHER_POINTS,
             reload: CRASHER_PROJECTILE_RELOAD * 2,
-            barrels: [{
-                nodeName: "barrel",
-                diameter: 0.4,
-                length: 1.1,
-            }],
+            barrels: ["barrel"],
             bullet: {
                 speed: CRASHER_PROJECTILE_SPEED,
                 damage: CRASHER_PROJECTILE_DAMAGE * 2,
+                damageTime: 0.2,
                 health: CRASHER_PROJECTILE_HEALTH,
             },
         };
@@ -598,8 +633,7 @@ export class Sources {
         body.material = this._materials.pink;
         body.parent = source;
 
-        const barrelMetadata = metadata.barrels[0]!;
-        const barrel = createSimpleBarrel("barrel", barrelMetadata.diameter, barrelMetadata.length, this._scene);
+        const barrel = createSimpleBarrel("barrel", 0.4, 1.1, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
@@ -611,7 +645,7 @@ export class Sources {
         const barrelLength = 1.1;
         const barrelOffset = barrelDiameter * 0.51;
 
-        const metadata: Readonly<BulletCrasherMetadata> = {
+        const metadata: BulletCrasherMetadata = {
             displayName: "Twin Crasher",
             size: 1.4,
             speed: CRASHER_SPEED * 0.7,
@@ -619,18 +653,11 @@ export class Sources {
             damage: MEGA_CRASHER_DAMAGE,
             points: MEGA_CRASHER_POINTS,
             reload: CRASHER_PROJECTILE_RELOAD * 0.5,
-            barrels: [{
-                nodeName: "barrelL",
-                diameter: barrelDiameter,
-                length: barrelLength,
-            }, {
-                nodeName: "barrelR",
-                diameter: barrelDiameter,
-                length: barrelLength,
-            }],
+            barrels: ["barrelL", "barrelR"],
             bullet: {
                 speed: CRASHER_PROJECTILE_SPEED,
                 damage: CRASHER_PROJECTILE_DAMAGE,
+                damageTime: 0.2,
                 health: CRASHER_PROJECTILE_HEALTH,
             },
         };
@@ -662,7 +689,7 @@ export class Sources {
             muzzle: { diameter: 0.8, length: 0.7 },
         };
 
-        const metadata: Readonly<DroneCrasherMetadata> = {
+        const metadata: DroneCrasherMetadata = {
             displayName: "Drone Crasher",
             size: 1.4,
             speed: CRASHER_SPEED * 0.5,
@@ -670,14 +697,11 @@ export class Sources {
             damage: MEGA_CRASHER_DAMAGE,
             points: MEGA_CRASHER_POINTS,
             reload: CRASHER_PROJECTILE_RELOAD * 4,
-            barrels: [{
-                nodeName: "barrel",
-                diameter: barrelProperties.muzzle.diameter,
-                length: barrelProperties.muzzle.length,
-            }],
+            barrels: ["barrel"],
             drone: {
                 speed: CRASHER_PROJECTILE_SPEED,
                 damage: CRASHER_PROJECTILE_DAMAGE,
+                damageTime: 0.2,
                 health: CRASHER_PROJECTILE_HEALTH * 1.25,
             },
         };
@@ -705,21 +729,7 @@ export class Sources {
         const barrelDiameter = 0.55;
         const barrelLength = 0.75;
 
-        const tank = {
-            reload: 1,
-            barrels: [{
-                nodeName: "barrel",
-                diameter: barrelDiameter,
-                length: barrelLength,
-            }],
-            bullet: {
-                speed: 8,
-                damage: 20,
-                health: 100,
-            },
-        };
-
-        const metadata: Readonly<BossMetadata> = {
+        const metadata: BossMetadata = {
             displayName: "Keeper",
             size: 4,
             height: 2,
@@ -727,12 +737,18 @@ export class Sources {
             health: 2000,
             damage: 40,
             points: 300,
-            tanks: [
-                { nodeName: "tank0", ...tank },
-                { nodeName: "tank1", ...tank },
-                { nodeName: "tank2", ...tank },
-                { nodeName: "tank3", ...tank },
-            ],
+            tanks: ["tank0", "tank1", "tank2", "tank3"],
+        };
+
+        const tankMetadata: BossTankMetadata = {
+            reload: 1,
+            barrels: ["barrel"],
+            bullet: {
+                speed: 8,
+                damage: 20,
+                damageTime: 0.2,
+                health: 100,
+            },
         };
 
         const source = new TransformNode("keeper", this._scene);
@@ -759,7 +775,7 @@ export class Sources {
         }];
 
         for (let index = 0; index < tankTransforms.length; ++index) {
-            const tankMetadata = metadata.tanks[index]!;
+            const tankNodeName = metadata.tanks[index]!;
             const tankTransform = tankTransforms[index]!;
 
             const offset = new TransformNode("offset");
@@ -767,8 +783,9 @@ export class Sources {
             offset.rotationQuaternion = tankTransform.rotation;
             offset.parent = body;
 
-            const tank = new TransformNode(tankMetadata.nodeName);
+            const tank = new TransformNode(tankNodeName);
             tank.rotationQuaternion = Quaternion.Identity();
+            tank.metadata = tankMetadata;
             tank.parent = offset;
 
             const tankBody = createSphere("body", 1, this._scene);
@@ -791,15 +808,10 @@ export class Sources {
         const barrelDiameter = 0.45;
         const barrelLength = 0.75;
 
-        const metadata: Readonly<PlayerTankMetadata> = {
+        const metadata: PlayerTankMetadata = {
             displayName: "Tank",
             size: 1,
-            shieldSize: 1.75,
-            barrels: [{
-                nodeName: "barrel",
-                diameter: barrelDiameter,
-                length: barrelLength,
-            }],
+            barrels: ["barrel"],
             multiplier: {},
         };
 
@@ -826,17 +838,12 @@ export class Sources {
         const barrelDiameter = 0.4;
         const barrelLength = 0.9;
 
-        const metadata: Readonly<PlayerTankMetadata> = {
+        const metadata: PlayerTankMetadata = {
             displayName: "Sniper",
             size: 1,
-            shieldSize: 2,
-            barrels: [{
-                nodeName: "barrel",
-                diameter: barrelDiameter,
-                length: barrelLength,
-            }],
+            barrels: ["barrel"],
             multiplier: {
-                projectileSpeed: 2,
+                weaponSpeed: 2,
                 reloadTime: 2,
             },
         };
@@ -865,19 +872,10 @@ export class Sources {
         const barrelLength = 0.75;
         const barrelOffset = barrelDiameter * 0.51;
 
-        const metadata: Readonly<PlayerTankMetadata> = {
+        const metadata: PlayerTankMetadata = {
             displayName: "Twin",
             size: 1,
-            shieldSize: 1.75,
-            barrels: [{
-                nodeName: "barrelL",
-                diameter: barrelDiameter,
-                length: barrelLength,
-            }, {
-                nodeName: "barrelR",
-                diameter: barrelDiameter,
-                length: barrelLength,
-            }],
+            barrels: ["barrelL", "barrelR"],
             multiplier: {
                 reloadTime: 0.6,
             },
@@ -913,19 +911,10 @@ export class Sources {
         const barrelLengthF = 0.75;
         const barrelLengthB = 0.65;
 
-        const metadata: Readonly<PlayerTankMetadata> = {
+        const metadata: PlayerTankMetadata = {
             displayName: "Flank Guard",
             size: 1,
-            shieldSize: 1.75,
-            barrels: [{
-                nodeName: "barrelF",
-                diameter: barrelDiameter,
-                length: barrelLengthF,
-            }, {
-                nodeName: "barrelR",
-                diameter: barrelDiameter,
-                length: barrelLengthB,
-            }],
+            barrels: ["barrelF", "barrelR"],
             multiplier: {},
         };
 
@@ -957,18 +946,13 @@ export class Sources {
         const barrelDiameter = 0.55;
         const barrelLength = 0.75;
 
-        const metadata: Readonly<PlayerTankMetadata> = {
+        const metadata: PlayerTankMetadata = {
             displayName: "Pounder",
             size: 1,
-            shieldSize: 1.75,
-            barrels: [{
-                nodeName: "barrel",
-                diameter: barrelDiameter,
-                length: barrelLength,
-            }],
+            barrels: ["barrel"],
             multiplier: {
-                projectileDamage: 2,
-                projectileHealth: 2,
+                weaponDamage: 2,
+                weaponHealth: 2,
                 reloadTime: 2,
             },
         };
@@ -998,17 +982,12 @@ export class Sources {
             muzzle: { diameter: 0.8, length: 0.7 },
         };
 
-        const metadata: Readonly<PlayerTankMetadata> = {
+        const metadata: PlayerTankMetadata = {
             displayName: "Director",
             size: 1,
-            shieldSize: 1.75,
-            barrels: [{
-                nodeName: "barrel",
-                diameter: barrelProperties.muzzle.diameter,
-                length: barrelProperties.muzzle.length,
-            }],
+            barrels: ["barrel"],
             multiplier: {
-                projectileSpeed: 0.5,
+                weaponSpeed: 0.5,
                 reloadTime: 3,
             },
         };
@@ -1038,20 +1017,15 @@ export class Sources {
             muzzle: { diameter: 0.8, length: 0.18 },
         };
 
-        const metadata: Readonly<PlayerTankMetadata> = {
+        const metadata: PlayerTankMetadata = {
             displayName: "Trapper",
             size: 1,
-            shieldSize: 1.75,
-            barrels: [{
-                nodeName: "barrel",
-                diameter: barrelProperties.muzzle.diameter,
-                length: barrelProperties.base.length + barrelProperties.muzzle.length,
-            }],
+            barrels: ["barrel"],
             multiplier: {
                 reloadTime: 2,
-                projectileSpeed: 0.8,
-                projectileDamage: 3,
-                projectileHealth: 3,
+                weaponSpeed: 0.8,
+                weaponDamage: 3,
+                weaponHealth: 3,
             },
         };
 
@@ -1078,20 +1052,15 @@ export class Sources {
         const barrelProperties = {
             base: { diameter: 0.45, length: 0.4 },
             muzzle: { diameter: 0.6, length: 0.35 },
+            variance: Tools.ToRadians(15),
         };
 
-        const metadata: Readonly<PlayerTankMetadata> = {
+        const metadata: PlayerTankMetadata = {
             displayName: "Machine Gun",
             size: 1,
-            shieldSize: 1.75,
-            barrels: [{
-                nodeName: "barrel",
-                diameter: barrelProperties.base.diameter,
-                length: barrelProperties.base.length + barrelProperties.muzzle.length,
-                variance: Tools.ToRadians(15),
-            }],
+            barrels: ["barrel"],
             multiplier: {
-                projectileHealth: 0.5,
+                weaponHealth: 0.5,
                 reloadTime: 0.6,
             },
         };
@@ -1105,8 +1074,43 @@ export class Sources {
         body.parent = source;
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
+        barrel.metadata.diameter = barrelProperties.base.diameter;
         barrel.material = this._materials.gray;
         barrel.parent = source;
+
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
+
+        return source;
+    }
+
+    private _createLancerTankSource(parent: TransformNode): TransformNode {
+        const lanceDiameter = 0.6;
+        const lanceLength = 0.6;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Lancer",
+            size: 1,
+            lances: ["lance"],
+            multiplier: {
+                weaponDamage: 4,
+                weaponHealth: 2,
+            },
+        };
+
+        const source = new TransformNode("lancer", this._scene);
+        source.metadata = metadata;
+        source.parent = parent;
+
+        const body = createSphere("body", metadata.size, this._scene);
+        body.material = this._materials.blue;
+        body.parent = source;
+
+        const lance = createLance("lance", lanceDiameter, lanceLength, this._scene);
+        lance.position.z = 0.4;
+        lance.material = this._materials.gray;
+        lance.parent = source;
 
         const marker = createCircleMarker("marker", metadata.size, this._scene);
         marker.material = this._materials.blue;

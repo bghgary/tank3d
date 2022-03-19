@@ -1,33 +1,33 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { ApplyCollisionForce, ApplyMovement } from "../common";
+import { applyCollisionForce, applyMovement } from "../common";
 import { Entity, EntityType } from "../entity";
-import { Health } from "../health";
+import { Health } from "../components/health";
 import { decayVector3ToRef, TmpVector3 } from "../math";
-import { BarrelMetadata, ProjectileMetadata } from "../metadata";
-import { Shadow } from "../shadow";
+import { Shadow } from "../components/shadow";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { Projectile, Projectiles } from "./projectiles";
+import { WeaponProperties } from "../components/weapon";
 
 export class Drones extends Projectiles {
     private readonly _drones: Set<Drone>;
-    private readonly _metadata: Readonly<ProjectileMetadata>;
+    private readonly _properties: Readonly<WeaponProperties>;
 
-    public constructor(world: World, parent: TransformNode, metadata: Readonly<ProjectileMetadata>) {
+    public constructor(world: World, parent: TransformNode, properties: Readonly<WeaponProperties>) {
         const drones = new Set<Drone>();
         super(world, "drones", drones);
         this._root.parent = parent;
         this._drones = drones;
-        this._metadata = metadata;
+        this._properties = properties;
     }
 
     public get count(): number {
         return this._drones.size;
     }
 
-    public add(owner: Entity, barrelNode: TransformNode, barrelMetadata: Readonly<BarrelMetadata>, createNode: (parent: TransformNode) => TransformNode): Drone {
-        const drone = new Drone(owner, barrelNode, barrelMetadata, createNode(this._root), this._metadata, this._world.sources);
+    public add(owner: Entity, barrelNode: TransformNode, createNode: (parent: TransformNode) => TransformNode): Drone {
+        const drone = new Drone(owner, barrelNode, createNode(this._root), this._properties, this._world.sources);
         this._drones.add(drone);
         return drone;
     }
@@ -45,16 +45,16 @@ class Drone extends Projectile {
     private readonly _shadow: Shadow;
     private readonly _health: Health;
 
-    public constructor(owner: Entity, barrelNode: TransformNode, barrelMetadata: Readonly<BarrelMetadata>, droneNode: TransformNode, droneMetadata: Readonly<ProjectileMetadata>, sources: Sources) {
-        super(owner, barrelNode, barrelMetadata, droneNode, droneMetadata);
+    public constructor(owner: Entity, barrelNode: TransformNode, droneNode: TransformNode, properties: Readonly<WeaponProperties>, sources: Sources) {
+        super(owner, barrelNode, droneNode, properties);
         this._shadow = new Shadow(sources, this._node);
-        this._health = new Health(sources, this._node, this._metadata.health);
+        this._health = new Health(sources, this._node, this._properties.health);
     }
 
     public type = EntityType.Drone;
 
     public update(deltaTime: number, target: Vector3, radius: number, onDestroy: () => void): void {
-        ApplyMovement(deltaTime, this._node.position, this.velocity);
+        applyMovement(deltaTime, this._node.position, this.velocity);
 
         const direction = TmpVector3[0];
         target.subtractToRef(this._node.position, direction);
@@ -72,7 +72,7 @@ class Drone extends Projectile {
         decayVector3ToRef(forward, direction, deltaTime, 10, direction);
         this._node.setDirection(direction.normalize());
 
-        const speed = this._metadata.speed * Math.min(distance, 1);
+        const speed = this._properties.speed * Math.min(distance, 1);
         const targetVelocity = TmpVector3[2].copyFrom(forward).scaleInPlace(speed);
         decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
 
@@ -90,12 +90,12 @@ class Drone extends Projectile {
                 return 1;
             }
 
-            ApplyCollisionForce(this, other);
+            applyCollisionForce(this, other);
             return 0;
         }
 
-        ApplyCollisionForce(this, other);
+        applyCollisionForce(this, other);
         this._health.takeDamage(other);
-        return 0.2;
+        return other.damageTime;
     }
 }

@@ -240,20 +240,20 @@ export class Player {
 
     private _setTankUpgrades(): void {
         this._tank.setUpgrades({
-            projectileSpeed:  this._upgrades.getUpgradeValue(UpgradeType.ProjectileSpeed)  * 1,
-            projectileDamage: this._upgrades.getUpgradeValue(UpgradeType.ProjectileDamage) * 3,
-            projectileHealth: this._upgrades.getUpgradeValue(UpgradeType.ProjectileHealth) * 5,
-            reloadTime:       this._upgrades.getUpgradeValue(UpgradeType.ReloadTime)       * -0.03,
-            healthRegen:      this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)      * 1.6,
-            maxHealth:        this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)        * 15,
-            moveSpeed:        this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)        * 0.5,
-            bodyDamage:       this._upgrades.getUpgradeValue(UpgradeType.BodyDamage)       * 5,
+            weaponSpeed:  this._upgrades.getUpgradeValue(UpgradeType.WeaponSpeed)  * 1,
+            weaponDamage: this._upgrades.getUpgradeValue(UpgradeType.WeaponDamage) * 3,
+            weaponHealth: this._upgrades.getUpgradeValue(UpgradeType.WeaponHealth) * 5,
+            reloadTime:   this._upgrades.getUpgradeValue(UpgradeType.ReloadTime)   * -0.03,
+            healthRegen:  this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)  * 1.6,
+            maxHealth:    this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)    * 15,
+            moveSpeed:    this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)    * 0.5,
+            bodyDamage:   this._upgrades.getUpgradeValue(UpgradeType.BodyDamage)   * 5,
         });
     }
 
     private _updateTank(evolutionNode: EvolutionNode): void {
         this._tank = new evolutionNode.Tank(this._world, this._root, this._tank);
-        this._upgrades.setProjectileType(this._tank.projectileType);
+        this._upgrades.setWeaponType(this._tank.weaponType);
         this._level.setTankDisplayName(this._tank.displayName);
         this._setTankUpgrades();
     }

@@ -2,10 +2,11 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { Collider } from "../collisions";
-import { ApplyVariance } from "../common";
+import { applyVariance } from "../common";
+import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { TmpVector3 } from "../math";
-import { BarrelMetadata, ProjectileMetadata } from "../metadata";
+import { BarrelMetadata } from "../metadata";
 import { World } from "../worlds/world";
 
 export class Projectiles {
@@ -27,23 +28,25 @@ export class Projectiles {
 
 export abstract class Projectile implements Entity, Collider {
     protected readonly _node: TransformNode;
-    protected readonly _metadata: Readonly<ProjectileMetadata>;
+    protected readonly _properties: Readonly<WeaponProperties>;
 
-    public constructor(owner: Entity, barrelNode: TransformNode, barrelMetadata: Readonly<BarrelMetadata>, projectileNode: TransformNode, projectileMetadata: Readonly<ProjectileMetadata>) {
+    public constructor(owner: Entity, barrelNode: TransformNode, projectileNode: TransformNode, properties: Readonly<WeaponProperties>) {
+        const barrelMetadata = barrelNode.metadata as BarrelMetadata;
+
         this.owner = owner;
         this.size = barrelMetadata.diameter * 0.75;
 
         this._node = projectileNode;
         this._node.scaling.setAll(this.size);
 
-        this._metadata = projectileMetadata;
+        this._properties = properties;
 
-        const forward = ApplyVariance(barrelNode.forward, barrelMetadata.variance, TmpVector3[0]);
+        const forward = applyVariance(barrelNode.forward, barrelMetadata.variance, TmpVector3[0]);
         forward.scaleToRef(barrelMetadata.length + this.size * 0.5, this._node.position).addInPlace(barrelNode.absolutePosition);
 
         this._node.rotationQuaternion!.copyFrom(barrelNode.absoluteRotationQuaternion);
 
-        const initialSpeed = Math.max(Vector3.Dot(this.owner.velocity, forward) + projectileMetadata.speed, 0.1);
+        const initialSpeed = Math.max(Vector3.Dot(this.owner.velocity, forward) + properties.speed, 0.1);
         this.velocity.copyFrom(forward).scaleInPlace(initialSpeed);
     }
 
@@ -53,7 +56,8 @@ export abstract class Projectile implements Entity, Collider {
     public get active() { return this._node.isEnabled(); }
     public readonly size: number;
     public get mass() { return this.size * this.size; }
-    public get damage() { return this._metadata.damage; }
+    public get damage() { return this._properties.damage; }
+    public get damageTime() { return this._properties.damageTime; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();

@@ -38,7 +38,7 @@ void main() {
     glFragColor = vec4(color.rgb, 1.);
 }`;
 
-export function CreateGridMaterial(scene: Scene, size: number): ShaderMaterial {
+export function createGridMaterial(scene: Scene, size: number): ShaderMaterial {
     const material = new ShaderMaterial("grid", scene, "grid", { uniforms: ["worldViewProjection", "halfSize"] });
     material.setFloat("halfSize", size * 0.5);
     material.disableDepthWrite = true;
