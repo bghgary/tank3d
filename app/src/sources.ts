@@ -33,7 +33,7 @@ interface BarrelProperties {
     }[];
     baseCap?: boolean;
     baseDiameter?: number;
-    diameterIndex?: number;
+    diameter?: number;
     variance?: number;
 }
 
@@ -41,7 +41,7 @@ function createBarrel(name: string, properties: BarrelProperties, scene: Scene):
     const segments = properties.segments;
     const baseCap = properties.baseCap;
     const baseDiameter = properties.baseDiameter ?? segments[0]!.diameter;
-    const diameterIndex = properties.diameterIndex ?? segments.length - 1;
+    const diameter = properties.diameter ?? segments[segments.length - 1]!.diameter;
     const tesselation = Math.round(36 * max(segments, (segment) => segment.diameter));
 
     const computeCap = (index: number): number => {
@@ -74,7 +74,7 @@ function createBarrel(name: string, properties: BarrelProperties, scene: Scene):
     const mesh = (meshes.length === 1) ? meshes[0]!.bakeCurrentTransformIntoVertices() : Mesh.MergeMeshes(meshes)!;
     mesh.name = name;
     mesh.metadata = {
-        diameter: segments[diameterIndex]!.diameter,
+        diameter: diameter,
         length: totalLength,
         variance: properties.variance,
     };
@@ -246,6 +246,7 @@ export class Sources {
         // Level 2
         readonly assassin: TransformNode;
         readonly twinSniper: TransformNode;
+        readonly gatlingGun: TransformNode;
     };
 
     public constructor(world: World) {
@@ -338,6 +339,7 @@ export class Sources {
             // Level 2
             assassin: this._createAssassinTankSource(tanks),
             twinSniper: this._createTwinSniperTankSource(tanks),
+            gatlingGun: this._createGatlingGunTankSource(tanks),
         };
     }
 
@@ -1060,7 +1062,7 @@ export class Sources {
                 { diameter: 0.45, length: 0.4 },
                 { diameter: 0.6, length: 0.35 },
             ],
-            diameterIndex: 0,
+            diameter: 0.45,
             variance: Tools.ToRadians(15),
         };
 
@@ -1199,6 +1201,46 @@ export class Sources {
         barrelR.position.x = +barrelOffset;
         barrelR.material = this._materials.gray;
         barrelR.parent = source;
+
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
+
+        return source;
+    }
+
+    private _createGatlingGunTankSource(parent: TransformNode): TransformNode {
+        const barrelProperties: BarrelProperties = {
+            segments: [
+                { diameter: 0.45, length: 0.4 },
+                { diameter: 0.6, length: 0.5 },
+            ],
+            diameter: 0.45,
+            variance: Tools.ToRadians(10),
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Gatling Gun",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponSpeed: 2,
+                weaponHealth: 0.8,
+                reloadTime: 0.8,
+            },
+        };
+
+        const source = new TransformNode("gatlingGun", this._scene);
+        source.metadata = metadata;
+        source.parent = parent;
+
+        const body = createSphere("body", metadata.size, this._scene);
+        body.material = this._materials.blue;
+        body.parent = source;
+
+        const barrel = createBarrel("barrel", barrelProperties, this._scene);
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
 
         const marker = createCircleMarker("marker", metadata.size, this._scene);
         marker.material = this._materials.blue;
