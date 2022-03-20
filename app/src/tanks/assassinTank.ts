@@ -4,14 +4,14 @@ import { World } from "../worlds/world";
 import { BulletTank } from "./bulletTank";
 import { PlayerTank } from "./playerTank";
 
-export class SniperTank extends BulletTank {
+export class AssassinTank extends BulletTank {
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, SniperTank.CreateNode(world.sources, parent), previousTank);
+        super(world, AssassinTank.CreateNode(world.sources, parent), previousTank);
     }
 
-    public override CameraRadiusMultiplier = 1.2;
+    public override CameraRadiusMultiplier = 1.4;
 
     public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {
-        return sources.create(sources.tank.sniper, parent);
+        return sources.create(sources.tank.assassin, parent);
     }
 }

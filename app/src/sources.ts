@@ -9,7 +9,8 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import { Scene } from "@babylonjs/core/scene";
 import { createShadowMaterial } from "./materials/shadowMaterial";
-import { BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, ShapeMetadata, SizeMetadata, PlayerTankMetadata, BossMetadata, BarrelMetadata, BossTankMetadata, LanceMetadata } from "./metadata";
+import { max } from "./math";
+import { BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, ShapeMetadata, SizeMetadata, PlayerTankMetadata, BossMetadata, BossTankMetadata, LanceMetadata } from "./metadata";
 import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
@@ -26,72 +27,63 @@ const MEGA_CRASHER_POINTS = 100;
 const MARKER_MAGNIFICATION = 3;
 
 interface BarrelProperties {
-    base: {
-        diameter: number;
-        length: number
-    };
-    muzzle?: {
+    segments: {
         diameter: number;
         length: number;
-    };
+    }[];
+    baseCap?: boolean;
+    baseDiameter?: number;
+    diameterIndex?: number;
     variance?: number;
 }
 
 function createBarrel(name: string, properties: BarrelProperties, scene: Scene): Mesh {
-    const base = properties.base;
-    const muzzle = properties.muzzle;
+    const segments = properties.segments;
+    const baseCap = properties.baseCap;
+    const baseDiameter = properties.baseDiameter ?? segments[0]!.diameter;
+    const diameterIndex = properties.diameterIndex ?? segments.length - 1;
+    const tesselation = Math.round(36 * max(segments, (segment) => segment.diameter));
 
-    const metadata: BarrelMetadata = {
-        diameter: muzzle ? muzzle.diameter : base.diameter,
-        length: muzzle ? muzzle.length + base.length : base.length,
+    const computeCap = (index: number): number => {
+        if (segments.length === 1) {
+            return baseCap ? Mesh.CAP_ALL : Mesh.CAP_END;
+        } else if (index === 0) {
+            return baseCap ? Mesh.CAP_START : Mesh.NO_CAP;
+        } else {
+            return (index === segments.length - 1) ? Mesh.CAP_END : Mesh.NO_CAP;
+        }
+    };
+
+    let totalLength = 0;
+    const meshes = segments.map((segment, index) => {
+        const diameterBottom = (index === 0) ? baseDiameter : segments[index - 1]!.diameter;
+        const diameterTop = segment.diameter;
+        const mesh = MeshBuilder.CreateCylinder(`segment${index}`, {
+            tessellation: tesselation,
+            cap: computeCap(index),
+            diameterBottom: diameterBottom,
+            diameterTop: diameterTop,
+            height: segment.length,
+        }, scene);
+        mesh.rotation.x = Math.PI / 2;
+        mesh.position.z = totalLength + segment.length / 2;
+        totalLength += segment.length;
+        return mesh;
+    });
+
+    const mesh = (meshes.length === 1) ? meshes[0]!.bakeCurrentTransformIntoVertices() : Mesh.MergeMeshes(meshes)!;
+    mesh.name = name;
+    mesh.metadata = {
+        diameter: segments[diameterIndex]!.diameter,
+        length: totalLength,
         variance: properties.variance,
     };
 
-    const barrelBase = base.length ? (() => {
-        const mesh = MeshBuilder.CreateCylinder(name, {
-            tessellation: Math.round(36 * base.diameter),
-            cap: muzzle ? Mesh.NO_CAP : Mesh.CAP_END,
-            diameter: base.diameter,
-            height: base.length,
-        }, scene);
-
-        mesh.rotation.x = Math.PI / 2;
-        mesh.position.z = base.length / 2;
-        mesh.bakeCurrentTransformIntoVertices();
-        return mesh;
-    })() : null;
-
-    const barrelMuzzle = muzzle ? (() => {
-        const mesh = MeshBuilder.CreateCylinder(name, {
-            tessellation: Math.round(36 * Math.max(base.diameter, muzzle.diameter)),
-            cap: Mesh.CAP_END,
-            diameterBottom: base.diameter,
-            diameterTop: muzzle.diameter,
-            height: muzzle.length,
-        }, scene);
-
-        mesh.rotation.x = Math.PI / 2;
-        mesh.position.z = base.length + muzzle.length / 2;
-        mesh.bakeCurrentTransformIntoVertices();
-        return mesh;
-    })() : null;
-
-    if (barrelBase && barrelMuzzle) {
-        const barrel = Mesh.MergeMeshes([barrelBase, barrelMuzzle], true)!;
-        barrel.name = name;
-        barrel.metadata = metadata;
-        return barrel;
-    } else if (barrelBase) {
-        barrelBase.metadata = metadata;
-        return barrelBase;
-    } else {
-        barrelMuzzle!.metadata = metadata;
-        return barrelMuzzle!;
-    }
+    return mesh;
 }
 
 function createSimpleBarrel(name: string, diameter: number, length: number, scene: Scene): Mesh {
-    return createBarrel(name, { base: { diameter: diameter, length: length } }, scene);
+    return createBarrel(name, { segments: [{ diameter: diameter, length: length }] }, scene);
 }
 
 function createLance(name: string, diameter: number, length: number, scene: Scene): Mesh {
@@ -240,6 +232,8 @@ export class Sources {
 
     public readonly tank: {
         readonly base: TransformNode;
+
+        // Level 1
         readonly sniper: TransformNode;
         readonly twin: TransformNode;
         readonly flankGuard: TransformNode;
@@ -248,6 +242,9 @@ export class Sources {
         readonly trapper: TransformNode;
         readonly machineGun: TransformNode;
         readonly lancer: TransformNode;
+
+        // Level 2
+        readonly assassin: TransformNode;
     };
 
     public constructor(world: World) {
@@ -326,6 +323,8 @@ export class Sources {
         tanks.parent = sources;
         this.tank = {
             base: this._createBaseTankSource(tanks),
+
+            // Level 1
             sniper: this._createSniperTankSource(tanks),
             twin: this._createTwinTankSource(tanks),
             flankGuard: this._createFlankGuardTankSource(tanks),
@@ -334,6 +333,9 @@ export class Sources {
             trapper: this._createTrapperTankSource(tanks),
             machineGun: this._createMachineGunTankSource(tanks),
             lancer: this._createLancerTankSource(tanks),
+
+            // Level 2
+            assassin: this._createAssassinTankSource(tanks),
         };
     }
 
@@ -684,9 +686,9 @@ export class Sources {
     }
 
     private _createDroneCrasherSource(parent: TransformNode): TransformNode {
-        const barrelProperties = {
-            base: { diameter: 0.25, length: 0 },
-            muzzle: { diameter: 0.8, length: 0.7 },
+        const barrelProperties: BarrelProperties = {
+            segments: [{ diameter: 0.8, length: 0.7 }],
+            baseDiameter: 0.25,
         };
 
         const metadata: DroneCrasherMetadata = {
@@ -977,9 +979,9 @@ export class Sources {
     }
 
     private _createDirectorTankSource(parent: TransformNode): TransformNode {
-        const barrelProperties = {
-            base: { diameter: 0.25, length: 0 },
-            muzzle: { diameter: 0.8, length: 0.7 },
+        const barrelProperties: BarrelProperties = {
+            segments: [{ diameter: 0.8, length: 0.7 }],
+            baseDiameter: 0.25,
         };
 
         const metadata: PlayerTankMetadata = {
@@ -1012,9 +1014,11 @@ export class Sources {
     }
 
     private _createTrapperTankSource(parent: TransformNode): TransformNode {
-        const barrelProperties = {
-            base: { diameter: 0.4, length: 0.52 },
-            muzzle: { diameter: 0.8, length: 0.18 },
+        const barrelProperties: BarrelProperties = {
+            segments: [
+                { diameter: 0.4, length: 0.52 },
+                { diameter: 0.8, length: 0.18 },
+            ],
         };
 
         const metadata: PlayerTankMetadata = {
@@ -1049,9 +1053,12 @@ export class Sources {
     }
 
     private _createMachineGunTankSource(parent: TransformNode): TransformNode {
-        const barrelProperties = {
-            base: { diameter: 0.45, length: 0.4 },
-            muzzle: { diameter: 0.6, length: 0.35 },
+        const barrelProperties: BarrelProperties = {
+            segments: [
+                { diameter: 0.45, length: 0.4 },
+                { diameter: 0.6, length: 0.35 },
+            ],
+            diameterIndex: 0,
             variance: Tools.ToRadians(15),
         };
 
@@ -1074,7 +1081,6 @@ export class Sources {
         body.parent = source;
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
-        barrel.metadata.diameter = barrelProperties.base.diameter;
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
@@ -1111,6 +1117,47 @@ export class Sources {
         lance.position.z = 0.4;
         lance.material = this._materials.gray;
         lance.parent = source;
+
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
+
+        return source;
+    }
+
+    private _createAssassinTankSource(parent: TransformNode): TransformNode {
+        const barrelProperties: BarrelProperties = {
+            segments: [
+                { diameter: 0.4, length: 0.15 },
+                { diameter: 0.4, length: 0.45 },
+            ],
+            baseCap: true,
+            baseDiameter: 0.75,
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Assassin",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponDamage: 1.2,
+                weaponSpeed: 2.5,
+                reloadTime: 2.5,
+            },
+        };
+
+        const source = new TransformNode("assassin", this._scene);
+        source.metadata = metadata;
+        source.parent = parent;
+
+        const body = createSphere("body", metadata.size, this._scene);
+        body.material = this._materials.blue;
+        body.parent = source;
+
+        const barrel = createBarrel("barrel", barrelProperties, this._scene);
+        barrel.position.z = 0.35;
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
 
         const marker = createCircleMarker("marker", metadata.size, this._scene);
         marker.material = this._materials.blue;

@@ -32,3 +32,14 @@ export function decayQuaternionToRef(from: Readonly<Quaternion>, to: Readonly<Qu
     result.w = to.w - (to.w - from.w) * decayFactor;
     return result;
 }
+
+export function max<T>(array: Iterable<T>, callback: (value: T) => number): number {
+    let max = -Number.MAX_VALUE;
+    for (const item of array) {
+        const value = callback(item);
+        if (value > max) {
+            max = value;
+        }
+    }
+    return max;
+}

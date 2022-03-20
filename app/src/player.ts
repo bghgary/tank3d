@@ -16,7 +16,7 @@ import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { EvolutionNode, EvolutionRootNode } from "./evolutions";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { decayVector3ToRef } from "./math";
+import { decayScalar, decayVector3ToRef } from "./math";
 import { Observable } from "@babylonjs/core/Misc/observable";
 
 declare const DEV_BUILD: boolean;
@@ -66,12 +66,17 @@ export class Player {
     private readonly _commandState = new Map<Command, State>();
 
     private _tank: PlayerTank;
+    private _cameraRadiusTarget: number;
 
     public constructor(world: World) {
         this._world = world;
 
         this._root = new TransformNode("player", this._world.scene);
         this._tank = new EvolutionRootNode.Tank(this._world, this._root);
+
+        const limit = world.size * 0.25;
+        this._tank.position.x = Scalar.RandomRange(-limit, limit);
+        this._tank.position.z = Scalar.RandomRange(-limit, limit);
 
         const bottomPanel = new StackPanel("bottomPanel");
         bottomPanel.adaptWidthToChildren = true;
@@ -91,9 +96,12 @@ export class Player {
         this._evolutions = new Evolutions(this._world, this._level);
         this._evolutions.onEvolveObservable.add((evolutionNode) => this._updateTank(evolutionNode));
 
-        this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, Vector3.Zero(), this._world.scene);
+        this._camera = new ArcRotateCamera("camera", CAMERA_ALPHA, CAMERA_BETA, CAMERA_RADIUS, this._tank.position, this._world.scene);
         this._camera.lowerRadiusLimit = 2;
         this._world.scene.activeCameras = [this._camera];
+
+        this._cameraRadiusTarget = CAMERA_RADIUS;
+        this._setCameraRadius();
 
         this._world.scene.onKeyboardObservable.add((data) => {
             if (this._world.paused) {
@@ -164,7 +172,7 @@ export class Player {
                 this._camera.target.copyFrom(this._tank.position);
                 this._camera.alpha = CAMERA_ALPHA;
                 this._camera.beta = CAMERA_BETA;
-                this._camera.radius = CAMERA_RADIUS;
+                this._setCameraRadius();
 
                 this._commandState.clear();
             }
@@ -215,8 +223,8 @@ export class Player {
     }
 
     private _updateCamera(deltaTime: number): void {
-        const target = this._camera.target;
-        decayVector3ToRef(this._tank.position, target, deltaTime, 4, target);
+        decayVector3ToRef(this._tank.position, this._camera.target, deltaTime, 4, this._camera.target);
+        this._camera.radius = decayScalar(this._camera.radius, this._cameraRadiusTarget, deltaTime, 4);
     }
 
     private _onTankDestroyed(entity: Entity): void {
@@ -256,5 +264,10 @@ export class Player {
         this._upgrades.setWeaponType(this._tank.weaponType);
         this._level.setTankDisplayName(this._tank.displayName);
         this._setTankUpgrades();
+        this._setCameraRadius();
+    }
+
+    private _setCameraRadius(): void {
+        this._cameraRadiusTarget = CAMERA_RADIUS * this._tank.CameraRadiusMultiplier;
     }
 }

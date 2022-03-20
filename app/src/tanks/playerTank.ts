@@ -129,6 +129,7 @@ export abstract class PlayerTank implements Entity, Collider {
     public get height() { return this.size; }
 
     public abstract readonly weaponType: WeaponType;
+    public readonly CameraRadiusMultiplier: number = 1;
 
     public get inBounds(): boolean {
         const limit = (this._world.size + this._metadata.size) * 0.5;
