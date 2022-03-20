@@ -245,6 +245,7 @@ export class Sources {
 
         // Level 2
         readonly assassin: TransformNode;
+        readonly twinSniper: TransformNode;
     };
 
     public constructor(world: World) {
@@ -336,6 +337,7 @@ export class Sources {
 
             // Level 2
             assassin: this._createAssassinTankSource(tanks),
+            twinSniper: this._createTwinSniperTankSource(tanks),
         };
     }
 
@@ -1158,6 +1160,45 @@ export class Sources {
         barrel.position.z = 0.35;
         barrel.material = this._materials.gray;
         barrel.parent = source;
+
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
+
+        return source;
+    }
+
+    private _createTwinSniperTankSource(parent: TransformNode): TransformNode {
+        const barrelDiameter = 0.4;
+        const barrelLength = 0.9;
+        const barrelOffset = barrelDiameter * 0.51;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Twin Sniper",
+            size: 1,
+            barrels: ["barrelL", "barrelR"],
+            multiplier: {
+                weaponSpeed: 2,
+            },
+        };
+
+        const source = new TransformNode("twinSniper", this._scene);
+        source.metadata = metadata;
+        source.parent = parent;
+
+        const body = createSphere("body", metadata.size, this._scene);
+        body.material = this._materials.blue;
+        body.parent = source;
+
+        const barrelL = createSimpleBarrel("barrelL", barrelDiameter, barrelLength, this._scene);
+        barrelL.position.x = -barrelOffset;
+        barrelL.material = this._materials.gray;
+        barrelL.parent = source;
+
+        const barrelR = createSimpleBarrel("barrelR", barrelDiameter, barrelLength, this._scene);
+        barrelR.position.x = +barrelOffset;
+        barrelR.material = this._materials.gray;
+        barrelR.parent = source;
 
         const marker = createCircleMarker("marker", metadata.size, this._scene);
         marker.material = this._materials.blue;
