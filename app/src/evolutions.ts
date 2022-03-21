@@ -14,6 +14,7 @@ import { LancerTank } from "./tanks/lancerTank";
 import { AssassinTank } from "./tanks/assassinTank";
 import { TwinSniperTank } from "./tanks/twinSniperTank";
 import { GatlingGunTank } from "./tanks/gatlingGunTank";
+import { HunterTank } from "./tanks/hunterTank";
 
 interface TankConstructor {
     prototype: PlayerTank;
@@ -38,6 +39,9 @@ export const EvolutionRootNode: EvolutionNode = {
             children: [],
         }, {
             Tank: GatlingGunTank,
+            children: [],
+        }, {
+            Tank: HunterTank,
             children: [],
         }]
     }, {

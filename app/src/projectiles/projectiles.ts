@@ -26,9 +26,24 @@ export class Projectiles {
     }
 }
 
+class ProjectileProperties implements Readonly<WeaponProperties> {
+    private readonly _properties: Readonly<WeaponProperties>;
+    private readonly _multiplier: Partial<Readonly<WeaponProperties>>;
+
+    public constructor(properties: Readonly<WeaponProperties>, multiplier?: Partial<Readonly<WeaponProperties>>) {
+        this._properties = properties;
+        this._multiplier = multiplier || {};
+    }
+
+    public get speed() { return this._properties.speed * (this._multiplier.speed || 1); }
+    public get damage() { return this._properties.damage * (this._multiplier.damage || 1); }
+    public get damageTime() { return this._properties.damageTime * (this._multiplier.damageTime || 1); }
+    public get health() { return this._properties.health * (this._multiplier.health || 1); }
+}
+
 export abstract class Projectile implements Entity, Collider {
     protected readonly _node: TransformNode;
-    protected readonly _properties: Readonly<WeaponProperties>;
+    protected readonly _properties: ProjectileProperties;
 
     public constructor(owner: Entity, barrelNode: TransformNode, projectileNode: TransformNode, properties: Readonly<WeaponProperties>) {
         const barrelMetadata = barrelNode.metadata as BarrelMetadata;
@@ -39,8 +54,6 @@ export abstract class Projectile implements Entity, Collider {
         this._node = projectileNode;
         this._node.scaling.setAll(this.size);
 
-        this._properties = properties;
-
         const forward = applyVariance(barrelNode.forward, barrelMetadata.variance, TmpVector3[0]);
         forward.scaleToRef(barrelMetadata.length + this.size * 0.5, this._node.position).addInPlace(barrelNode.absolutePosition);
 
@@ -48,6 +61,8 @@ export abstract class Projectile implements Entity, Collider {
 
         const initialSpeed = Math.max(Vector3.Dot(this.owner.velocity, forward) + properties.speed, 0.1);
         this.velocity.copyFrom(forward).scaleInPlace(initialSpeed);
+
+        this._properties = new ProjectileProperties(properties, barrelMetadata.multiplier);
     }
 
     // Entity

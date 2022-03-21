@@ -8,9 +8,10 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import { Scene } from "@babylonjs/core/scene";
+import { WeaponProperties } from "./components/weapon";
 import { createShadowMaterial } from "./materials/shadowMaterial";
 import { max } from "./math";
-import { BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, ShapeMetadata, SizeMetadata, PlayerTankMetadata, BossMetadata, BossTankMetadata, LanceMetadata } from "./metadata";
+import { BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, ShapeMetadata, SizeMetadata, PlayerTankMetadata, BossMetadata, BossTankMetadata, LanceMetadata, BarrelMetadata } from "./metadata";
 import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
@@ -35,6 +36,7 @@ interface BarrelProperties {
     baseDiameter?: number;
     diameter?: number;
     variance?: number;
+    multiplier?: Partial<Readonly<WeaponProperties>>;
 }
 
 function createBarrel(name: string, properties: BarrelProperties, scene: Scene): Mesh {
@@ -77,7 +79,8 @@ function createBarrel(name: string, properties: BarrelProperties, scene: Scene):
         diameter: diameter,
         length: totalLength,
         variance: properties.variance,
-    };
+        multiplier: properties.multiplier,
+    } as BarrelMetadata;
 
     return mesh;
 }
@@ -247,6 +250,7 @@ export class Sources {
         readonly assassin: TransformNode;
         readonly twinSniper: TransformNode;
         readonly gatlingGun: TransformNode;
+        readonly hunter: TransformNode;
     };
 
     public constructor(world: World) {
@@ -340,6 +344,7 @@ export class Sources {
             assassin: this._createAssassinTankSource(tanks),
             twinSniper: this._createTwinSniperTankSource(tanks),
             gatlingGun: this._createGatlingGunTankSource(tanks),
+            hunter: this._createHunterTankSource(tanks),
         };
     }
 
@@ -883,7 +888,7 @@ export class Sources {
             size: 1,
             barrels: ["barrelL", "barrelR"],
             multiplier: {
-                reloadTime: 0.6,
+                reloadTime: 1.2,
             },
         };
 
@@ -1181,6 +1186,7 @@ export class Sources {
             barrels: ["barrelL", "barrelR"],
             multiplier: {
                 weaponSpeed: 2,
+                reloadTime: 2,
             },
         };
 
@@ -1241,6 +1247,51 @@ export class Sources {
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
+
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = source;
+
+        return source;
+    }
+
+    private _createHunterTankSource(parent: TransformNode): TransformNode {
+        const smallBarrelProperties: BarrelProperties = {
+            segments: [{ diameter: 0.25, length: 0.9 }]
+        };
+
+        const largeBarrelProperties: BarrelProperties = {
+            segments: [{ diameter: 0.45, length: 0.8 }],
+            multiplier: {
+                damage: 1.5,
+            },
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Hunter",
+            size: 1,
+            barrels: ["barrelS", "barrelL"],
+            multiplier: {
+                weaponSpeed: 2,
+                reloadTime: 3,
+            },
+        };
+
+        const source = new TransformNode("gatlingGun", this._scene);
+        source.metadata = metadata;
+        source.parent = parent;
+
+        const body = createSphere("body", metadata.size, this._scene);
+        body.material = this._materials.blue;
+        body.parent = source;
+
+        const smallBarrel = createBarrel("barrelS", smallBarrelProperties, this._scene);
+        smallBarrel.material = this._materials.gray;
+        smallBarrel.parent = source;
+
+        const largeBarrel = createBarrel("barrelL", largeBarrelProperties, this._scene);
+        largeBarrel.material = this._materials.gray;
+        largeBarrel.parent = source;
 
         const marker = createCircleMarker("marker", metadata.size, this._scene);
         marker.material = this._materials.blue;

@@ -14,6 +14,7 @@ export interface BarrelMetadata {
     readonly diameter: number;
     readonly length: number;
     readonly variance?: number;
+    readonly multiplier?: Partial<Readonly<WeaponProperties>>;
 }
 
 export interface LanceMetadata {
@@ -63,5 +64,5 @@ export interface BossMetadata extends DisplayNameMetadata, SizeMetadata {
 export interface PlayerTankMetadata extends DisplayNameMetadata, SizeMetadata {
     readonly barrels?: Array<string>;
     readonly lances?: Array<string>;
-    readonly multiplier: Partial<TankProperties>;
+    readonly multiplier: Partial<Readonly<TankProperties>>;
 }

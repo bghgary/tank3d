@@ -17,9 +17,9 @@ export class Barrel {
         this._scale = (node) => node.scaling.z = 1 - 0.1 / (node.metadata as BarrelMetadata).length;
     }
 
-    public shootBullet(bullets: Bullets, owner: Entity, createNode: (parent: TransformNode) => TransformNode, bulletMetadata: Readonly<WeaponProperties>): Projectile {
+    public shootBullet(bullets: Bullets, owner: Entity, createNode: (parent: TransformNode) => TransformNode, bulletProperties: Readonly<WeaponProperties>): Projectile {
         this._scale(this._node);
-        return bullets.add(owner, this._node, createNode, bulletMetadata);
+        return bullets.add(owner, this._node, createNode, bulletProperties);
     }
 
     public shootDrone(drones: Drones, owner: Entity, createNode: (parent: TransformNode) => TransformNode): Projectile {
@@ -27,9 +27,9 @@ export class Barrel {
         return drones.add(owner, this._node, createNode);
     }
 
-    public shootTrap(traps: Traps, owner: Entity, createNode: (parent: TransformNode) => TransformNode, trapMetadata: Readonly<WeaponProperties>): Projectile {
+    public shootTrap(traps: Traps, owner: Entity, createNode: (parent: TransformNode) => TransformNode, trapProperties: Readonly<WeaponProperties>): Projectile {
         this._scale(this._node);
-        return traps.add(owner, this._node, createNode, trapMetadata);
+        return traps.add(owner, this._node, createNode, trapProperties);
     }
 
     public update(deltaTime: number) {

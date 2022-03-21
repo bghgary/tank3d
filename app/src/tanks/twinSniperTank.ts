@@ -17,7 +17,7 @@ export class TwinSniperTank extends BulletTank {
         if (this._reloadTime === 0) {
             this._shootFrom(this._barrels[this._barrelIndex]!);
             this._barrelIndex = (this._barrelIndex + 1) % this._barrels.length;
-            this._reloadTime = this._properties.reloadTime;
+            this._reloadTime = this._properties.reloadTime * 0.5;
         }
 
         PlayerTank.prototype.shoot.call(this);
