@@ -981,10 +981,10 @@ export class Sources {
             size: 1,
             barrels: ["barrel"],
             multiplier: {
-                reloadTime: 2,
+                reloadTime: 3,
                 weaponSpeed: 0.8,
-                weaponDamage: 3,
-                weaponHealth: 3,
+                weaponDamage: 2.5,
+                weaponHealth: 2.5,
             },
         };
 
