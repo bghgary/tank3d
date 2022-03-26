@@ -30,6 +30,6 @@ export abstract class BarrelCrasher extends BaseCrasher {
         this.velocity.subtractInPlace(this._recoil);
         this._recoil.setAll(0);
 
-        return super.update(deltaTime, player, onDestroy);
+        super.update(deltaTime, player, onDestroy);
     }
 }

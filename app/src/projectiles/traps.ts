@@ -9,8 +9,6 @@ import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { Projectile, Projectiles } from "./projectiles";
 
-const MAX_DURATION = 24;
-
 export class Traps extends Projectiles {
     private readonly _traps: Set<Trap>;
 
@@ -20,8 +18,8 @@ export class Traps extends Projectiles {
         this._traps = traps;
     }
 
-    public add(owner: Entity, barrelNode: TransformNode, createNode: (parent: TransformNode) => TransformNode, properties: Readonly<WeaponProperties>): Trap {
-        const trap = new Trap(owner, barrelNode, createNode(this._root), properties, this._world.sources);
+    public add(owner: Entity, barrelNode: TransformNode, createNode: (parent: TransformNode) => TransformNode, properties: Readonly<WeaponProperties>, duration: number): Trap {
+        const trap = new Trap(owner, barrelNode, createNode(this._root), properties, duration, this._world.sources);
         this._traps.add(trap);
         return trap;
     }
@@ -38,12 +36,13 @@ export class Traps extends Projectiles {
 class Trap extends Projectile {
     private readonly _shadow: Shadow;
     private _health: number;
-    private _time = MAX_DURATION;
+    private _time: number;
 
-    public constructor(owner: Entity, barrelNode: TransformNode, bulletNode: TransformNode, properties: Readonly<WeaponProperties>, sources: Sources) {
+    public constructor(owner: Entity, barrelNode: TransformNode, bulletNode: TransformNode, properties: Readonly<WeaponProperties>, duration: number, sources: Sources) {
         super(owner, barrelNode, bulletNode, properties);
         this._shadow = new Shadow(sources, this._node);
         this._health = this._properties.health;
+        this._time = duration;
     }
 
     public type = EntityType.Trap;

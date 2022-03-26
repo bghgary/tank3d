@@ -9,8 +9,6 @@ import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { Projectile, Projectiles } from "./projectiles";
 
-const MAX_DURATION = 3;
-
 export class Bullets extends Projectiles {
     private readonly _bullets: Set<Bullet>;
 
@@ -20,8 +18,8 @@ export class Bullets extends Projectiles {
         this._bullets = bullets;
     }
 
-    public add(owner: Entity, barrelNode: TransformNode, createNode: (parent: TransformNode) => TransformNode, bulletProperties: Readonly<WeaponProperties>): Projectile {
-        const bullet = new Bullet(owner, barrelNode, createNode(this._root), bulletProperties, this._world.sources);
+    public add(owner: Entity, barrelNode: TransformNode, createNode: (parent: TransformNode) => TransformNode, bulletProperties: Readonly<WeaponProperties>, duration: number): Projectile {
+        const bullet = new Bullet(owner, barrelNode, createNode(this._root), bulletProperties, duration, this._world.sources);
         this._bullets.add(bullet);
         return bullet;
     }
@@ -39,13 +37,14 @@ class Bullet extends Projectile {
     private readonly _shadow: Shadow;
     private readonly _targetVelocity: Readonly<Vector3> = new Vector3();
     private _health: number;
-    private _time = MAX_DURATION;
+    private _time: number;
 
-    public constructor(owner: Entity, barrelNode: TransformNode, bulletNode: TransformNode, bulletProperties: Readonly<WeaponProperties>, sources: Sources) {
-        super(owner, barrelNode, bulletNode, bulletProperties);
-        this._targetVelocity.copyFrom(this.velocity).scaleInPlace(bulletProperties.speed / this.velocity.length());
+    public constructor(owner: Entity, barrelNode: TransformNode, bulletNode: TransformNode, properties: Readonly<WeaponProperties>, duration: number, sources: Sources) {
+        super(owner, barrelNode, bulletNode, properties);
+        this._targetVelocity.copyFrom(this.velocity).scaleInPlace(properties.speed / this.velocity.length());
         this._shadow = new Shadow(sources, this._node);
         this._health = this._properties.health;
+        this._time = duration;
     }
 
     public type = EntityType.Bullet;

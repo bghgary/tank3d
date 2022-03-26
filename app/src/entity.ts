@@ -1,14 +1,15 @@
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 
 export const enum EntityType {
-    Bullet,
-    Drone,
-    Trap,
-    Lance,
-    Shape,
-    Crasher,
     Boss,
+    Bullet,
+    Crasher,
+    Drone,
+    Lance,
+    Missile,
+    Shape,
     Tank,
+    Trap,
 }
 
 export interface Entity {

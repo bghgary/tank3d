@@ -8,6 +8,7 @@ import { FlankGuardTank } from "./tanks/flankGuardTank";
 import { GatlingGunTank } from "./tanks/gatlingGunTank";
 import { HunterTank } from "./tanks/hunterTank";
 import { LancerTank } from "./tanks/lancerTank";
+import { LauncherTank } from "./tanks/launcherTank";
 import { MachineGunTank } from "./tanks/machineGunTank";
 import { PlayerTank } from "./tanks/playerTank";
 import { PounderTank } from "./tanks/pounderTank";
@@ -56,7 +57,10 @@ export const EvolutionRootNode: EvolutionNode = {
         children: []
     }, {
         Tank: PounderTank,
-        children: []
+        children: [{
+            Tank: LauncherTank,
+            children: []
+        }]
     }, {
         Tank: DirectorTank,
         children: []

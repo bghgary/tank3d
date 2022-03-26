@@ -8,13 +8,13 @@ import { PlayerTank, TankProperties } from "./playerTank";
 
 export class BulletTank extends BarrelTank {
     protected readonly _createBulletNode: (parent: TransformNode) => TransformNode;
-    protected readonly _bulletProperites: WeaponProperties;
+    protected readonly _bulletProperties: WeaponProperties;
 
     protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
         this._createBulletNode = (parent) => this._world.sources.create(this._world.sources.bullet.tank, parent);
-        this._bulletProperites = {
+        this._bulletProperties = {
             speed: this._properties.weaponSpeed,
             damage: this._properties.weaponDamage,
             damageTime: 0.2,
@@ -42,13 +42,13 @@ export class BulletTank extends BarrelTank {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const bullet = barrel.shootBullet(this._world.bullets, this, this._createBulletNode, this._bulletProperites);
+        const bullet = barrel.shootBullet(this._world.bullets, this, this._createBulletNode, this._bulletProperties, 3);
         applyRecoil(this._recoil, bullet);
     }
 
     protected _updateBulletProperties(): void {
-        this._bulletProperites.speed = this._properties.weaponSpeed;
-        this._bulletProperites.damage = this._properties.weaponDamage;
-        this._bulletProperites.health = this._properties.weaponHealth;
+        this._bulletProperties.speed = this._properties.weaponSpeed;
+        this._bulletProperties.damage = this._properties.weaponDamage;
+        this._bulletProperties.health = this._properties.weaponHealth;
     }
 }

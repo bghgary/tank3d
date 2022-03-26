@@ -40,7 +40,7 @@ export class BulletCrasher extends BarrelCrasher {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const bullet = barrel.shootBullet(this._world.bullets, this, this._createBulletNode, (this._metadata as BulletCrasherMetadata).bullet);
+        const bullet = barrel.shootBullet(this._world.bullets, this, this._createBulletNode, (this._metadata as BulletCrasherMetadata).bullet, 3);
         applyRecoil(this._recoil, bullet);
     }
 }

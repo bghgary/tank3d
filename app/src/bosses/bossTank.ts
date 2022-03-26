@@ -66,7 +66,7 @@ export class BossTank {
         const angle = Math.acos(Vector3.Dot(playerDirection, forward));
         if (this._reloadTime === 0 && angle < SHOOT_ANGLE) {
             for (const barrel of this._barrels) {
-                barrel.shootBullet(this._world.bullets, this._owner, this._createBulletNode, this._metadata.bullet);
+                barrel.shootBullet(this._world.bullets, this._owner, this._createBulletNode, this._metadata.bullet, 3);
             }
 
             this._reloadTime = this._metadata.reload;

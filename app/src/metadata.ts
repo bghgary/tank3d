@@ -21,6 +21,11 @@ export interface LanceMetadata {
     readonly diameter: number;
 }
 
+export interface MissileMetadata extends SizeMetadata {
+    readonly barrels: Array<string>;
+    readonly multiplier: Partial<Readonly<WeaponProperties>>;
+}
+
 export interface ShapeMetadata extends DisplayNameMetadata, SizeMetadata {
     readonly health: number;
     readonly damage: number;

@@ -10,7 +10,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { WeaponProperties } from "./components/weapon";
 import { createShadowMaterial } from "./materials/shadowMaterial";
 import { max } from "./math";
-import { BarrelMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LanceMetadata, PlayerTankMetadata, ShapeMetadata, SizeMetadata } from "./metadata";
+import { BarrelMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LanceMetadata, MissileMetadata, PlayerTankMetadata, ShapeMetadata, SizeMetadata } from "./metadata";
 import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
@@ -202,6 +202,10 @@ export class Sources {
         readonly tank: Mesh;
     }
 
+    public readonly missile: {
+        readonly launcherTank: Mesh;
+    }
+
     public readonly shape: {
         readonly cube: Mesh;
         readonly tetrahedron: Mesh;
@@ -240,6 +244,7 @@ export class Sources {
         readonly twinSniper: Mesh;
         readonly gatlingGun: Mesh;
         readonly hunter: Mesh;
+        readonly launcher: Mesh;
     };
 
     public constructor(world: World) {
@@ -288,6 +293,12 @@ export class Sources {
             tank: this._createTrapSource(traps, "tank", this._materials.blue),
         }
 
+        const missiles = new TransformNode("missiles", this._scene);
+        missiles.parent = sources;
+        this.missile = {
+            launcherTank: this._createLauncherTankMissileSource(missiles, "launcherTank"),
+        };
+
         const shapes = new TransformNode("shapes", this._scene);
         shapes.parent = sources;
         this.shape = {
@@ -334,6 +345,7 @@ export class Sources {
             twinSniper: this._createTwinSniperTankSource(tanks),
             gatlingGun: this._createGatlingGunTankSource(tanks),
             hunter: this._createHunterTankSource(tanks),
+            launcher: this._createLauncherTankSource(tanks),
         };
     }
 
@@ -451,6 +463,29 @@ export class Sources {
         source.metadata = metadata;
         source.material = material;
         source.parent = parent;
+        return source;
+    }
+
+    private _createLauncherTankMissileSource(parent: TransformNode, name: string): Mesh {
+        const metadata: MissileMetadata = {
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                damage: 0.17,
+                health: 0.17,
+            },
+        };
+
+        const source = createSphere(name, metadata.size, this._scene);
+        source.metadata = metadata;
+        source.material = this._materials.blue;
+        source.parent = parent;
+
+        const barrel = createSimpleBarrel("barrel", 0.45, 0.75, this._scene);
+        barrel.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI, 0);
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
+
         return source;
     }
 
@@ -689,7 +724,7 @@ export class Sources {
         source.parent = parent;
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
-        barrel.rotationQuaternion = Quaternion.RotationYawPitchRoll(Math.PI, 0, 0);
+        barrel.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI, 0);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
@@ -754,14 +789,11 @@ export class Sources {
             offset.rotationQuaternion = tankTransform.rotation;
             offset.parent = source;
 
-            const tank = new TransformNode(tankNodeName);
-            tank.rotationQuaternion = Quaternion.Identity();
+            const tank = createSphere(tankNodeName, 1, this._scene);
             tank.metadata = tankMetadata;
+            tank.rotationQuaternion = Quaternion.Identity();
+            tank.material = this._materials.orange;
             tank.parent = offset;
-
-            const tankBody = createSphere("body", 1, this._scene);
-            tankBody.material = this._materials.orange;
-            tankBody.parent = tank;
 
             const barrel = createSimpleBarrel("barrel", barrelDiameter, barrelLength, this._scene);
             barrel.material = this._materials.gray;
@@ -879,7 +911,7 @@ export class Sources {
         barrelF.parent = source;
 
         const barrelB = createSimpleBarrel("barrelR", barrelDiameter, barrelLengthB, this._scene);
-        barrelB.rotationQuaternion = Quaternion.RotationYawPitchRoll(Math.PI, 0, 0);
+        barrelB.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI, 0);
         barrelB.material = this._materials.gray;
         barrelB.parent = source;
 
@@ -1139,6 +1171,35 @@ export class Sources {
         const largeBarrel = createBarrel("barrelL", largeBarrelProperties, this._scene);
         largeBarrel.material = this._materials.gray;
         largeBarrel.parent = source;
+
+        return source;
+    }
+
+    private _createLauncherTankSource(parent: TransformNode): Mesh {
+        const barrelProperties: BarrelProperties = {
+            segments: [
+                { diameter: 0.7, length: 0.7 },
+                { diameter: 0.6, length: 0.1 },
+            ]
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Launcher",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponSpeed: 0.5,
+                weaponDamage: 2,
+                weaponHealth: 2,
+                reloadTime: 3,
+            },
+        };
+
+        const source = this._createTankBody("launcher", metadata, parent);
+
+        const barrel = createBarrel("barrel", barrelProperties, this._scene);
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
 
         return source;
     }

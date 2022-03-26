@@ -1,10 +1,10 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Barrel } from "../components/barrel";
 import { applyRecoil } from "../common";
+import { Barrel } from "../components/barrel";
+import { WeaponProperties, WeaponType } from "../components/weapon";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
-import { WeaponProperties, WeaponType } from "../components/weapon";
 
 export class TrapTank extends BarrelTank {
     protected readonly _createTrapNode: (parent: TransformNode) => TransformNode;
@@ -42,7 +42,7 @@ export class TrapTank extends BarrelTank {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const trap = barrel.shootTrap(this._world.traps, this, this._createTrapNode, this._trapProperties);
+        const trap = barrel.shootTrap(this._world.traps, this, this._createTrapNode, this._trapProperties, 24);
         applyRecoil(this._recoil, trap);
     }
 
