@@ -1,3 +1,4 @@
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { findNode } from "../common";
 import { Lance } from "../components/lance";
@@ -12,7 +13,7 @@ export class LancerTank extends PlayerTank {
     private readonly _lanceProperties: WeaponProperties;
 
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, LancerTank.CreateNode(world.sources, parent), previousTank);
+        super(world, LancerTank.CreateMesh(world.sources, parent), previousTank);
 
         this._lanceProperties = {
             speed: this._properties.weaponSpeed,
@@ -44,7 +45,7 @@ export class LancerTank extends PlayerTank {
         }
     }
 
-    public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {
+    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
         return sources.create(sources.tank.lancer, parent);
     }
 

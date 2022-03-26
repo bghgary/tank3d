@@ -1,14 +1,14 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { applyCollisionForce, applyMovement } from "../common";
-import { Entity, EntityType } from "../entity";
 import { Health } from "../components/health";
-import { decayVector3ToRef, TmpVector3 } from "../math";
 import { Shadow } from "../components/shadow";
+import { WeaponProperties } from "../components/weapon";
+import { Entity, EntityType } from "../entity";
+import { decayVector3ToRef, TmpVector3 } from "../math";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { Projectile, Projectiles } from "./projectiles";
-import { WeaponProperties } from "../components/weapon";
 
 export class Drones extends Projectiles {
     private readonly _drones: Set<Drone>;

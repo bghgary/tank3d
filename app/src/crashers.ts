@@ -1,13 +1,14 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Quaternion } from "@babylonjs/core/Maths/math.vector";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Entity } from "./entity";
-import { Player } from "./player";
-import { World } from "./worlds/world";
 import { BaseCrasher } from "./crashers/baseCrasher";
 import { BulletCrasher } from "./crashers/bulletCrasher";
 import { DroneCrasher } from "./crashers/droneCrasher";
 import { TwinCrasher } from "./crashers/twinCrasher";
+import { Entity } from "./entity";
+import { Player } from "./player";
+import { World } from "./worlds/world";
 
 const DROP_HEIGHT = 5;
 
@@ -52,19 +53,19 @@ export class Crashers {
         this._crashers.add(crasher);
     }
 
-    private _createCrasher(source: TransformNode): BaseCrasher {
+    private _createCrasher(source: Mesh): BaseCrasher {
         return new BaseCrasher(this._world, this._world.sources.create(source, this._root));
     }
 
-    private _createBulletCrasher(source: TransformNode): BaseCrasher {
+    private _createBulletCrasher(source: Mesh): BaseCrasher {
         return new BulletCrasher(this._world, this._world.sources.create(source, this._root));
     }
 
-    private _createTwinCrasher(source: TransformNode): BaseCrasher {
+    private _createTwinCrasher(source: Mesh): BaseCrasher {
         return new TwinCrasher(this._world, this._world.sources.create(source, this._root));
     }
 
-    private _createDroneCrasher(source: TransformNode): BaseCrasher {
+    private _createDroneCrasher(source: Mesh): BaseCrasher {
         return new DroneCrasher(this._world, this._world.sources.create(source, this._root));
     }
 

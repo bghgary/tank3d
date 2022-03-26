@@ -1,3 +1,4 @@
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
@@ -6,10 +7,10 @@ import { PlayerTank } from "./playerTank";
 
 export class MachineGunTank extends BulletTank {
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, MachineGunTank.CreateNode(world.sources, parent), previousTank);
+        super(world, MachineGunTank.CreateMesh(world.sources, parent), previousTank);
     }
 
-    public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {
+    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
         return sources.create(sources.tank.machineGun, parent);
     }
 }

@@ -1,3 +1,4 @@
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
@@ -8,11 +9,7 @@ export class TwinTank extends BulletTank {
     private _barrelIndex = 0;
 
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, TwinTank.CreateNode(world.sources, parent), previousTank);
-    }
-
-    public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {
-        return sources.create(sources.tank.twin, parent);
+        super(world, TwinTank.CreateMesh(world.sources, parent), previousTank);
     }
 
     public override shoot(): void {
@@ -23,5 +20,9 @@ export class TwinTank extends BulletTank {
         }
 
         PlayerTank.prototype.shoot.call(this);
+    }
+
+    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+        return sources.create(sources.tank.twin, parent);
     }
 }

@@ -2,14 +2,14 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Collider } from "../collisions";
 import { applyCollisionForce, applyGravity, applyMovement, applyWallClamp } from "../common";
-import { Entity, EntityType } from "../entity";
 import { Health } from "../components/health";
+import { Shadow } from "../components/shadow";
+import { Crasher } from "../crashers";
+import { Entity, EntityType } from "../entity";
+import { decayVector3ToRef, TmpVector3 } from "../math";
 import { CrasherMetadata } from "../metadata";
 import { Player } from "../player";
-import { Shadow } from "../components/shadow";
 import { World } from "../worlds/world";
-import { Crasher } from "../crashers";
-import { decayVector3ToRef, TmpVector3 } from "../math";
 
 const IDLE_MOVEMENT_SPEED = 1;
 const IDLE_ROTATION_SPEED = 1;

@@ -1,25 +1,26 @@
-import { BaseTank } from "./tanks/baseTank";
-import { FlankGuardTank } from "./tanks/flankGuardTank";
-import { PounderTank } from "./tanks/pounderTank";
-import { SniperTank } from "./tanks/sniperTank";
-import { PlayerTank } from "./tanks/playerTank";
-import { TwinTank } from "./tanks/twinTank";
-import { World } from "./worlds/world";
-import { Sources } from "./sources";
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { DirectorTank } from "./tanks/directorTank";
-import { TrapperTank } from "./tanks/trapperTank";
-import { MachineGunTank } from "./tanks/machineGunTank";
-import { LancerTank } from "./tanks/lancerTank";
+import { Sources } from "./sources";
 import { AssassinTank } from "./tanks/assassinTank";
-import { TwinSniperTank } from "./tanks/twinSniperTank";
+import { BaseTank } from "./tanks/baseTank";
+import { DirectorTank } from "./tanks/directorTank";
+import { FlankGuardTank } from "./tanks/flankGuardTank";
 import { GatlingGunTank } from "./tanks/gatlingGunTank";
 import { HunterTank } from "./tanks/hunterTank";
+import { LancerTank } from "./tanks/lancerTank";
+import { MachineGunTank } from "./tanks/machineGunTank";
+import { PlayerTank } from "./tanks/playerTank";
+import { PounderTank } from "./tanks/pounderTank";
+import { SniperTank } from "./tanks/sniperTank";
+import { TrapperTank } from "./tanks/trapperTank";
+import { TwinSniperTank } from "./tanks/twinSniperTank";
+import { TwinTank } from "./tanks/twinTank";
+import { World } from "./worlds/world";
 
 interface TankConstructor {
     prototype: PlayerTank;
     new(world: World, parent: TransformNode, previousTank?: PlayerTank): PlayerTank;
-    CreateNode(sources: Sources, parent?: TransformNode): TransformNode;
+    CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh;
 }
 
 export interface EvolutionNode {

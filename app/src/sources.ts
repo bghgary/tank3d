@@ -2,7 +2,6 @@ import { Material } from "@babylonjs/core/Materials/material";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
-import { InstancedMesh } from "@babylonjs/core/Meshes/instancedMesh";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
@@ -11,7 +10,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { WeaponProperties } from "./components/weapon";
 import { createShadowMaterial } from "./materials/shadowMaterial";
 import { max } from "./math";
-import { BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, ShapeMetadata, SizeMetadata, PlayerTankMetadata, BossMetadata, BossTankMetadata, LanceMetadata, BarrelMetadata } from "./metadata";
+import { BarrelMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LanceMetadata, PlayerTankMetadata, ShapeMetadata, SizeMetadata } from "./metadata";
 import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
@@ -149,16 +148,6 @@ function createPrism(name: string, size: number, scene: Scene): Mesh {
     return mesh;
 }
 
-// function createTriangleMarker(name: string, size: number, scene: Scene): Mesh {
-//     const marker = MeshBuilder.CreateDisc(name, { tessellation: 3 }, scene);
-//     marker.rotation.x = Math.PI / 2;
-//     marker.rotation.z = Math.PI / 2;
-//     marker.scaling.scaleInPlace(size * MARKER_MAGNIFICATION);
-//     marker.bakeCurrentTransformIntoVertices();
-//     marker.layerMask = Minimap.LayerMask;
-//     return marker;
-// }
-
 function createSquareMarker(name: string, size: number, scene: Scene): Mesh {
     const marker = MeshBuilder.CreateDisc(name, { tessellation: 4 }, scene);
     marker.rotation.x = Math.PI / 2;
@@ -223,34 +212,34 @@ export class Sources {
     public readonly crasher: {
         readonly small: Mesh;
         readonly big: Mesh;
-        readonly shooter: TransformNode;
-        readonly destroyer: TransformNode;
-        readonly twin: TransformNode;
-        readonly drone: TransformNode;
+        readonly shooter: Mesh;
+        readonly destroyer: Mesh;
+        readonly twin: Mesh;
+        readonly drone: Mesh;
     };
 
     public readonly boss: {
-        readonly keeper: TransformNode;
+        readonly keeper: Mesh;
     }
 
     public readonly tank: {
-        readonly base: TransformNode;
+        readonly base: Mesh;
 
         // Level 1
-        readonly sniper: TransformNode;
-        readonly twin: TransformNode;
-        readonly flankGuard: TransformNode;
-        readonly pounder: TransformNode;
-        readonly director: TransformNode;
-        readonly trapper: TransformNode;
-        readonly machineGun: TransformNode;
-        readonly lancer: TransformNode;
+        readonly sniper: Mesh;
+        readonly twin: Mesh;
+        readonly flankGuard: Mesh;
+        readonly pounder: Mesh;
+        readonly director: Mesh;
+        readonly trapper: Mesh;
+        readonly machineGun: Mesh;
+        readonly lancer: Mesh;
 
         // Level 2
-        readonly assassin: TransformNode;
-        readonly twinSniper: TransformNode;
-        readonly gatlingGun: TransformNode;
-        readonly hunter: TransformNode;
+        readonly assassin: Mesh;
+        readonly twinSniper: Mesh;
+        readonly gatlingGun: Mesh;
+        readonly hunter: Mesh;
     };
 
     public constructor(world: World) {
@@ -349,23 +338,19 @@ export class Sources {
     }
 
     public createShield(parent?: TransformNode): Mesh {
-        return this._createClone(this._adornment.shield, parent);
+        return this._clone(this._adornment.shield, parent);
     }
 
-    public createHealth(parent?: TransformNode): TransformNode {
-        return this._createInstance(this._adornment.health, parent);
+    public createHealth(parent?: TransformNode): AbstractMesh {
+        return this._instantiate(this._adornment.health, parent);
     }
 
-    public createShadow(parent?: TransformNode): TransformNode {
-        return this._createInstance(this._adornment.shadow, parent);
+    public createShadow(parent?: TransformNode): AbstractMesh {
+        return this._instantiate(this._adornment.shadow, parent);
     }
 
-    public create(source: TransformNode, parent?: TransformNode): TransformNode {
-        if ((source as Mesh).getClassName() === "Mesh") {
-            return this._createInstance(source as Mesh, parent);
-        } else {
-            return this._instantiateHeirarchy(source, parent);
-        }
+    public create(source: Mesh, parent?: TransformNode): AbstractMesh {
+        return this._instantiate(source, parent);
     }
 
     private _createMaterial(name: string, r: number, g: number, b: number): Material {
@@ -374,7 +359,7 @@ export class Sources {
         return material;
     }
 
-    private _createClone(source: Mesh, parent?: TransformNode): Mesh {
+    private _clone(source: Mesh, parent?: TransformNode): Mesh {
         const clone = source.clone(source.name, parent);
         this._initRotation(clone);
         this._initMesh(clone);
@@ -382,18 +367,7 @@ export class Sources {
         return clone;
     }
 
-    private _createInstance(source: Mesh, parent?: TransformNode): InstancedMesh {
-        const instance = source.createInstance(source.name);
-        this._initRotation(instance);
-        this._initMesh(instance);
-        instance.id = source.id;
-        instance.layerMask = source.layerMask;
-        instance.metadata = source.metadata;
-        instance.parent = parent || null;
-        return instance;
-    }
-
-    private _instantiateHeirarchy(source: TransformNode, parent?: TransformNode): TransformNode {
+    private _instantiate(source: TransformNode, parent?: TransformNode): AbstractMesh {
         const instance = source.instantiateHierarchy(parent, undefined, (source, target) => {
             target.id = source.id;
             target.name = source.name;
@@ -401,8 +375,9 @@ export class Sources {
             if ((target as AbstractMesh).layerMask && (source as AbstractMesh).layerMask) {
                 (target as AbstractMesh).layerMask = (source as AbstractMesh).layerMask;
             }
-        })!;
+        }) as AbstractMesh;
         this._initRotation(instance);
+        this._initMesh(instance);
         for (const mesh of instance.getChildMeshes()) {
             this._initMesh(mesh);
         }
@@ -585,7 +560,7 @@ export class Sources {
         return source;
     }
 
-    private _createShooterCrasherSource(parent: TransformNode): TransformNode {
+    private _createShooterCrasherSource(parent: TransformNode): Mesh {
         const metadata: BulletCrasherMetadata = {
             displayName: "Shooter Crasher",
             size: 0.7,
@@ -603,13 +578,10 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("shooter", this._scene);
+        const source = createTetrahedron("shooter", metadata.size, this._scene);
         source.metadata = metadata;
+        source.material = this._materials.pink;
         source.parent = parent;
-
-        const body = createTetrahedron("body", metadata.size, this._scene);
-        body.material = this._materials.pink;
-        body.parent = source;
 
         const barrel = createSimpleBarrel("barrel", 0.2, 0.5, this._scene);
         barrel.material = this._materials.gray;
@@ -618,7 +590,7 @@ export class Sources {
         return source;
     }
 
-    private _createDestroyerCrasherSource(parent: TransformNode): TransformNode {
+    private _createDestroyerCrasherSource(parent: TransformNode): Mesh {
         const metadata: BulletCrasherMetadata = {
             displayName: "Destroyer Crasher",
             size: 1.4,
@@ -636,13 +608,10 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("destroyer", this._scene);
+        const source = createTetrahedron("destroyer", metadata.size, this._scene);
         source.metadata = metadata;
+        source.material = this._materials.pink;
         source.parent = parent;
-
-        const body = createTetrahedron("body", metadata.size, this._scene);
-        body.material = this._materials.pink;
-        body.parent = source;
 
         const barrel = createSimpleBarrel("barrel", 0.4, 1.1, this._scene);
         barrel.material = this._materials.gray;
@@ -651,7 +620,7 @@ export class Sources {
         return source;
     }
 
-    private _createTwinCrasherSource(parent: TransformNode): TransformNode {
+    private _createTwinCrasherSource(parent: TransformNode): Mesh {
         const barrelDiameter = 0.4;
         const barrelLength = 1.1;
         const barrelOffset = barrelDiameter * 0.51;
@@ -673,13 +642,10 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("twin", this._scene);
+        const source = createTetrahedron("twin", metadata.size, this._scene);
         source.metadata = metadata;
+        source.material = this._materials.pink;
         source.parent = parent;
-
-        const body = createTetrahedron("body", metadata.size, this._scene);
-        body.material = this._materials.pink;
-        body.parent = source;
 
         const barrelL = createSimpleBarrel("barrelL", barrelDiameter, barrelLength, this._scene);
         barrelL.position.x = -barrelOffset;
@@ -694,7 +660,7 @@ export class Sources {
         return source;
     }
 
-    private _createDroneCrasherSource(parent: TransformNode): TransformNode {
+    private _createDroneCrasherSource(parent: TransformNode): Mesh {
         const barrelProperties: BarrelProperties = {
             segments: [{ diameter: 0.8, length: 0.7 }],
             baseDiameter: 0.25,
@@ -717,13 +683,10 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("drone", this._scene);
+        const source = createTetrahedron("drone", metadata.size, this._scene);
         source.metadata = metadata;
+        source.material = this._materials.pink;
         source.parent = parent;
-
-        const body = createTetrahedron("body", metadata.size, this._scene);
-        body.material = this._materials.pink;
-        body.parent = source;
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.rotationQuaternion = Quaternion.RotationYawPitchRoll(Math.PI, 0, 0);
@@ -733,7 +696,7 @@ export class Sources {
         return source;
     }
 
-    private _createKeeperBossSource(parent: TransformNode): TransformNode {
+    private _createKeeperBossSource(parent: TransformNode): Mesh {
         const bodyWidth = 3;
         const bodyHeight = 1.3;
 
@@ -762,13 +725,10 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("keeper", this._scene);
+        const source = MeshBuilder.CreateBox("keeper", { width: bodyWidth, height: bodyHeight, depth: bodyWidth }, this._scene);
         source.metadata = metadata;
+        source.material = this._materials.orange;
         source.parent = parent;
-
-        const body = MeshBuilder.CreateBox("body", { width: bodyWidth, height: bodyHeight, depth: bodyWidth }, this._scene);
-        body.material = this._materials.orange;
-        body.parent = source;
 
         const angle = Math.PI * 0.25;
         const tankTransforms = [{
@@ -792,7 +752,7 @@ export class Sources {
             const offset = new TransformNode("offset");
             offset.position.copyFrom(tankTransform.position);
             offset.rotationQuaternion = tankTransform.rotation;
-            offset.parent = body;
+            offset.parent = source;
 
             const tank = new TransformNode(tankNodeName);
             tank.rotationQuaternion = Quaternion.Identity();
@@ -815,7 +775,20 @@ export class Sources {
         return source;
     }
 
-    private _createBaseTankSource(parent: TransformNode): TransformNode {
+    private _createTankBody(name: string, metadata: PlayerTankMetadata, parent: TransformNode): Mesh {
+        const body = createSphere(name, metadata.size, this._scene);
+        body.metadata = metadata;
+        body.material = this._materials.blue;
+        body.parent = parent;
+
+        const marker = createCircleMarker("marker", metadata.size, this._scene);
+        marker.material = this._materials.blue;
+        marker.parent = body;
+
+        return body;
+    }
+
+    private _createBaseTankSource(parent: TransformNode): Mesh {
         const barrelDiameter = 0.45;
         const barrelLength = 0.75;
 
@@ -826,26 +799,16 @@ export class Sources {
             multiplier: {},
         };
 
-        const source = new TransformNode("base", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("base", metadata, parent);
 
         const barrel = createSimpleBarrel("barrel", barrelDiameter, barrelLength, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createSniperTankSource(parent: TransformNode): TransformNode {
+    private _createSniperTankSource(parent: TransformNode): Mesh {
         const barrelDiameter = 0.4;
         const barrelLength = 0.9;
 
@@ -859,26 +822,16 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("sniper", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("sniper", metadata, parent);
 
         const barrel = createSimpleBarrel("barrel", barrelDiameter, barrelLength, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createTwinTankSource(parent: TransformNode): TransformNode {
+    private _createTwinTankSource(parent: TransformNode): Mesh {
         const barrelDiameter = 0.4;
         const barrelLength = 0.75;
         const barrelOffset = barrelDiameter * 0.51;
@@ -892,13 +845,7 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("twin", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("twin", metadata, parent);
 
         const barrelL = createSimpleBarrel("barrelL", barrelDiameter, barrelLength, this._scene);
         barrelL.position.x = -barrelOffset;
@@ -910,14 +857,10 @@ export class Sources {
         barrelR.material = this._materials.gray;
         barrelR.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createFlankGuardTankSource(parent: TransformNode): TransformNode {
+    private _createFlankGuardTankSource(parent: TransformNode): Mesh {
         const barrelDiameter = 0.45;
         const barrelLengthF = 0.75;
         const barrelLengthB = 0.65;
@@ -929,13 +872,7 @@ export class Sources {
             multiplier: {},
         };
 
-        const source = new TransformNode("flankGuard", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("flankGuard", metadata, parent);
 
         const barrelF = createSimpleBarrel("barrelF", barrelDiameter, barrelLengthF, this._scene);
         barrelF.material = this._materials.gray;
@@ -946,14 +883,10 @@ export class Sources {
         barrelB.material = this._materials.gray;
         barrelB.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createPounderTankSource(parent: TransformNode): TransformNode {
+    private _createPounderTankSource(parent: TransformNode): Mesh {
         const barrelDiameter = 0.55;
         const barrelLength = 0.75;
 
@@ -968,26 +901,16 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("pounder", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("pounder", metadata, parent);
 
         const barrel = createSimpleBarrel("barrel", barrelDiameter, barrelLength, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createDirectorTankSource(parent: TransformNode): TransformNode {
+    private _createDirectorTankSource(parent: TransformNode): Mesh {
         const barrelProperties: BarrelProperties = {
             segments: [{ diameter: 0.8, length: 0.7 }],
             baseDiameter: 0.25,
@@ -1003,26 +926,16 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("director", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("director", metadata, parent);
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createTrapperTankSource(parent: TransformNode): TransformNode {
+    private _createTrapperTankSource(parent: TransformNode): Mesh {
         const barrelProperties: BarrelProperties = {
             segments: [
                 { diameter: 0.4, length: 0.52 },
@@ -1042,26 +955,16 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("trapper", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("trapper", metadata, parent);
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createMachineGunTankSource(parent: TransformNode): TransformNode {
+    private _createMachineGunTankSource(parent: TransformNode): Mesh {
         const barrelProperties: BarrelProperties = {
             segments: [
                 { diameter: 0.45, length: 0.4 },
@@ -1081,26 +984,16 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("machineGun", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("machineGun", metadata, parent);
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createLancerTankSource(parent: TransformNode): TransformNode {
+    private _createLancerTankSource(parent: TransformNode): Mesh {
         const lanceDiameter = 0.6;
         const lanceLength = 0.6;
 
@@ -1114,27 +1007,17 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("lancer", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("lancer", metadata, parent);
 
         const lance = createLance("lance", lanceDiameter, lanceLength, this._scene);
         lance.position.z = 0.4;
         lance.material = this._materials.gray;
         lance.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createAssassinTankSource(parent: TransformNode): TransformNode {
+    private _createAssassinTankSource(parent: TransformNode): Mesh {
         const barrelProperties: BarrelProperties = {
             segments: [
                 { diameter: 0.4, length: 0.15 },
@@ -1155,27 +1038,17 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("assassin", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("assassin", metadata, parent);
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.position.z = 0.35;
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createTwinSniperTankSource(parent: TransformNode): TransformNode {
+    private _createTwinSniperTankSource(parent: TransformNode): Mesh {
         const barrelDiameter = 0.4;
         const barrelLength = 0.9;
         const barrelOffset = barrelDiameter * 0.51;
@@ -1190,13 +1063,7 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("twinSniper", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("twinSniper", metadata, parent);
 
         const barrelL = createSimpleBarrel("barrelL", barrelDiameter, barrelLength, this._scene);
         barrelL.position.x = -barrelOffset;
@@ -1208,14 +1075,10 @@ export class Sources {
         barrelR.material = this._materials.gray;
         barrelR.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createGatlingGunTankSource(parent: TransformNode): TransformNode {
+    private _createGatlingGunTankSource(parent: TransformNode): Mesh {
         const barrelProperties: BarrelProperties = {
             segments: [
                 { diameter: 0.45, length: 0.4 },
@@ -1236,26 +1099,16 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("gatlingGun", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("gatlingGun", metadata, parent);
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
-
         return source;
     }
 
-    private _createHunterTankSource(parent: TransformNode): TransformNode {
+    private _createHunterTankSource(parent: TransformNode): Mesh {
         const smallBarrelProperties: BarrelProperties = {
             segments: [{ diameter: 0.25, length: 0.9 }]
         };
@@ -1277,13 +1130,7 @@ export class Sources {
             },
         };
 
-        const source = new TransformNode("gatlingGun", this._scene);
-        source.metadata = metadata;
-        source.parent = parent;
-
-        const body = createSphere("body", metadata.size, this._scene);
-        body.material = this._materials.blue;
-        body.parent = source;
+        const source = this._createTankBody("hunter", metadata, parent);
 
         const smallBarrel = createBarrel("barrelS", smallBarrelProperties, this._scene);
         smallBarrel.material = this._materials.gray;
@@ -1292,10 +1139,6 @@ export class Sources {
         const largeBarrel = createBarrel("barrelL", largeBarrelProperties, this._scene);
         largeBarrel.material = this._materials.gray;
         largeBarrel.parent = source;
-
-        const marker = createCircleMarker("marker", metadata.size, this._scene);
-        marker.material = this._materials.blue;
-        marker.parent = source;
 
         return source;
     }

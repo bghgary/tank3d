@@ -3,11 +3,11 @@ import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Collider } from "./collisions";
 import { applyCollisionForce, applyGravity, applyMovement, applyWallBounce } from "./common";
-import { Entity, EntityType } from "./entity";
 import { Health } from "./components/health";
+import { Shadow } from "./components/shadow";
+import { Entity, EntityType } from "./entity";
 import { decayScalar } from "./math";
 import { ShapeMetadata } from "./metadata";
-import { Shadow } from "./components/shadow";
 import { World } from "./worlds/world";
 
 const IDLE_ROTATION_SPEED = 0.15;

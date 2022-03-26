@@ -1,12 +1,12 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Drones } from "../projectiles/drones";
 import { Entity } from "../entity";
 import { decayScalar } from "../math";
-import { Projectile } from "../projectiles/projectiles";
+import { BarrelMetadata } from "../metadata";
 import { Bullets } from "../projectiles/bullets";
+import { Drones } from "../projectiles/drones";
+import { Projectile } from "../projectiles/projectiles";
 import { Traps } from "../projectiles/traps";
 import { WeaponProperties } from "./weapon";
-import { BarrelMetadata } from "../metadata";
 
 export class Barrel {
     private readonly _node: TransformNode;

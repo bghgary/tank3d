@@ -1,10 +1,10 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Barrel } from "../components/barrel";
 import { applyRecoil } from "../common";
+import { Barrel } from "../components/barrel";
+import { WeaponProperties, WeaponType } from "../components/weapon";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
-import { WeaponProperties, WeaponType } from "../components/weapon";
 
 export class BulletTank extends BarrelTank {
     protected readonly _createBulletNode: (parent: TransformNode) => TransformNode;

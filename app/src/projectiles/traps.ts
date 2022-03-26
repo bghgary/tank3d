@@ -1,13 +1,13 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { applyCollisionForce, applyMovement } from "../common";
+import { Shadow } from "../components/shadow";
+import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { decayVector3ToRef } from "../math";
-import { Projectile, Projectiles } from "./projectiles";
-import { Shadow } from "../components/shadow";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
-import { WeaponProperties } from "../components/weapon";
+import { Projectile, Projectiles } from "./projectiles";
 
 const MAX_DURATION = 24;
 

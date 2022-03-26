@@ -1,4 +1,5 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { Nullable } from "@babylonjs/core/types";
@@ -43,7 +44,7 @@ export class DirectorTank extends DroneTank {
     private _defendTime = 0;
 
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, DirectorTank.CreateNode(world.sources, parent), previousTank);
+        super(world, DirectorTank.CreateMesh(world.sources, parent), previousTank);
 
         this._circleRadius = this._metadata.size + 2;
     }
@@ -132,7 +133,7 @@ export class DirectorTank extends DroneTank {
         this._autoRotateSpeed = this._properties.weaponSpeed * 0.5 / this._circleRadius;
     }
 
-    public static CreateNode(sources: Sources, parent?: TransformNode): TransformNode {
+    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
         return sources.create(sources.tank.director, parent);
     }
 }

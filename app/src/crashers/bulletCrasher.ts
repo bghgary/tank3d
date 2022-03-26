@@ -1,7 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Barrel } from "../components/barrel";
 import { applyRecoil } from "../common";
+import { Barrel } from "../components/barrel";
 import { BulletCrasherMetadata } from "../metadata";
 import { Player } from "../player";
 import { World } from "../worlds/world";

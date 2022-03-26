@@ -1,5 +1,5 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { findNode as findNode } from "../common";
+import { findNode } from "../common";
 import { decayVector3ToRef, TmpVector3 } from "../math";
 import { Player } from "../player";
 import { World } from "../worlds/world";

@@ -1,10 +1,10 @@
+import { Observable } from "@babylonjs/core/Misc/observable";
 import { Button } from "@babylonjs/gui/2D/controls/button";
 import { Container } from "@babylonjs/gui/2D/controls/container";
-import { World } from "../worlds/world";
-import { Observable } from "@babylonjs/core/Misc/observable";
-import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { Control } from "@babylonjs/gui/2D/controls/control";
-import { registerKeyboard, isHierarchyEnabled, KeyInfo } from "./common";
+import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
+import { World } from "../worlds/world";
+import { isHierarchyEnabled, KeyInfo, registerKeyboard } from "./common";
 
 const CORNER_RADIUS = 15;
 

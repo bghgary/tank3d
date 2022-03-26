@@ -1,9 +1,9 @@
 import { Observable } from "@babylonjs/core/Misc/observable";
+import { Container } from "@babylonjs/gui/2D/controls/container";
+import { decayScalar } from "../math";
 import { Bar } from "./bar";
 import { Score } from "./score";
 import { Theme } from "./theme";
-import { Container } from "@babylonjs/gui/2D/controls/container";
-import { decayScalar } from "../math";
 
 const MIN_BAR_VALUE = 0.07;
 

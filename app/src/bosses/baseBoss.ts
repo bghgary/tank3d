@@ -3,11 +3,11 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Boss } from "../bosses";
 import { Collider } from "../collisions";
 import { applyCollisionForce, applyGravity, applyMovement, applyWallClamp } from "../common";
-import { Entity, EntityType } from "../entity";
 import { Health } from "../components/health";
+import { Shadow } from "../components/shadow";
+import { Entity, EntityType } from "../entity";
 import { BossMetadata } from "../metadata";
 import { Player } from "../player";
-import { Shadow } from "../components/shadow";
 import { World } from "../worlds/world";
 
 export abstract class BaseBoss implements Boss, Collider {
