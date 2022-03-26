@@ -23,12 +23,6 @@ export class DroneCrasher extends BarrelCrasher {
     }
 
     public override update(deltaTime: number, player: Player, onDestroy: (entity: Entity) => void): void {
-        if (player.active) {
-            this._drones.update(deltaTime, player.position, 0);
-        } else {
-            this._drones.update(deltaTime, this._node.position, this._metadata.size);
-        }
-
         super.update(deltaTime, player, (entity) => {
             this._drones.dispose();
             onDestroy(entity);
@@ -36,22 +30,23 @@ export class DroneCrasher extends BarrelCrasher {
     }
 
     protected override _chase(deltaTime: number, player: Player, direction: Vector3): boolean {
-        if (!super._chase(deltaTime, player, direction)) {
-            return false;
+        const chasing = super._chase(deltaTime, player, direction);
+
+        if (player.active && chasing) {
+            this._drones.update(deltaTime, player.position, 0);
+        } else {
+            this._drones.update(deltaTime, this._node.position, this._metadata.size);
         }
 
-        if (this._reloadTime === 0 && this._drones.count < MAX_DRONE_COUNT) {
-            const angle = Math.acos(Vector3.Dot(this._node.forward, direction));
-            if (angle < CHASE_ANGLE) {
-                for (const barrel of this._barrels) {
-                    const drone = barrel.shootDrone(this._drones, this, this._createDroneNode);
-                    applyRecoil(this._recoil, drone);
-                }
-
-                this._reloadTime = (this._metadata as BarrelCrasherMetadata).reload;
+        if (this._drones.count < MAX_DRONE_COUNT && this._reloadTime === 0) {
+            for (const barrel of this._barrels) {
+                const drone = barrel.shootDrone(this._drones, this, this._createDroneNode);
+                applyRecoil(this._recoil, drone);
             }
+
+            this._reloadTime = (this._metadata as BarrelCrasherMetadata).reload;
         }
 
-        return true;
+        return chasing;
     }
 }
