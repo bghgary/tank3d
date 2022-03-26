@@ -24,6 +24,7 @@ export interface LanceMetadata {
 export interface MissileMetadata extends SizeMetadata {
     readonly barrels: Array<string>;
     readonly multiplier: Partial<Readonly<WeaponProperties>>;
+    readonly reloadMultiplier?: number;
 }
 
 export interface ShapeMetadata extends DisplayNameMetadata, SizeMetadata {

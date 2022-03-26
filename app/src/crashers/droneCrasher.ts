@@ -8,7 +8,6 @@ import { Drones } from "../projectiles/drones";
 import { World } from "../worlds/world";
 import { BarrelCrasher } from "./barrelCrasher";
 
-const CHASE_ANGLE = 0.02 * Math.PI;
 const MAX_DRONE_COUNT = 4;
 
 export class DroneCrasher extends BarrelCrasher {

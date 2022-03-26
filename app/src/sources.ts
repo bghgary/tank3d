@@ -474,6 +474,7 @@ export class Sources {
                 damage: 0.17,
                 health: 0.17,
             },
+            reloadMultiplier: 0.5,
         };
 
         const source = createSphere(name, metadata.size, this._scene);
@@ -1191,7 +1192,7 @@ export class Sources {
                 weaponSpeed: 0.5,
                 weaponDamage: 2,
                 weaponHealth: 2,
-                reloadTime: 3,
+                reloadTime: 4,
             },
         };
 

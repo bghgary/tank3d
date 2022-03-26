@@ -32,7 +32,7 @@ class LauncherMissile extends Missile {
     private readonly _barrels: Array<Barrel>;
     private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
     private readonly _bulletProperties: Readonly<WeaponProperties>;
-    private readonly _ownerProperties: TankProperties;
+    private readonly _getReloadTime: () => number;
     private _reloadTime: number;
     private _recoil = new Vector3();
 
@@ -43,8 +43,8 @@ class LauncherMissile extends Missile {
         this._barrels = missileMetadata.barrels.map((name) => new Barrel(findNode(missileNode, name)));
         this._createBulletNode = (parent) => this._world.sources.create(this._world.sources.bullet.tank, parent);
         this._bulletProperties = new WeaponPropertiesWithMultiplier(this._properties, missileMetadata.multiplier);
-        this._ownerProperties = (owner as PlayerTankInternal)._properties;
-        this._reloadTime = this._ownerProperties.reloadTime * 0.5;
+        this._getReloadTime = () => (owner as PlayerTankInternal)._properties.reloadTime * (missileMetadata.reloadMultiplier || 0);
+        this._reloadTime = this._getReloadTime() * 0.5;
     }
 
     public override update(deltaTime: number, onDestroy: () => void): void {
@@ -54,7 +54,7 @@ class LauncherMissile extends Missile {
                 applyRecoil(this._recoil, bullet);
             }
 
-            this._reloadTime = this._ownerProperties.reloadTime;
+            this._reloadTime = this._getReloadTime();
         }
 
         for (const barrel of this._barrels) {
