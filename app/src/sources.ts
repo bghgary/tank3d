@@ -43,7 +43,7 @@ function createBarrel(name: string, properties: BarrelProperties, scene: Scene):
     const baseCap = properties.baseCap;
     const baseDiameter = properties.baseDiameter ?? segments[0]!.diameter;
     const diameter = properties.diameter ?? segments[segments.length - 1]!.diameter;
-    const tesselation = Math.round(36 * max(segments, (segment) => segment.diameter));
+    const tesselation = Math.round(48 * max(segments, (segment) => segment.diameter));
 
     const computeCap = (index: number): number => {
         if (segments.length === 1) {
@@ -254,6 +254,7 @@ export class Sources {
         readonly launcher: Mesh;
         readonly destroyer: Mesh;
         readonly builder: Mesh;
+        readonly artillery: Mesh;
     };
 
     public constructor(world: World) {
@@ -358,6 +359,7 @@ export class Sources {
             launcher: this._createLauncherTankSource(tanks),
             destroyer: this._createDestroyerTankSource(tanks),
             builder: this._createBuilderTankSource(tanks),
+            artillery: this._createArtilleryTankSource(tanks),
         };
     }
 
@@ -1267,6 +1269,53 @@ export class Sources {
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
+
+        return source;
+    }
+
+    private _createArtilleryTankSource(parent: TransformNode): Mesh {
+        const mainBarrelDiameter = 0.55;
+        const mainBarrelLength = 0.75;
+        const sideBarrelDiameter = mainBarrelDiameter * 0.25;
+        const sideBarrelLength = mainBarrelLength * 0.9;
+        const sideBarrelAngle = 0.1;
+
+        const sideBarrelProperties: BarrelProperties = {
+            segments: [{ diameter: sideBarrelDiameter, length: sideBarrelLength }],
+            multiplier: {
+                damage: 0.25,
+                health: 0.25,
+            },
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Builder",
+            size: 1,
+            barrels: ["barrel", "barrelL", "barrelR"],
+            multiplier: {
+                weaponDamage: 2,
+                weaponHealth: 2,
+                reloadTime: 2,
+            },
+        };
+
+        const source = this._createTankBody("builder", metadata, parent);
+
+        const barrel = createSimpleBarrel("barrel", mainBarrelDiameter, mainBarrelLength, this._scene);
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
+
+        const barrelL = createBarrel("barrelL", sideBarrelProperties, this._scene);
+        barrelL.position.x = -mainBarrelDiameter * 0.5;
+        barrelL.rotationQuaternion = Quaternion.FromEulerAngles(0, -sideBarrelAngle, 0);
+        barrelL.material = this._materials.gray;
+        barrelL.parent = source;
+
+        const barrelR = createBarrel("barrelR", sideBarrelProperties, this._scene);
+        barrelR.position.x = mainBarrelDiameter * 0.5;
+        barrelR.rotationQuaternion = Quaternion.FromEulerAngles(0, sideBarrelAngle, 0);
+        barrelR.material = this._materials.gray;
+        barrelR.parent = source;
 
         return source;
     }

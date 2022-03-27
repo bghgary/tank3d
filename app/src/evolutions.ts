@@ -1,6 +1,7 @@
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "./sources";
+import { ArtilleryTank } from "./tanks/artilleryTank";
 import { AssassinTank } from "./tanks/assassinTank";
 import { BaseTank } from "./tanks/baseTank";
 import { BuilderTank } from "./tanks/builderTank";
@@ -67,6 +68,9 @@ export const EvolutionRootNode: EvolutionNode = {
             children: []
         }, {
             Tank: BuilderTank,
+            children: []
+        }, {
+            Tank: ArtilleryTank,
             children: []
         }]
     }, {
