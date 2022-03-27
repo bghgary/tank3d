@@ -20,15 +20,16 @@ function applySpeedVariance(speed: number, variance = 0): number {
     return speed + Scalar.RandomRange(-variance * speed, variance * speed);
 }
 
-export class Projectiles {
+export class Projectiles<T extends Projectile> {
     protected readonly _world: World;
     protected readonly _root: TransformNode;
     protected readonly _collisionToken: IDisposable;
+    protected readonly _projectiles = new Set<T>();
 
-    public constructor(world: World, rootName: string, projectiles: Iterable<Projectile>) {
+    public constructor(world: World, rootName: string) {
         this._world = world;
         this._root = new TransformNode(rootName, this._world.scene);
-        this._collisionToken = this._world.collisions.register(projectiles);
+        this._collisionToken = this._world.collisions.register(this._projectiles);
     }
 
     public dispose(): void {
@@ -41,7 +42,7 @@ export abstract class Projectile implements Entity, Collider {
     protected readonly _node: TransformNode;
     protected readonly _properties: WeaponPropertiesWithMultiplier;
 
-    public constructor(owner: Entity, barrelNode: TransformNode, projectileNode: TransformNode, properties: Readonly<WeaponProperties>) {
+    public constructor(barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>) {
         const barrelMetadata = barrelNode.metadata as BarrelMetadata;
         const barrelDiameter = barrelMetadata.diameter * barrelNode.absoluteScaling.x;
         const barrelLength = barrelMetadata.length * barrelNode.absoluteScaling.z;
@@ -49,7 +50,7 @@ export abstract class Projectile implements Entity, Collider {
         this.owner = owner;
         this.size = barrelDiameter * 0.75;
 
-        this._node = projectileNode;
+        this._node = node;
         this._node.scaling.setAll(this.size);
 
         const forward = applyAngleVariance(barrelNode.forward, barrelMetadata.angleVariance, TmpVector3[0]);

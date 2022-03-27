@@ -1,48 +1,49 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { applyCollisionForce, applyMovement } from "../common";
 import { Shadow } from "../components/shadow";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { decayVector3ToRef } from "../math";
-import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { Projectile, Projectiles } from "./projectiles";
 
-export class Bullets extends Projectiles {
-    private readonly _bullets: Set<Bullet>;
-
+export class Bullets extends Projectiles<Bullet> {
     public constructor(world: World) {
-        const bullets = new Set<Bullet>();
-        super(world, "bullets", bullets);
-        this._bullets = bullets;
+        super(world, "bullets");
     }
 
-    public add(owner: Entity, barrelNode: TransformNode, createNode: (parent: TransformNode) => TransformNode, bulletProperties: Readonly<WeaponProperties>, duration: number): Projectile {
-        const bullet = new Bullet(owner, barrelNode, createNode(this._root), bulletProperties, duration, this._world.sources);
-        this._bullets.add(bullet);
+    public add(constructor: BulletConstructor, barrelNode: TransformNode, owner: Entity, source: Mesh, properties: Readonly<WeaponProperties>, duration: number): Projectile {
+        const node = this._world.sources.create(source, this._root);
+        const bullet = new constructor(this._world, barrelNode, owner, node, properties, duration);
+        this._projectiles.add(bullet);
         return bullet;
     }
 
     public update(deltaTime: number): void {
-        for (const bullet of this._bullets) {
-            bullet.update(deltaTime, () => {
-                this._bullets.delete(bullet);
+        for (const projectile of this._projectiles) {
+            projectile.update(deltaTime, () => {
+                this._projectiles.delete(projectile);
             });
         }
     }
 }
 
-class Bullet extends Projectile {
+export interface BulletConstructor {
+    new(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>, duration: number): Bullet;
+}
+
+export class Bullet extends Projectile {
     private readonly _shadow: Shadow;
     private readonly _targetVelocity: Readonly<Vector3> = new Vector3();
     private _health: number;
     private _time: number;
 
-    public constructor(owner: Entity, barrelNode: TransformNode, bulletNode: TransformNode, properties: Readonly<WeaponProperties>, duration: number, sources: Sources) {
-        super(owner, barrelNode, bulletNode, properties);
+    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>, duration: number) {
+        super(barrelNode, owner, node, properties);
         this._targetVelocity.copyFrom(this.velocity).scaleInPlace(properties.speed / this.velocity.length());
-        this._shadow = new Shadow(sources, this._node);
+        this._shadow = new Shadow(world.sources, this._node);
         this._health = this._properties.health;
         this._time = duration;
     }

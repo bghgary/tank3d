@@ -7,14 +7,12 @@ import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
 
-export class TrapTank extends BarrelTank {
-    protected readonly _createTrapNode: (parent: TransformNode) => TransformNode;
+export abstract class TrapTank extends BarrelTank {
+    protected abstract readonly _trapSource: Mesh;
     protected readonly _trapProperties: WeaponProperties;
 
-    protected constructor(world: World, node: TransformNode, trapSource: Mesh, previousTank?: PlayerTank) {
+    protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
-
-        this._createTrapNode = (parent) => this._world.sources.create(trapSource, parent);
 
         this._trapProperties = {
             speed: this._properties.weaponSpeed,
@@ -44,7 +42,7 @@ export class TrapTank extends BarrelTank {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const trap = barrel.shootTrap(this._world.traps, this, this._createTrapNode, this._trapProperties, 24);
+        const trap = barrel.shootTrap(this, this._trapSource, this._trapProperties, 24);
         applyRecoil(this._recoil, trap);
     }
 

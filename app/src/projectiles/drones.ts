@@ -1,4 +1,5 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { applyCollisionForce, applyMovement } from "../common";
 import { Health } from "../components/health";
@@ -6,36 +7,33 @@ import { Shadow } from "../components/shadow";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { decayVector3ToRef, TmpVector3 } from "../math";
-import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { Projectile, Projectiles } from "./projectiles";
 
-export class Drones extends Projectiles {
-    private readonly _drones: Set<Drone>;
+export class Drones extends Projectiles<Drone> {
     private readonly _properties: Readonly<WeaponProperties>;
 
     public constructor(world: World, parent: TransformNode, properties: Readonly<WeaponProperties>) {
-        const drones = new Set<Drone>();
-        super(world, "drones", drones);
+        super(world, "drones");
         this._root.parent = parent;
-        this._drones = drones;
         this._properties = properties;
     }
 
     public get count(): number {
-        return this._drones.size;
+        return this._projectiles.size;
     }
 
-    public add(owner: Entity, barrelNode: TransformNode, createNode: (parent: TransformNode) => TransformNode): Drone {
-        const drone = new Drone(owner, barrelNode, createNode(this._root), this._properties, this._world.sources);
-        this._drones.add(drone);
+    public add(owner: Entity, barrelNode: TransformNode, source: Mesh): Drone {
+        const node = this._world.sources.create(source, this._root);
+        const drone = new Drone(this._world, barrelNode, owner, node, this._properties);
+        this._projectiles.add(drone);
         return drone;
     }
 
     public update(deltaTime: number, target: Vector3, radius: number): void {
-        for (const drone of this._drones) {
-            drone.update(deltaTime, target, radius, () => {
-                this._drones.delete(drone);
+        for (const projectile of this._projectiles) {
+            projectile.update(deltaTime, target, radius, () => {
+                this._projectiles.delete(projectile);
             });
         }
     }
@@ -45,10 +43,10 @@ class Drone extends Projectile {
     private readonly _shadow: Shadow;
     private readonly _health: Health;
 
-    public constructor(owner: Entity, barrelNode: TransformNode, droneNode: TransformNode, properties: Readonly<WeaponProperties>, sources: Sources) {
-        super(owner, barrelNode, droneNode, properties);
-        this._shadow = new Shadow(sources, this._node);
-        this._health = new Health(sources, this._node, this._properties.health);
+    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>) {
+        super(barrelNode, owner, node, properties);
+        this._shadow = new Shadow(world.sources, this._node);
+        this._health = new Health(world.sources, this._node, this._properties.health);
     }
 
     public type = EntityType.Drone;

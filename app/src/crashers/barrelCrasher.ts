@@ -17,7 +17,7 @@ export abstract class BarrelCrasher extends BaseCrasher {
     protected constructor(world: World, node: TransformNode) {
         super(world, node);
 
-        this._barrels = (this._metadata as BarrelCrasherMetadata).barrels.map((name) => new Barrel(findNode(node, name)));
+        this._barrels = (this._metadata as BarrelCrasherMetadata).barrels.map((name) => new Barrel(world, findNode(node, name)));
     }
 
     public override update(deltaTime: number, player: Player, onDestroy: (entity: Entity) => void): void {

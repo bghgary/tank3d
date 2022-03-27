@@ -6,8 +6,11 @@ import { PlayerTank } from "./playerTank";
 import { TrapTank } from "./trapTank";
 
 export class BuilderTank extends TrapTank {
+    protected override readonly _trapSource = this._world.sources.trap.tankQuad;
+
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, BuilderTank.CreateMesh(world.sources, parent), world.sources.trap.tankQuad, previousTank);
+        super(world, BuilderTank.CreateMesh(world.sources, parent), previousTank);
+        this._trapSource = world.sources.trap.tankQuad;
     }
 
     public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {

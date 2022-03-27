@@ -1,6 +1,5 @@
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
@@ -16,8 +15,7 @@ export class BlasterTank extends BulletTank {
 
     public override _shootFrom(barrel: Barrel): void {
         for (let i = 0; i < BULLETS_PER_SHOT; ++i) {
-            const bullet = barrel.shootBullet(this._world.bullets, this, this._createBulletNode, this._bulletProperties, 3);
-            applyRecoil(this._recoil, bullet);
+            super._shootFrom(barrel);
         }
     }
 

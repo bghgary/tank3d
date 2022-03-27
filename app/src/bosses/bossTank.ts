@@ -6,6 +6,7 @@ import { Entity } from "../entity";
 import { decayQuaternionToRef, decayVector3ToRef, QuaternionIdentity, TmpMatrix, TmpVector3 } from "../math";
 import { BossTankMetadata } from "../metadata";
 import { Player } from "../player";
+import { Bullet } from "../projectiles/bullets";
 import { World } from "../worlds/world";
 
 const MAX_TANK_ANGLE = 0.5 * Math.PI;
@@ -17,7 +18,6 @@ export class BossTank {
     private readonly _node: TransformNode;
     private readonly _metadata: BossTankMetadata;
     private readonly _barrels: Array<Barrel>;
-    private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
 
     private _reloadTime = 0;
 
@@ -26,9 +26,7 @@ export class BossTank {
         this._owner = owner;
         this._node = node;
         this._metadata = this._node.metadata;
-        this._barrels = this._metadata.barrels.map((name) => new Barrel(findNode(this._node, name)));
-
-        this._createBulletNode = (parent) => this._world.sources.create(this._world.sources.bullet.boss, parent);
+        this._barrels = this._metadata.barrels.map((name) => new Barrel(this._world, findNode(this._node, name)));
     }
 
     public update(deltaTime: number, active: boolean, player: Player): void {
@@ -66,7 +64,7 @@ export class BossTank {
         const angle = Math.acos(Vector3.Dot(playerDirection, forward));
         if (this._reloadTime === 0 && angle < SHOOT_ANGLE) {
             for (const barrel of this._barrels) {
-                barrel.shootBullet(this._world.bullets, this._owner, this._createBulletNode, this._metadata.bullet, 3);
+                barrel.shootBullet(Bullet, this._owner, this._world.sources.bullet.boss, this._metadata.bullet, 3);
             }
 
             this._reloadTime = this._metadata.reload;

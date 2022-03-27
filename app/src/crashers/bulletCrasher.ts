@@ -4,18 +4,15 @@ import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
 import { BulletCrasherMetadata } from "../metadata";
 import { Player } from "../player";
+import { Bullet } from "../projectiles/bullets";
 import { World } from "../worlds/world";
 import { BarrelCrasher } from "./barrelCrasher";
 
 const CHASE_ANGLE = 0.02 * Math.PI;
 
 export class BulletCrasher extends BarrelCrasher {
-    private readonly _createBulletNode: (parent: TransformNode) => TransformNode;
-
     public constructor(world: World, node: TransformNode) {
         super(world, node);
-
-        this._createBulletNode = (parent) => this._world.sources.create(this._world.sources.bullet.crasher, parent);
     }
 
     protected override _chase(deltaTime: number, player: Player, direction: Vector3): boolean {
@@ -40,7 +37,7 @@ export class BulletCrasher extends BarrelCrasher {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const bullet = barrel.shootBullet(this._world.bullets, this, this._createBulletNode, (this._metadata as BulletCrasherMetadata).bullet, 3);
+        const bullet = barrel.shootBullet(Bullet, this, this._world.sources.bullet.crasher, (this._metadata as BulletCrasherMetadata).bullet, 3);
         applyRecoil(this._recoil, bullet);
     }
 }

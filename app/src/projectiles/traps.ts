@@ -1,33 +1,30 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { applyCollisionForce, applyMovement } from "../common";
 import { Shadow } from "../components/shadow";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { decayVector3ToRef } from "../math";
-import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { Projectile, Projectiles } from "./projectiles";
 
-export class Traps extends Projectiles {
-    private readonly _traps: Set<Trap>;
-
+export class Traps extends Projectiles<Trap> {
     public constructor(world: World) {
-        const traps = new Set<Trap>();
-        super(world, "traps", traps);
-        this._traps = traps;
+        super(world, "traps");
     }
 
-    public add(owner: Entity, barrelNode: TransformNode, createNode: (parent: TransformNode) => TransformNode, properties: Readonly<WeaponProperties>, duration: number): Trap {
-        const trap = new Trap(owner, barrelNode, createNode(this._root), properties, duration, this._world.sources);
-        this._traps.add(trap);
+    public add(barrelNode: TransformNode, owner: Entity, source: Mesh, properties: Readonly<WeaponProperties>, duration: number): Trap {
+        const node = this._world.sources.create(source, this._root);
+        const trap = new Trap(this._world, barrelNode, owner, node, properties, duration);
+        this._projectiles.add(trap);
         return trap;
     }
 
     public update(deltaTime: number): void {
-        for (const trap of this._traps) {
-            trap.update(deltaTime, () => {
-                this._traps.delete(trap);
+        for (const projectile of this._projectiles) {
+            projectile.update(deltaTime, () => {
+                this._projectiles.delete(projectile);
             });
         }
     }
@@ -38,9 +35,9 @@ class Trap extends Projectile {
     private _health: number;
     private _time: number;
 
-    public constructor(owner: Entity, barrelNode: TransformNode, bulletNode: TransformNode, properties: Readonly<WeaponProperties>, duration: number, sources: Sources) {
-        super(owner, barrelNode, bulletNode, properties);
-        this._shadow = new Shadow(sources, this._node);
+    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>, duration: number) {
+        super(barrelNode, owner, node, properties);
+        this._shadow = new Shadow(world.sources, this._node);
         this._health = this._properties.health;
         this._time = duration;
     }

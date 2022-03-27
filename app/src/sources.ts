@@ -199,6 +199,7 @@ export class Sources {
         readonly tank: Mesh;
         readonly crasher: Mesh;
         readonly boss: Mesh;
+        readonly launcherTank: Mesh;
     };
 
     public readonly drone: {
@@ -209,10 +210,6 @@ export class Sources {
     public readonly trap: {
         readonly tankTriangle: Mesh;
         readonly tankQuad: Mesh;
-    }
-
-    public readonly missile: {
-        readonly launcherTank: Mesh;
     }
 
     public readonly shape: {
@@ -291,6 +288,7 @@ export class Sources {
             tank: this._createBulletSource(bullets, "tank", 8, this._materials.blue),
             crasher: this._createBulletSource(bullets, "crasher", 4, this._materials.pink),
             boss: this._createBulletSource(bullets, "boss", 8, this._materials.orange),
+            launcherTank: this._createLauncherTankMissileSource(bullets, "launcherTank"),
         };
 
         const drones = new TransformNode("drones", this._scene);
@@ -306,12 +304,6 @@ export class Sources {
             tankTriangle: this._createTrapSource(traps, "tank", this._materials.blue, 3),
             tankQuad: this._createTrapSource(traps, "tank", this._materials.blue, 4),
         }
-
-        const missiles = new TransformNode("missiles", this._scene);
-        missiles.parent = sources;
-        this.missile = {
-            launcherTank: this._createLauncherTankMissileSource(missiles, "launcherTank"),
-        };
 
         const shapes = new TransformNode("shapes", this._scene);
         shapes.parent = sources;

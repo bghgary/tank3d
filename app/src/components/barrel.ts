@@ -1,41 +1,38 @@
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Entity } from "../entity";
 import { decayScalar } from "../math";
 import { BarrelMetadata } from "../metadata";
-import { Bullets } from "../projectiles/bullets";
+import { BulletConstructor } from "../projectiles/bullets";
 import { Drones } from "../projectiles/drones";
-import { MissileConstructor, Missiles } from "../projectiles/missiles";
 import { Projectile } from "../projectiles/projectiles";
-import { Traps } from "../projectiles/traps";
+import { World } from "../worlds/world";
 import { WeaponProperties } from "./weapon";
 
 export class Barrel {
+    private readonly _world: World;
     private readonly _node: TransformNode;
     private readonly _scale: (node: TransformNode) => void;
 
-    public constructor(node: TransformNode) {
+    public constructor(world: World, node: TransformNode) {
+        this._world = world;
         this._node = node;
         this._scale = (node) => node.scaling.z = 1 - 0.1 / (node.metadata as BarrelMetadata).length;
     }
 
-    public shootBullet(bullets: Bullets, owner: Entity, createNode: (parent: TransformNode) => TransformNode, bulletProperties: Readonly<WeaponProperties>, duration: number): Projectile {
+    public shootBullet(constructor: BulletConstructor, owner: Entity, source: Mesh, properties: Readonly<WeaponProperties>, duration: number): Projectile {
         this._scale(this._node);
-        return bullets.add(owner, this._node, createNode, bulletProperties, duration);
+        return this._world.bullets.add(constructor, this._node, owner, source, properties, duration);
     }
 
-    public shootDrone(drones: Drones, owner: Entity, createNode: (parent: TransformNode) => TransformNode): Projectile {
+    public shootTrap(owner: Entity, source: Mesh, properties: Readonly<WeaponProperties>, duration: number): Projectile {
         this._scale(this._node);
-        return drones.add(owner, this._node, createNode);
+        return this._world.traps.add(this._node, owner, source, properties, duration);
     }
 
-    public shootMissile(missiles: Missiles, constructor: MissileConstructor, owner: Entity, createNode: (parent: TransformNode) => TransformNode, duration: number): Projectile {
+    public shootDrone(drones: Drones, owner: Entity, source: Mesh): Projectile {
         this._scale(this._node);
-        return missiles.add(constructor, owner, this._node, createNode, duration);
-    }
-
-    public shootTrap(traps: Traps, owner: Entity, createNode: (parent: TransformNode) => TransformNode, trapProperties: Readonly<WeaponProperties>, duration: number): Projectile {
-        this._scale(this._node);
-        return traps.add(owner, this._node, createNode, trapProperties, duration);
+        return drones.add(owner, this._node, source);
     }
 
     public update(deltaTime: number) {

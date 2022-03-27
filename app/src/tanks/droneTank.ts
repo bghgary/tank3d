@@ -1,19 +1,18 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Barrel } from "../components/barrel";
 import { applyRecoil } from "../common";
-import { Drones } from "../projectiles/drones";
+import { Barrel } from "../components/barrel";
+import { WeaponProperties, WeaponType } from "../components/weapon";
 import { Entity } from "../entity";
+import { Drones } from "../projectiles/drones";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
-import { WeaponProperties, WeaponType } from "../components/weapon";
 
 const MAX_DRONE_COUNT = 4;
 
 export abstract class DroneTank extends BarrelTank {
     protected readonly _drones: Drones;
-    protected readonly _createDroneNode: (parent: TransformNode) => TransformNode;
     protected readonly _droneProperties: WeaponProperties;
     protected readonly _target = new Vector3();
     protected _radius = 0;
@@ -29,7 +28,6 @@ export abstract class DroneTank extends BarrelTank {
         };
 
         this._drones = new Drones(world, node.parent as TransformNode, this._droneProperties);
-        this._createDroneNode = (parent) => this._world.sources.create(this._world.sources.drone.tank, parent);
         this._target.copyFrom(world.pointerPosition);
     }
 
@@ -63,7 +61,7 @@ export abstract class DroneTank extends BarrelTank {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const drone = barrel.shootDrone(this._drones, this, this._createDroneNode);
+        const drone = barrel.shootDrone(this._drones, this, this._world.sources.drone.tank);
         applyRecoil(this._recoil, drone);
     }
 
