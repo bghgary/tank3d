@@ -26,23 +26,24 @@ const MEGA_CRASHER_POINTS = 100;
 
 const MARKER_MAGNIFICATION = 3;
 
-interface BarrelProperties {
-    segments: {
-        diameter: number;
-        length: number;
-    }[];
-    baseCap?: boolean;
-    baseDiameter?: number;
-    diameter?: number;
-    variance?: number;
-    multiplier?: Partial<Readonly<WeaponProperties>>;
+interface BarrelParameters {
+    readonly segments: Array<{
+        readonly diameter: number;
+        readonly length: number;
+    }>;
+    readonly baseCap?: boolean;
+    readonly baseDiameter?: number;
+    readonly diameter?: number;
+    readonly angleVariance?: number;
+    readonly speedVariance?: number;
+    readonly multiplier?: Partial<Readonly<WeaponProperties>>;
 }
 
-function createBarrel(name: string, properties: BarrelProperties, scene: Scene): Mesh {
-    const segments = properties.segments;
-    const baseCap = properties.baseCap;
-    const baseDiameter = properties.baseDiameter ?? segments[0]!.diameter;
-    const diameter = properties.diameter ?? segments[segments.length - 1]!.diameter;
+function createBarrel(name: string, parameters: BarrelParameters, scene: Scene): Mesh {
+    const segments = parameters.segments;
+    const baseCap = parameters.baseCap;
+    const baseDiameter = parameters.baseDiameter ?? segments[0]!.diameter;
+    const diameter = parameters.diameter ?? segments[segments.length - 1]!.diameter;
     const tesselation = Math.round(48 * max(segments, (segment) => segment.diameter));
 
     const computeCap = (index: number): number => {
@@ -77,8 +78,9 @@ function createBarrel(name: string, properties: BarrelProperties, scene: Scene):
     mesh.metadata = {
         diameter: diameter,
         length: totalLength,
-        variance: properties.variance,
-        multiplier: properties.multiplier,
+        angleVariance: parameters.angleVariance,
+        speedVariance: parameters.speedVariance,
+        multiplier: parameters.multiplier,
     } as BarrelMetadata;
 
     return mesh;
@@ -255,6 +257,7 @@ export class Sources {
         readonly destroyer: Mesh;
         readonly builder: Mesh;
         readonly artillery: Mesh;
+        readonly blaster: Mesh;
     };
 
     public constructor(world: World) {
@@ -360,6 +363,7 @@ export class Sources {
             destroyer: this._createDestroyerTankSource(tanks),
             builder: this._createBuilderTankSource(tanks),
             artillery: this._createArtilleryTankSource(tanks),
+            blaster: this._createBlasterTankSource(tanks),
         };
     }
 
@@ -711,7 +715,7 @@ export class Sources {
     }
 
     private _createDroneCrasherSource(parent: TransformNode): Mesh {
-        const barrelProperties: BarrelProperties = {
+        const barrelProperties: BarrelParameters = {
             segments: [{ diameter: 0.8, length: 0.7 }],
             baseDiameter: 0.25,
         };
@@ -958,7 +962,7 @@ export class Sources {
     }
 
     private _createDirectorTankSource(parent: TransformNode): Mesh {
-        const barrelProperties: BarrelProperties = {
+        const barrelProperties: BarrelParameters = {
             segments: [{ diameter: 0.8, length: 0.7 }],
             baseDiameter: 0.25,
         };
@@ -983,7 +987,7 @@ export class Sources {
     }
 
     private _createTrapperTankSource(parent: TransformNode): Mesh {
-        const barrelProperties: BarrelProperties = {
+        const barrelProperties: BarrelParameters = {
             segments: [
                 { diameter: 0.4, length: 0.52 },
                 { diameter: 0.8, length: 0.18 },
@@ -1012,13 +1016,13 @@ export class Sources {
     }
 
     private _createMachineGunTankSource(parent: TransformNode): Mesh {
-        const barrelProperties: BarrelProperties = {
+        const barrelProperties: BarrelParameters = {
             segments: [
                 { diameter: 0.45, length: 0.4 },
                 { diameter: 0.6, length: 0.35 },
             ],
             diameter: 0.45,
-            variance: Tools.ToRadians(15),
+            angleVariance: Tools.ToRadians(15),
         };
 
         const metadata: PlayerTankMetadata = {
@@ -1065,7 +1069,7 @@ export class Sources {
     }
 
     private _createAssassinTankSource(parent: TransformNode): Mesh {
-        const barrelProperties: BarrelProperties = {
+        const barrelProperties: BarrelParameters = {
             segments: [
                 { diameter: 0.4, length: 0.15 },
                 { diameter: 0.4, length: 0.45 },
@@ -1126,13 +1130,13 @@ export class Sources {
     }
 
     private _createGatlingGunTankSource(parent: TransformNode): Mesh {
-        const barrelProperties: BarrelProperties = {
+        const barrelProperties: BarrelParameters = {
             segments: [
                 { diameter: 0.45, length: 0.4 },
                 { diameter: 0.6, length: 0.5 },
             ],
             diameter: 0.45,
-            variance: Tools.ToRadians(10),
+            angleVariance: Tools.ToRadians(10),
         };
 
         const metadata: PlayerTankMetadata = {
@@ -1156,11 +1160,11 @@ export class Sources {
     }
 
     private _createHunterTankSource(parent: TransformNode): Mesh {
-        const smallBarrelProperties: BarrelProperties = {
+        const smallBarrelProperties: BarrelParameters = {
             segments: [{ diameter: 0.25, length: 0.9 }]
         };
 
-        const largeBarrelProperties: BarrelProperties = {
+        const largeBarrelProperties: BarrelParameters = {
             segments: [{ diameter: 0.45, length: 0.8 }],
             multiplier: {
                 damage: 1.5,
@@ -1191,7 +1195,7 @@ export class Sources {
     }
 
     private _createLauncherTankSource(parent: TransformNode): Mesh {
-        const barrelProperties: BarrelProperties = {
+        const barrelProperties: BarrelParameters = {
             segments: [
                 { diameter: 0.7, length: 0.7 },
                 { diameter: 0.6, length: 0.1 },
@@ -1245,7 +1249,7 @@ export class Sources {
     }
 
     private _createBuilderTankSource(parent: TransformNode): Mesh {
-        const barrelProperties: BarrelProperties = {
+        const barrelProperties: BarrelParameters = {
             segments: [
                 { diameter: 0.7, length: 0.6 },
                 { diameter: 0.9, length: 0.2 },
@@ -1280,7 +1284,7 @@ export class Sources {
         const sideBarrelLength = mainBarrelLength * 0.9;
         const sideBarrelAngle = 0.1;
 
-        const sideBarrelProperties: BarrelProperties = {
+        const sideBarrelProperties: BarrelParameters = {
             segments: [{ diameter: sideBarrelDiameter, length: sideBarrelLength }],
             multiplier: {
                 damage: 0.3,
@@ -1316,6 +1320,40 @@ export class Sources {
         barrelR.rotationQuaternion = Quaternion.FromEulerAngles(0, sideBarrelAngle, 0);
         barrelR.material = this._materials.gray;
         barrelR.parent = source;
+
+        return source;
+    }
+
+    private _createBlasterTankSource(parent: TransformNode): Mesh {
+        const barrelProperties: BarrelParameters = {
+            segments: [
+                { diameter: 0.5, length: 0.15 },
+                { diameter: 0.65, length: 0.3 },
+            ],
+            baseCap: true,
+            baseDiameter: 0.75,
+            diameter: 0.3,
+            angleVariance: Tools.ToRadians(8),
+            speedVariance: 0.1,
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Blaster",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponSpeed: 2,
+                weaponDamage: 0.6,
+                reloadTime: 5,
+            },
+        };
+
+        const source = this._createTankBody("blaster", metadata, parent);
+
+        const barrel = createBarrel("barrel", barrelProperties, this._scene);
+        barrel.position.z = 0.35;
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
 
         return source;
     }

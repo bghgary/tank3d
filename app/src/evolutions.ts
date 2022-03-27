@@ -4,6 +4,7 @@ import { Sources } from "./sources";
 import { ArtilleryTank } from "./tanks/artilleryTank";
 import { AssassinTank } from "./tanks/assassinTank";
 import { BaseTank } from "./tanks/baseTank";
+import { BlasterTank } from "./tanks/blasterTank";
 import { BuilderTank } from "./tanks/builderTank";
 import { DestroyerTank } from "./tanks/destroyerTank";
 import { DirectorTank } from "./tanks/directorTank";
@@ -72,6 +73,9 @@ export const EvolutionRootNode: EvolutionNode = {
         }, {
             Tank: ArtilleryTank,
             children: []
+        }, {
+            Tank: BlasterTank,
+            children: [],
         }]
     }, {
         Tank: DirectorTank,
@@ -86,6 +90,9 @@ export const EvolutionRootNode: EvolutionNode = {
         Tank: MachineGunTank,
         children: [{
             Tank: GatlingGunTank,
+            children: [],
+        }, {
+            Tank: BlasterTank,
             children: [],
         }]
     }, {

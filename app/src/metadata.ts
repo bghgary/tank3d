@@ -13,7 +13,8 @@ export interface SizeMetadata {
 export interface BarrelMetadata {
     readonly diameter: number;
     readonly length: number;
-    readonly variance?: number;
+    readonly angleVariance?: number;
+    readonly speedVariance?: number;
     readonly multiplier?: Partial<Readonly<WeaponProperties>>;
 }
 
