@@ -1276,15 +1276,15 @@ export class Sources {
     private _createArtilleryTankSource(parent: TransformNode): Mesh {
         const mainBarrelDiameter = 0.55;
         const mainBarrelLength = 0.75;
-        const sideBarrelDiameter = mainBarrelDiameter * 0.25;
+        const sideBarrelDiameter = mainBarrelDiameter * 0.3;
         const sideBarrelLength = mainBarrelLength * 0.9;
         const sideBarrelAngle = 0.1;
 
         const sideBarrelProperties: BarrelProperties = {
             segments: [{ diameter: sideBarrelDiameter, length: sideBarrelLength }],
             multiplier: {
-                damage: 0.25,
-                health: 0.25,
+                damage: 0.3,
+                health: 0.3,
             },
         };
 
