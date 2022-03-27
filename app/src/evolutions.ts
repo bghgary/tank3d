@@ -3,6 +3,8 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "./sources";
 import { AssassinTank } from "./tanks/assassinTank";
 import { BaseTank } from "./tanks/baseTank";
+import { BuilderTank } from "./tanks/builderTank";
+import { DestroyerTank } from "./tanks/destroyerTank";
 import { DirectorTank } from "./tanks/directorTank";
 import { FlankGuardTank } from "./tanks/flankGuardTank";
 import { GatlingGunTank } from "./tanks/gatlingGunTank";
@@ -60,13 +62,22 @@ export const EvolutionRootNode: EvolutionNode = {
         children: [{
             Tank: LauncherTank,
             children: []
+        }, {
+            Tank: DestroyerTank,
+            children: []
+        }, {
+            Tank: BuilderTank,
+            children: []
         }]
     }, {
         Tank: DirectorTank,
         children: []
     }, {
         Tank: TrapperTank,
-        children: []
+        children: [{
+            Tank: BuilderTank,
+            children: []
+        }]
     }, {
         Tank: MachineGunTank,
         children: [{

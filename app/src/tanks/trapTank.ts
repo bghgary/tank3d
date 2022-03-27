@@ -1,3 +1,4 @@
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
@@ -10,10 +11,11 @@ export class TrapTank extends BarrelTank {
     protected readonly _createTrapNode: (parent: TransformNode) => TransformNode;
     protected readonly _trapProperties: WeaponProperties;
 
-    protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
+    protected constructor(world: World, node: TransformNode, trapSource: Mesh, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
-        this._createTrapNode = (parent) => this._world.sources.create(this._world.sources.trap.tank, parent);
+        this._createTrapNode = (parent) => this._world.sources.create(trapSource, parent);
+
         this._trapProperties = {
             speed: this._properties.weaponSpeed,
             damage: this._properties.weaponDamage,

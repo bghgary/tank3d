@@ -1,3 +1,4 @@
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
@@ -15,7 +16,7 @@ export abstract class MissileTank extends BarrelTank {
 
     protected abstract readonly _missileConstructor: MissileConstructor;
 
-    protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
+    protected constructor(world: World, node: TransformNode, missileSource: Mesh, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
         this._missileProperties = {
@@ -26,7 +27,7 @@ export abstract class MissileTank extends BarrelTank {
         };
 
         this._missiles = new Missiles(world, node.parent as TransformNode, this._missileProperties);
-        this._createMissileNode = (parent) => this._world.sources.create(this._world.sources.missile.launcherTank, parent);
+        this._createMissileNode = (parent) => this._world.sources.create(missileSource, parent);
     }
 
     public override readonly weaponType = WeaponType.Bullet;

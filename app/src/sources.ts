@@ -128,19 +128,25 @@ function createSphere(name: string, size: number, scene: Scene): Mesh {
     return MeshBuilder.CreateSphere(name, { segments: 16 * size }, scene);
 }
 
-function createPrism(name: string, size: number, scene: Scene): Mesh {
+function createPrism(name: string, size: number, sides: number, scene: Scene): Mesh {
+    const angle = Math.PI / sides;
+
     const outerRadius = 0.5;
-    const innerRadius = 0.2;
-    const angle = Math.PI / 3;
+    const innerRadius = 0.5 * Math.cos(angle) - 0.05;
+
+    const points = new Array<Vector3>(sides * 2);
     const getPoint = (radius: number, angle: number) => new Vector3(-radius * Math.sin(angle), radius * Math.cos(angle), 0);
-    const p0 = getPoint(outerRadius, angle * 0);
-    const p1 = getPoint(innerRadius, angle * 1);
-    const p2 = getPoint(outerRadius, angle * 2);
-    const p3 = getPoint(innerRadius, angle * 3);
-    const p4 = getPoint(outerRadius, angle * 4);
-    const p5 = getPoint(innerRadius, angle * 5);
-    const shape = [ p0, p1, p1, p2, p2, p3, p3, p4, p4, p5, p5, p0, ];
-    const path = [ new Vector3(0, 0, -0.3), new Vector3(0, 0, 0.3) ];
+    for (let i = 0; i < points.length; ++i) {
+        points[i] = getPoint((i % 2) === 0 ? outerRadius : innerRadius, angle * i);
+    }
+
+    const shape = new Array<Vector3>(points.length * 2);
+    for (let i = 0; i < points.length; ++i) {
+        shape[i * 2 + 0] = points[i]!;
+        shape[i * 2 + 1] = points[(i + 1) % points.length]!;
+    }
+
+    const path = [new Vector3(0, 0, -0.3), new Vector3(0, 0, 0.3)];
     const mesh = MeshBuilder.ExtrudeShape(name, { shape: shape, path: path, cap: Mesh.CAP_ALL }, scene);
     mesh.rotation.x = Math.PI / 2;
     mesh.scaling.scaleInPlace(size * 1.2);
@@ -199,7 +205,8 @@ export class Sources {
     };
 
     public readonly trap: {
-        readonly tank: Mesh;
+        readonly tankTriangle: Mesh;
+        readonly tankQuad: Mesh;
     }
 
     public readonly missile: {
@@ -245,6 +252,8 @@ export class Sources {
         readonly gatlingGun: Mesh;
         readonly hunter: Mesh;
         readonly launcher: Mesh;
+        readonly destroyer: Mesh;
+        readonly builder: Mesh;
     };
 
     public constructor(world: World) {
@@ -290,7 +299,8 @@ export class Sources {
         const traps = new TransformNode("traps", this._scene);
         traps.parent = sources;
         this.trap = {
-            tank: this._createTrapSource(traps, "tank", this._materials.blue),
+            tankTriangle: this._createTrapSource(traps, "tank", this._materials.blue, 3),
+            tankQuad: this._createTrapSource(traps, "tank", this._materials.blue, 4),
         }
 
         const missiles = new TransformNode("missiles", this._scene);
@@ -346,6 +356,8 @@ export class Sources {
             gatlingGun: this._createGatlingGunTankSource(tanks),
             hunter: this._createHunterTankSource(tanks),
             launcher: this._createLauncherTankSource(tanks),
+            destroyer: this._createDestroyerTankSource(tanks),
+            builder: this._createBuilderTankSource(tanks),
         };
     }
 
@@ -454,12 +466,12 @@ export class Sources {
         return source;
     }
 
-    private _createTrapSource(parent: TransformNode, name: string, material: Material): Mesh {
+    private _createTrapSource(parent: TransformNode, name: string, material: Material, sides: number): Mesh {
         const metadata: SizeMetadata = {
             size: 1,
         };
 
-        const source = createPrism(name, metadata.size, this._scene);
+        const source = createPrism(name, metadata.size, sides, this._scene);
         source.metadata = metadata;
         source.material = material;
         source.parent = parent;
@@ -1197,6 +1209,60 @@ export class Sources {
         };
 
         const source = this._createTankBody("launcher", metadata, parent);
+
+        const barrel = createBarrel("barrel", barrelProperties, this._scene);
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
+
+        return source;
+    }
+
+    private _createDestroyerTankSource(parent: TransformNode): Mesh {
+        const barrelDiameter = 0.7;
+        const barrelLength = 0.75;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Destroyer",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponSpeed: 0.2,
+                weaponDamage: 4,
+                weaponHealth: 4,
+                reloadTime: 5,
+            },
+        };
+
+        const source = this._createTankBody("destroyer", metadata, parent);
+
+        const barrel = createSimpleBarrel("barrel", barrelDiameter, barrelLength, this._scene);
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
+
+        return source;
+    }
+
+    private _createBuilderTankSource(parent: TransformNode): Mesh {
+        const barrelProperties: BarrelProperties = {
+            segments: [
+                { diameter: 0.7, length: 0.6 },
+                { diameter: 0.9, length: 0.2 },
+            ]
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Builder",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponSpeed: 0.8,
+                weaponDamage: 3.5,
+                weaponHealth: 3.5,
+                reloadTime: 3,
+            },
+        };
+
+        const source = this._createTankBody("builder", metadata, parent);
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.material = this._materials.gray;

@@ -5,12 +5,12 @@ import { World } from "../worlds/world";
 import { PlayerTank } from "./playerTank";
 import { TrapTank } from "./trapTank";
 
-export class TrapperTank extends TrapTank {
+export class BuilderTank extends TrapTank {
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, TrapperTank.CreateMesh(world.sources, parent), world.sources.trap.tankTriangle, previousTank);
+        super(world, BuilderTank.CreateMesh(world.sources, parent), world.sources.trap.tankQuad, previousTank);
     }
 
     public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
-        return sources.create(sources.tank.trapper, parent);
+        return sources.create(sources.tank.builder, parent);
     }
 }

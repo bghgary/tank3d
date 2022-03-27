@@ -20,7 +20,7 @@ export class LauncherTank extends MissileTank {
     protected override readonly _missileConstructor = LauncherMissile;
 
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, LauncherTank.CreateMesh(world.sources, parent), previousTank);
+        super(world, LauncherTank.CreateMesh(world.sources, parent), world.sources.missile.launcherTank, previousTank);
     }
 
     public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
