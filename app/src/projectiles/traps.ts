@@ -51,13 +51,7 @@ class Trap extends Projectile {
 
         this._shadow.update();
 
-        if (this._health <= 0) {
-            onDestroy();
-            this._node.dispose();
-        }
-
-        this._time = Math.max(this._time - deltaTime, 0);
-        if (this._time === 0) {
+        if (this._health <= 0 || (this._time -= deltaTime) <= 0) {
             onDestroy();
             this._node.dispose();
         }

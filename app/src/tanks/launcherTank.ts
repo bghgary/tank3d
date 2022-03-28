@@ -18,8 +18,8 @@ interface PlayerTankInternal extends Entity {
 }
 
 export class LauncherTank extends BulletTank {
-    protected override readonly _bulletConstructor = LauncherMissile;
-    protected override readonly _bulletSource = this._world.sources.bullet.launcherTank;
+    protected override readonly _bulletConstructor = Missile;
+    protected override readonly _bulletSource = this._world.sources.bullet.tankLauncher;
 
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
         super(world, LauncherTank.CreateMesh(world.sources, parent), previousTank);
@@ -30,7 +30,7 @@ export class LauncherTank extends BulletTank {
     }
 }
 
-class LauncherMissile extends Bullet {
+class Missile extends Bullet {
     private readonly _barrels: Array<Barrel>;
     private readonly _bulletSource: Mesh;
     private readonly _bulletProperties: Readonly<WeaponProperties>;

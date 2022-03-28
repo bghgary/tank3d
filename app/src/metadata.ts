@@ -28,6 +28,11 @@ export interface MissileMetadata extends SizeMetadata {
     readonly reloadMultiplier?: number;
 }
 
+export interface BombMetadata extends SizeMetadata {
+    readonly barrels: Array<string>;
+    readonly multiplier: Partial<Readonly<WeaponProperties>>;
+}
+
 export interface ShapeMetadata extends DisplayNameMetadata, SizeMetadata {
     readonly health: number;
     readonly damage: number;

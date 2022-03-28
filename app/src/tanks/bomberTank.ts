@@ -1,0 +1,52 @@
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
+import { Mesh } from "@babylonjs/core/Meshes/mesh";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { findNode } from "../common";
+import { WeaponProperties, WeaponPropertiesWithMultiplier } from "../components/weapon";
+import { Entity } from "../entity";
+import { BombMetadata } from "../metadata";
+import { Bullet, Bullets } from "../projectiles/bullets";
+import { Sources } from "../sources";
+import { World } from "../worlds/world";
+import { BulletTank } from "./bulletTank";
+import { PlayerTank } from "./playerTank";
+
+export class BomberTank extends BulletTank {
+    protected override readonly _bulletConstructor = Bomb;
+    protected override readonly _bulletSource = this._world.sources.bullet.tankBomber;
+
+    public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
+        super(world, BomberTank.CreateMesh(world.sources, parent), previousTank);
+    }
+
+    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+        return sources.create(sources.tank.bomber, parent);
+    }
+}
+
+class Bomb extends Bullet {
+    private readonly _barrelNodes: Array<TransformNode>;
+    private readonly _bullets: Bullets;
+    private readonly _bulletSource: Mesh;
+    private readonly _bulletProperties: Readonly<WeaponProperties>;
+
+    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>, duration: number) {
+        super(world, barrelNode, owner, node, properties, duration);
+
+        const bombMetadata = node.metadata as BombMetadata;
+        this._barrelNodes = bombMetadata.barrels.map((name) => findNode(node, name));
+        this._bullets = world.bullets;
+        this._bulletSource = world.sources.bullet.tank;
+        this._bulletProperties = new WeaponPropertiesWithMultiplier(properties, bombMetadata.multiplier);
+    }
+
+    public override update(deltaTime: number, onDestroy: () => void): void {
+        super.update(deltaTime, () => {
+            for (const barrelNode of this._barrelNodes) {
+                this._bullets.add(Bullet, barrelNode, this.owner, this._bulletSource, this._bulletProperties, 2);
+            }
+
+            onDestroy();
+        });
+    }
+}
