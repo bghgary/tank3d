@@ -1,4 +1,6 @@
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { DeepImmutable } from "@babylonjs/core/types";
+import { Damage } from "./components/damage";
 
 export const enum EntityType {
     Boss,
@@ -18,8 +20,7 @@ export interface Entity {
     readonly active: boolean;
     readonly size: number;
     readonly mass: number;
-    readonly damage: number;
-    readonly damageTime: number;
+    readonly damage: DeepImmutable<Damage>;
     readonly position: Vector3;
     readonly rotation: Quaternion;
     readonly velocity: Vector3;

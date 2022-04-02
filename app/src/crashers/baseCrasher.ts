@@ -2,7 +2,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Collider } from "../collisions";
 import { applyCollisionForce, applyGravity, applyMovement, applyWallClamp } from "../common";
-import { Health } from "../components/health";
+import { BarHealth } from "../components/health";
 import { Shadow } from "../components/shadow";
 import { Crasher } from "../crashers";
 import { Entity, EntityType } from "../entity";
@@ -19,14 +19,14 @@ export class BaseCrasher implements Crasher, Collider {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
     protected readonly _metadata: CrasherMetadata;
-    protected readonly _health: Health;
+    protected readonly _health: BarHealth;
     protected readonly _shadow: Shadow;
 
     public constructor(world: World, node: TransformNode) {
         this._world = world;
         this._node = node;
         this._metadata = this._node.metadata;
-        this._health = new Health(this._world.sources, node, this._metadata.health);
+        this._health = new BarHealth(this._world.sources, node, this._metadata.health);
         this._shadow = new Shadow(this._world.sources, node);
     }
 
@@ -37,7 +37,6 @@ export class BaseCrasher implements Crasher, Collider {
     public get size() { return this._metadata.size; }
     public get mass() { return this.size * this.size; }
     public get damage() { return this._metadata.damage; }
-    public readonly damageTime = 1;
     public get points() { return this._metadata.points; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
@@ -97,6 +96,6 @@ export class BaseCrasher implements Crasher, Collider {
             applyCollisionForce(this, other);
         }
 
-        return other.damageTime;
+        return other.damage.time;
     }
 }

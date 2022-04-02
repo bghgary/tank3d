@@ -1,5 +1,6 @@
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties, WeaponType } from "../components/weapon";
@@ -16,8 +17,11 @@ export abstract class TrapTank extends BarrelTank {
 
         this._trapProperties = {
             speed: this._properties.weaponSpeed,
-            damage: this._properties.weaponDamage,
-            damageTime: 0.2,
+            damage: {
+                value: this._properties.weaponDamage,
+                time: 0.2,
+                count: 1,
+            },
             health: this._properties.weaponHealth,
         };
     }
@@ -36,7 +40,7 @@ export abstract class TrapTank extends BarrelTank {
         super.shoot();
     }
 
-    public override setUpgrades(upgrades: Readonly<TankProperties>): void {
+    public override setUpgrades(upgrades: DeepImmutable<TankProperties>): void {
         super.setUpgrades(upgrades);
         this._updateTrapProperties();
     }
@@ -48,7 +52,7 @@ export abstract class TrapTank extends BarrelTank {
 
     protected _updateTrapProperties(): void {
         this._trapProperties.speed = this._properties.weaponSpeed;
-        this._trapProperties.damage = this._properties.weaponDamage;
+        this._trapProperties.damage.value = this._properties.weaponDamage;
         this._trapProperties.health = this._properties.weaponHealth;
     }
 }

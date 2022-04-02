@@ -1,7 +1,9 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { applyCollisionForce, applyMovement } from "../common";
+import { Health } from "../components/health";
 import { Shadow } from "../components/shadow";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
@@ -14,7 +16,7 @@ export class Traps extends Projectiles<Trap> {
         super(world, "traps");
     }
 
-    public add(barrelNode: TransformNode, owner: Entity, source: Mesh, properties: Readonly<WeaponProperties>, duration: number): Trap {
+    public add(barrelNode: TransformNode, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Trap {
         const node = this._world.sources.create(source, this._root);
         const trap = new Trap(this._world, barrelNode, owner, node, properties, duration);
         this._projectiles.add(trap);
@@ -32,13 +34,13 @@ export class Traps extends Projectiles<Trap> {
 
 class Trap extends Projectile {
     private readonly _shadow: Shadow;
-    private _health: number;
+    private _health: Health;
     private _time: number;
 
-    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>, duration: number) {
+    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(barrelNode, owner, node, properties);
         this._shadow = new Shadow(world.sources, this._node);
-        this._health = this._properties.health;
+        this._health = new Health(this._properties.health);
         this._time = duration;
     }
 
@@ -51,7 +53,7 @@ class Trap extends Projectile {
 
         this._shadow.update();
 
-        if (this._health <= 0 || (this._time -= deltaTime) <= 0) {
+        if (!this._health.update(deltaTime) || (this._time -= deltaTime) <= 0) {
             onDestroy();
             this._node.dispose();
         }
@@ -64,7 +66,7 @@ class Trap extends Projectile {
         }
 
         applyCollisionForce(this, other, 2);
-        this._health -= other.damage;
-        return other.damageTime;
+        this._health.takeDamage(other);
+        return other.damage.time;
     }
 }

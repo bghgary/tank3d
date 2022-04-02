@@ -7,6 +7,7 @@ import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import { Scene } from "@babylonjs/core/scene";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { WeaponProperties } from "./components/weapon";
 import { createShadowMaterial } from "./materials/shadowMaterial";
 import { max } from "./math";
@@ -17,7 +18,8 @@ import { World } from "./worlds/world";
 const CRASHER_SPEED = 5;
 const CRASHER_PROJECTILE_RELOAD = 0.5;
 const CRASHER_PROJECTILE_SPEED = 5;
-const CRASHER_PROJECTILE_DAMAGE = 5;
+const CRASHER_PROJECTILE_DAMAGE_VALUE = 5;
+const CRASHER_PROJECTILE_DAMAGE_TIME = 0.2;
 const CRASHER_PROJECTILE_HEALTH = 8;
 
 const MEGA_CRASHER_HEALTH = 300;
@@ -36,7 +38,7 @@ interface BarrelParameters {
     readonly diameter?: number;
     readonly angleVariance?: number;
     readonly speedVariance?: number;
-    readonly multiplier?: Partial<Readonly<WeaponProperties>>;
+    readonly multiplier?: Partial<DeepImmutable<WeaponProperties>>;
 }
 
 function createBarrel(name: string, parameters: BarrelParameters, scene: Scene): Mesh {
@@ -491,7 +493,7 @@ export class Sources {
             size: 1,
             barrels: ["barrel"],
             multiplier: {
-                damage: 0.17,
+                damage: { value: 0.17, time: 1, count: 1 },
                 health: 0.17,
             },
             reloadMultiplier: 0.5,
@@ -516,7 +518,7 @@ export class Sources {
             barrels: ["barrel1", "barrel2", "barrel3", "barrel4", "barrel5"],
             multiplier: {
                 speed: 0.5,
-                damage: 0.5,
+                damage: { value: 0.5, time: 1, count: 1 },
                 health: 0.5,
             },
         };
@@ -548,7 +550,7 @@ export class Sources {
             displayName: "Cube",
             size: 0.6,
             health: 10,
-            damage: 10,
+            damage: { value: 10, time: 1, count: 1 },
             points: 10,
         };
 
@@ -567,7 +569,7 @@ export class Sources {
             displayName: "Tetrahedron",
             size: 0.75,
             health: 30,
-            damage: 20,
+            damage: { value: 20, time: 1, count: 1 },
             points: 25,
         };
 
@@ -586,7 +588,7 @@ export class Sources {
             displayName: "Dodecahedron",
             size: 1,
             health: 125,
-            damage: 50,
+            damage: { value: 50, time: 1, count: 1 },
             points: 120,
         };
 
@@ -604,7 +606,7 @@ export class Sources {
             displayName: "Truncated Isocahedron",
             size: 1.62,
             health: 250,
-            damage: 50,
+            damage: { value: 50, time: 1, count: 1 },
             points: 200,
         };
 
@@ -621,7 +623,7 @@ export class Sources {
             size: 0.5,
             speed: CRASHER_SPEED,
             health: 10,
-            damage: 20,
+            damage: { value: 20, time: 1, count: 1 },
             points: 10,
         };
 
@@ -638,7 +640,7 @@ export class Sources {
             size: 0.7,
             speed: CRASHER_SPEED,
             health: 20,
-            damage: 40,
+            damage: { value: 40, time: 1, count: 1 },
             points: 25,
         };
 
@@ -655,14 +657,17 @@ export class Sources {
             size: 0.7,
             speed: CRASHER_SPEED * 1.1,
             health: 20,
-            damage: 30,
+            damage: { value: 30, time: 1, count: 1 },
             points: 50,
             reload: CRASHER_PROJECTILE_RELOAD,
             barrels: ["barrel"],
             bullet: {
                 speed: CRASHER_PROJECTILE_SPEED,
-                damage: CRASHER_PROJECTILE_DAMAGE,
-                damageTime: 0.2,
+                damage: {
+                    value: CRASHER_PROJECTILE_DAMAGE_VALUE,
+                    time: CRASHER_PROJECTILE_DAMAGE_TIME,
+                    count: 1
+                },
                 health: CRASHER_PROJECTILE_HEALTH,
             },
         };
@@ -685,14 +690,17 @@ export class Sources {
             size: 1.4,
             speed: CRASHER_SPEED * 0.6,
             health: MEGA_CRASHER_HEALTH,
-            damage: MEGA_CRASHER_DAMAGE,
+            damage: { value: MEGA_CRASHER_DAMAGE, time: 1, count: 1 },
             points: MEGA_CRASHER_POINTS,
             reload: CRASHER_PROJECTILE_RELOAD * 2,
             barrels: ["barrel"],
             bullet: {
                 speed: CRASHER_PROJECTILE_SPEED,
-                damage: CRASHER_PROJECTILE_DAMAGE * 2,
-                damageTime: 0.2,
+                damage: {
+                    value: CRASHER_PROJECTILE_DAMAGE_VALUE * 2,
+                    time: CRASHER_PROJECTILE_DAMAGE_TIME,
+                    count: 1
+                },
                 health: CRASHER_PROJECTILE_HEALTH,
             },
         };
@@ -719,14 +727,17 @@ export class Sources {
             size: 1.4,
             speed: CRASHER_SPEED * 0.7,
             health: MEGA_CRASHER_HEALTH,
-            damage: MEGA_CRASHER_DAMAGE,
+            damage: { value: MEGA_CRASHER_DAMAGE, time: 1, count: 1 },
             points: MEGA_CRASHER_POINTS,
             reload: CRASHER_PROJECTILE_RELOAD * 0.5,
             barrels: ["barrelL", "barrelR"],
             bullet: {
                 speed: CRASHER_PROJECTILE_SPEED,
-                damage: CRASHER_PROJECTILE_DAMAGE,
-                damageTime: 0.2,
+                damage: {
+                    value: CRASHER_PROJECTILE_DAMAGE_VALUE,
+                    time: CRASHER_PROJECTILE_DAMAGE_TIME,
+                    count: 1
+                },
                 health: CRASHER_PROJECTILE_HEALTH,
             },
         };
@@ -760,14 +771,17 @@ export class Sources {
             size: 1.4,
             speed: CRASHER_SPEED * 0.5,
             health: MEGA_CRASHER_HEALTH,
-            damage: MEGA_CRASHER_DAMAGE,
+            damage: { value: MEGA_CRASHER_DAMAGE, time: 1, count: 1 },
             points: MEGA_CRASHER_POINTS,
             reload: CRASHER_PROJECTILE_RELOAD * 4,
             barrels: ["barrel"],
             drone: {
                 speed: CRASHER_PROJECTILE_SPEED,
-                damage: CRASHER_PROJECTILE_DAMAGE,
-                damageTime: 0.2,
+                damage: {
+                    value: CRASHER_PROJECTILE_DAMAGE_VALUE,
+                    time: CRASHER_PROJECTILE_DAMAGE_TIME,
+                    count: 1
+                },
                 health: CRASHER_PROJECTILE_HEALTH * 1.25,
             },
         };
@@ -798,7 +812,7 @@ export class Sources {
             height: 2,
             speed: 1,
             health: 2000,
-            damage: 40,
+            damage: { value: 40, time: 1, count: 1 },
             points: 300,
             tanks: ["tank0", "tank1", "tank2", "tank3"],
         };
@@ -808,8 +822,7 @@ export class Sources {
             barrels: ["barrel"],
             bullet: {
                 speed: 8,
-                damage: 20,
-                damageTime: 0.2,
+                damage: { value: 20, time: 0.2, count: 1 },
                 health: 100,
             },
         };
@@ -1202,7 +1215,7 @@ export class Sources {
         const largeBarrelProperties: BarrelParameters = {
             segments: [{ diameter: 0.45, length: 0.8 }],
             multiplier: {
-                damage: 1.5,
+                damage: { value: 1.5, time: 1, count: 1 },
             },
         };
 
@@ -1322,7 +1335,7 @@ export class Sources {
         const sideBarrelProperties: BarrelParameters = {
             segments: [{ diameter: sideBarrelDiameter, length: sideBarrelLength }],
             multiplier: {
-                damage: 0.3,
+                damage: { value: 0.3, time: 1, count: 1 },
                 health: 0.3,
             },
         };

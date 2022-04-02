@@ -4,6 +4,7 @@ import { Nullable } from "@babylonjs/core/types";
 import { Entity } from "../entity";
 import { SizeMetadata } from "../metadata";
 import { Sources } from "../sources";
+import { Damage } from "./damage";
 
 const REGEN_TIME = 30;
 const REGEN_SPEED = 0.2;
@@ -11,15 +12,52 @@ const RESET_SPEED = 200;
 const DAMAGE_SPEED = 5;
 
 export class Health {
+    private readonly _max: number;
+    private _current: number;
+    private _damage: Nullable<Damage> = null;
+    private _damageTime = 0;
+    private _damageCount = 0;
+
+    public constructor(max: number) {
+        this._max = this._current = max;
+    }
+
+    public update(deltaTime: number): boolean {
+        if (this._damage && this._damageCount > 0) {
+            this._damageTime -= deltaTime;
+            if (this._damageTime <= 0) {
+                this._current -= this._damage.value;
+                this._damageTime += this._damage.time;
+                --this._damageCount;
+            }
+        }
+
+        return this._current > 0;
+    }
+
+    public takeDamage(entity: Entity): void {
+        this._damage = entity.damage;
+        this._damageTime = 0;
+        this._damageCount = entity.damage.count;
+    }
+
+    public reset(): void {
+        this._current = this._max;
+    }
+}
+
+export class BarHealth {
     private readonly _node: TransformNode;
     private _size!: number;
     private _max: number;
-    private _regenSpeed: number;
     private _current: number;
     private _target: number;
     private _speed = 0;
+    private _regenSpeed: number;
     private _regenTime = 0;
-    private _lastDamageEntity: Nullable<Entity> = null;
+    private _damageEntity: Nullable<Entity> = null;
+    private _damageTime = 0;
+    private _damageCount = 0;
 
     public constructor(sources: Sources, parent: TransformNode, max: number, regenSpeed = 0) {
         this._node = sources.createHealth();
@@ -64,13 +102,24 @@ export class Health {
     }
 
     public update(deltaTime: number, onZero: (source: Entity) => void): void {
+        if (this._damageEntity && this._damageCount > 0) {
+            this._damageTime -= deltaTime;
+            if (this._damageTime <= 0) {
+                this._target = Math.min(this._current, this._target) - this._damageEntity.damage.value;
+                this._speed = (this._current - this._target) * DAMAGE_SPEED;
+                this._regenTime = REGEN_TIME;
+                this._damageTime += this._damageEntity.damage.time;
+                --this._damageCount;
+            }
+        }
+
         if (this._target < this._current) {
             this._node.setEnabled(true);
             this._current = Math.max(this._current - this._speed * deltaTime, Math.max(this._target, 0));
             this._node.scaling.x = this._current / this._max * this._size;
             if (this._current === 0) {
                 this._target = this._current;
-                onZero(this._lastDamageEntity!);
+                onZero(this._damageEntity!);
             }
         } else if (this._target > this._current) {
             this._node.setEnabled(true);
@@ -96,13 +145,9 @@ export class Health {
     }
 
     public takeDamage(entity: Entity): void {
-        this._target = Math.min(this._current, this._target) - entity.damage;
-        this._speed = (this._current - this._target) * DAMAGE_SPEED;
-        this._regenTime = REGEN_TIME;
-
-        if (this._target <= 0) {
-            this._lastDamageEntity = entity;
-        }
+        this._damageEntity = entity;
+        this._damageTime = 0;
+        this._damageCount = entity.damage.count;
     }
 
     public reset(): void {

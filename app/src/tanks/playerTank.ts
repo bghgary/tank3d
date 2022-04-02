@@ -1,16 +1,18 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { Collider } from "../collisions";
 import { applyCollisionForce, applyMovement, applyWallClamp } from "../common";
-import { Entity, EntityType } from "../entity";
-import { Health } from "../components/health";
-import { decayVector3ToRef, TmpVector3 } from "../math";
-import { PlayerTankMetadata } from "../metadata";
+import { Damage, DamageZero } from "../components/damage";
+import { BarHealth } from "../components/health";
 import { Shadow } from "../components/shadow";
 import { Shield } from "../components/shield";
-import { World } from "../worlds/world";
 import { WeaponType } from "../components/weapon";
+import { Entity, EntityType } from "../entity";
+import { decayVector3ToRef, TmpVector3 } from "../math";
+import { PlayerTankMetadata } from "../metadata";
+import { World } from "../worlds/world";
 
 export interface TankProperties {
     weaponSpeed: number;
@@ -65,13 +67,14 @@ export abstract class PlayerTank implements Entity, Collider {
     protected readonly _node: TransformNode;
     protected readonly _metadata: PlayerTankMetadata;
     protected readonly _shield: Shield;
-    protected readonly _health: Health;
+    protected readonly _health: BarHealth;
     protected readonly _shadow: Shadow;
 
     protected _autoShoot = false;
     protected _autoRotate = false;
     protected _autoRotateSpeed = 1;
-    protected _properties: Readonly<TankProperties>;
+    protected _properties: DeepImmutable<TankProperties>;
+    protected _damage: Damage = { value: 0, time: 1, count: 1 };
 
     private readonly _collisionToken: IDisposable;
 
@@ -81,6 +84,7 @@ export abstract class PlayerTank implements Entity, Collider {
         this._node = node;
         this._metadata = this._node.metadata;
         this._properties = multiply(BaseProperties, this._metadata.multiplier);
+        this._damage.value = this._properties.bodyDamage;
 
         if (previousTank) {
             this._node.position.copyFrom(previousTank._node.position);
@@ -98,7 +102,7 @@ export abstract class PlayerTank implements Entity, Collider {
             previousTank.dispose();
         } else {
             this._shield = new Shield(this._world.sources, node);
-            this._health = new Health(this._world.sources, this._node, this._properties.maxHealth, this._properties.healthRegen);
+            this._health = new BarHealth(this._world.sources, this._node, this._properties.maxHealth, this._properties.healthRegen);
             this._shadow = new Shadow(this._world.sources, this._node);
         }
 
@@ -116,8 +120,7 @@ export abstract class PlayerTank implements Entity, Collider {
     public get active() { return !this._shield.enabled && this.inBounds && this._node.isEnabled(); }
     public get size() { return this._shield.enabled ? this._shield.size : this._metadata.size; }
     public readonly mass = 2;
-    public get damage() { return this._shield.enabled ? 0 : this._properties.bodyDamage; }
-    public readonly damageTime = 1;
+    public get damage() { return this._shield.enabled ? DamageZero : this._damage; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
@@ -184,8 +187,9 @@ export abstract class PlayerTank implements Entity, Collider {
         });
     }
 
-    public setUpgrades(upgrades: Readonly<TankProperties>): void {
+    public setUpgrades(upgrades: DeepImmutable<TankProperties>): void {
         this._properties = multiply(add(BaseProperties, upgrades), this._metadata.multiplier);
+        this._damage.value = this._properties.bodyDamage;
         this._health.setMax(this._properties.maxHealth);
         this._health.setRegenSpeed(this._properties.healthRegen);
     }
@@ -212,6 +216,6 @@ export abstract class PlayerTank implements Entity, Collider {
 
         this._health.takeDamage(other);
         applyCollisionForce(this, other);
-        return other.damageTime;
+        return other.damage.time;
     }
 }

@@ -1,5 +1,6 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { Entity } from "./entity";
 
 const GRAVITY = 9.8;
@@ -15,7 +16,7 @@ export function applyCollisionForce(target: Entity, other: Entity, strength = 1)
     velocity.z += dz * factor;
 }
 
-export function applyMovement(deltaTime: number, position: Vector3, velocity: Readonly<Vector3>): void {
+export function applyMovement(deltaTime: number, position: Vector3, velocity: DeepImmutable<Vector3>): void {
     position.x += velocity.x * deltaTime;
     position.z += velocity.z * deltaTime;
 }

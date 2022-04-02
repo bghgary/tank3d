@@ -1,12 +1,13 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { IDisposable } from "@babylonjs/core/scene";
+import { DeepImmutable } from "@babylonjs/core/types";
 import Quadtree from "@timohausmann/quadtree-js";
 import { Entity } from "./entity";
 import { World } from "./worlds/world";
 
 export interface Collider extends Quadtree.Rect {
     readonly active: boolean;
-    readonly position: Readonly<Vector3>;
+    readonly position: DeepImmutable<Vector3>;
     readonly size: number;
     onCollide(other: Entity): number;
 }

@@ -3,6 +3,7 @@ import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import { IDisposable } from "@babylonjs/core/scene";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { Collider } from "../collisions";
 import { WeaponProperties, WeaponPropertiesWithMultiplier } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
@@ -10,7 +11,7 @@ import { TmpVector3 } from "../math";
 import { BarrelMetadata } from "../metadata";
 import { World } from "../worlds/world";
 
-function applyAngleVariance(forward: Readonly<Vector3>, variance = Tools.ToRadians(2), result: Vector3): Vector3 {
+function applyAngleVariance(forward: DeepImmutable<Vector3>, variance = Tools.ToRadians(2), result: Vector3): Vector3 {
     const angle = Scalar.RandomRange(-variance, variance);
     forward.rotateByQuaternionToRef(Quaternion.FromEulerAngles(0, angle, 0), result);
     return result;
@@ -42,7 +43,7 @@ export abstract class Projectile implements Entity, Collider {
     protected readonly _node: TransformNode;
     protected readonly _properties: WeaponPropertiesWithMultiplier;
 
-    public constructor(barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>) {
+    public constructor(barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>) {
         const barrelMetadata = barrelNode.metadata as BarrelMetadata;
         const barrelDiameter = barrelMetadata.diameter * barrelNode.absoluteScaling.x;
         const barrelLength = barrelMetadata.length * barrelNode.absoluteScaling.z;
@@ -72,7 +73,6 @@ export abstract class Projectile implements Entity, Collider {
     public readonly size: number;
     public get mass() { return this.size * this.size; }
     public get damage() { return this._properties.damage; }
-    public get damageTime() { return this._properties.damageTime; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();

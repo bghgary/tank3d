@@ -1,8 +1,9 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { applyCollisionForce, applyMovement } from "../common";
-import { Health } from "../components/health";
+import { BarHealth } from "../components/health";
 import { Shadow } from "../components/shadow";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
@@ -11,9 +12,9 @@ import { World } from "../worlds/world";
 import { Projectile, Projectiles } from "./projectiles";
 
 export class Drones extends Projectiles<Drone> {
-    private readonly _properties: Readonly<WeaponProperties>;
+    private readonly _properties: DeepImmutable<WeaponProperties>;
 
-    public constructor(world: World, parent: TransformNode, properties: Readonly<WeaponProperties>) {
+    public constructor(world: World, parent: TransformNode, properties: DeepImmutable<WeaponProperties>) {
         super(world, "drones");
         this._root.parent = parent;
         this._properties = properties;
@@ -41,12 +42,12 @@ export class Drones extends Projectiles<Drone> {
 
 class Drone extends Projectile {
     private readonly _shadow: Shadow;
-    private readonly _health: Health;
+    private readonly _health: BarHealth;
 
-    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>) {
+    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>) {
         super(barrelNode, owner, node, properties);
         this._shadow = new Shadow(world.sources, this._node);
-        this._health = new Health(world.sources, this._node, this._properties.health);
+        this._health = new BarHealth(world.sources, this._node, this._properties.health);
     }
 
     public type = EntityType.Drone;
@@ -94,6 +95,6 @@ class Drone extends Projectile {
 
         applyCollisionForce(this, other);
         this._health.takeDamage(other);
-        return other.damageTime;
+        return other.damage.time;
     }
 }

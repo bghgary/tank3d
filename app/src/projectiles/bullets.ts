@@ -1,7 +1,9 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { applyCollisionForce, applyMovement } from "../common";
+import { Health } from "../components/health";
 import { Shadow } from "../components/shadow";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
@@ -14,7 +16,7 @@ export class Bullets extends Projectiles<Bullet> {
         super(world, "bullets");
     }
 
-    public add(constructor: BulletConstructor, barrelNode: TransformNode, owner: Entity, source: Mesh, properties: Readonly<WeaponProperties>, duration: number): Projectile {
+    public add(constructor: BulletConstructor, barrelNode: TransformNode, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Projectile {
         const node = this._world.sources.create(source, this._root);
         const bullet = new constructor(this._world, barrelNode, owner, node, properties, duration);
         this._projectiles.add(bullet);
@@ -31,20 +33,20 @@ export class Bullets extends Projectiles<Bullet> {
 }
 
 export interface BulletConstructor {
-    new(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>, duration: number): Bullet;
+    new(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): Bullet;
 }
 
 export class Bullet extends Projectile {
     private readonly _shadow: Shadow;
-    private readonly _targetVelocity: Readonly<Vector3> = new Vector3();
-    private _health: number;
+    private readonly _targetVelocity: DeepImmutable<Vector3> = new Vector3();
+    private readonly _health: Health;
     private _time: number;
 
-    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>, duration: number) {
+    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(barrelNode, owner, node, properties);
         this._targetVelocity.copyFrom(this.velocity).scaleInPlace(properties.speed / this.velocity.length());
         this._shadow = new Shadow(world.sources, this._node);
-        this._health = this._properties.health;
+        this._health = new Health(this._properties.health);
         this._time = duration;
     }
 
@@ -57,7 +59,7 @@ export class Bullet extends Projectile {
 
         this._shadow.update();
 
-        if (this._health <= 0 || (this._time -= deltaTime) <= 0) {
+        if (!this._health.update(deltaTime) || (this._time -= deltaTime) <= 0) {
             onDestroy();
             this._node.dispose();
         }
@@ -69,7 +71,7 @@ export class Bullet extends Projectile {
         }
 
         applyCollisionForce(this, other, 2);
-        this._health -= other.damage;
-        return other.damageTime;
+        this._health.takeDamage(other);
+        return other.damage.time;
     }
 }

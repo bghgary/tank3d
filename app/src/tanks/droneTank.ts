@@ -1,5 +1,6 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties, WeaponType } from "../components/weapon";
@@ -22,8 +23,11 @@ export abstract class DroneTank extends BarrelTank {
 
         this._droneProperties = {
             speed: this._properties.weaponSpeed,
-            damage: this._properties.weaponDamage,
-            damageTime: 0.2,
+            damage: {
+                value: this._properties.weaponDamage,
+                time: 0.2,
+                count: 1,
+            },
             health: this._properties.weaponHealth,
         };
 
@@ -55,7 +59,7 @@ export abstract class DroneTank extends BarrelTank {
         super.update(deltaTime, onDestroy);
     }
 
-    public override setUpgrades(upgrades: Readonly<TankProperties>): void {
+    public override setUpgrades(upgrades: DeepImmutable<TankProperties>): void {
         super.setUpgrades(upgrades);
         this._updateDroneProperties();
     }
@@ -67,7 +71,7 @@ export abstract class DroneTank extends BarrelTank {
 
     protected _updateDroneProperties(): void {
         this._droneProperties.speed = this._properties.weaponSpeed;
-        this._droneProperties.damage = this._properties.weaponDamage;
+        this._droneProperties.damage.value = this._properties.weaponDamage;
         this._droneProperties.health = this._properties.weaponHealth;
     }
 }

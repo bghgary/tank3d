@@ -1,5 +1,6 @@
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { findNode } from "../common";
 import { Lance } from "../components/lance";
 import { WeaponProperties, WeaponType } from "../components/weapon";
@@ -17,8 +18,11 @@ export class LancerTank extends PlayerTank {
 
         this._lanceProperties = {
             speed: this._properties.weaponSpeed,
-            damage: this._properties.weaponDamage,
-            damageTime: this._properties.reloadTime,
+            damage: {
+                value: this._properties.weaponDamage,
+                time: this._properties.reloadTime,
+                count: 1,
+            },
             health: this._properties.weaponHealth,
         };
 
@@ -35,7 +39,7 @@ export class LancerTank extends PlayerTank {
         super.update(deltaTime, onDestroy);
     }
 
-    public override setUpgrades(upgrades: Readonly<TankProperties>): void {
+    public override setUpgrades(upgrades: DeepImmutable<TankProperties>): void {
         super.setUpgrades(upgrades);
         this._updateLanceProperties();
 
@@ -51,8 +55,8 @@ export class LancerTank extends PlayerTank {
 
     private _updateLanceProperties(): void {
         this._lanceProperties.speed = this._properties.weaponSpeed;
-        this._lanceProperties.damage = this._properties.weaponDamage;
-        this._lanceProperties.damageTime = this._properties.reloadTime;
+        this._lanceProperties.damage.value = this._properties.weaponDamage;
+        this._lanceProperties.damage.time = this._properties.reloadTime;
         this._lanceProperties.health = this._properties.weaponHealth;
     }
 }

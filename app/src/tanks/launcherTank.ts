@@ -2,6 +2,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil, findNode } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties, WeaponPropertiesWithMultiplier } from "../components/weapon";
@@ -14,7 +15,7 @@ import { BulletTank } from "./bulletTank";
 import { PlayerTank, TankProperties } from "./playerTank";
 
 interface PlayerTankInternal extends Entity {
-    _properties: Readonly<TankProperties>;
+    _properties: DeepImmutable<TankProperties>;
 }
 
 export class LauncherTank extends BulletTank {
@@ -33,12 +34,12 @@ export class LauncherTank extends BulletTank {
 class Missile extends Bullet {
     private readonly _barrels: Array<Barrel>;
     private readonly _bulletSource: Mesh;
-    private readonly _bulletProperties: Readonly<WeaponProperties>;
+    private readonly _bulletProperties: DeepImmutable<WeaponProperties>;
     private readonly _getReloadTime: () => number;
     private _reloadTime: number;
     private _recoil = new Vector3();
 
-    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>, duration: number) {
+    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, barrelNode, owner, node, properties, duration);
 
         const missileMetadata = node.metadata as MissileMetadata;

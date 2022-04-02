@@ -1,5 +1,6 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Observable } from "@babylonjs/core/Misc/observable";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { Button } from "@babylonjs/gui/2D/controls/button";
 import { Container } from "@babylonjs/gui/2D/controls/container";
 import { Control } from "@babylonjs/gui/2D/controls/control";
@@ -32,7 +33,7 @@ class BarBase<T extends Rectangle> {
     protected readonly _text: TextBlock;
     private _value = 0;
 
-    protected constructor(root: T, parent: Container, properties: Readonly<BarProperties>) {
+    protected constructor(root: T, parent: Container, properties: DeepImmutable<BarProperties>) {
         this._root = root;
         this._root.widthInPixels = properties.width;
         this._root.heightInPixels = properties.height;
@@ -84,13 +85,13 @@ class BarBase<T extends Rectangle> {
 }
 
 export class Bar extends BarBase<Rectangle> {
-    public constructor(name: string, parent: Container, properties: Readonly<BarProperties>) {
+    public constructor(name: string, parent: Container, properties: DeepImmutable<BarProperties>) {
         super(new Rectangle(name), parent, properties);
     }
 }
 
 export class BarButton extends BarBase<Button> {
-    public constructor(name: string, parent: Container, properties: Readonly<BarButtonProperties>, world: World) {
+    public constructor(name: string, parent: Container, properties: DeepImmutable<BarButtonProperties>, world: World) {
         super(new Button(name), parent, properties);
 
         this._root.pointerEnterAnimation = () => this._root.background = properties.hoverColor;

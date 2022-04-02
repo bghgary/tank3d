@@ -1,19 +1,21 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { Collider } from "../collisions";
 import { applyCollisionForce, findNode } from "../common";
 import { Entity, EntityType } from "../entity";
 import { decayScalar } from "../math";
 import { LanceMetadata } from "../metadata";
 import { World } from "../worlds/world";
+import { Health } from "./health";
 import { WeaponProperties } from "./weapon";
 
 class LanceCollider implements Entity, Collider {
     private readonly _node: TransformNode;
-    private readonly _properties: Readonly<WeaponProperties>;
+    private readonly _properties: DeepImmutable<WeaponProperties>;
     private readonly _takeDamage: (other: Entity) => void;
 
-    public constructor(owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>, size: number, takeDamage: (other: Entity) => void) {
+    public constructor(owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, size: number, takeDamage: (other: Entity) => void) {
         this.owner = owner;
         this._node = node;
         this._properties = properties;
@@ -28,7 +30,6 @@ class LanceCollider implements Entity, Collider {
     public readonly size: number;
     public get mass() { return this.size * this.size; }
     public get damage() { return this._properties.damage; }
-    public get damageTime() { return this._properties.damageTime; }
     public get position() { return this._node.absolutePosition; }
     public get rotation() { return this.owner.rotation; }
     public get velocity() { return this.owner.velocity; }
@@ -47,23 +48,21 @@ class LanceCollider implements Entity, Collider {
 
         applyCollisionForce(this.owner, other);
         this._takeDamage(other);
-        return other.damageTime;
+        return other.damage.time;
     }
 }
 
 export class Lance {
     private readonly _node: TransformNode;
-    private readonly _properties: Readonly<WeaponProperties>;
     private readonly _colliders: Array<LanceCollider>;
     private readonly _collisionToken: IDisposable;
 
-    private _health: number;
+    private _health: Health;
     private _targetScale = 1;
 
     public constructor(world: World, owner: Entity, node: TransformNode, properties: WeaponProperties) {
         this._node = node;
-        this._properties = properties;
-        this._health = properties.health;
+        this._health = new Health(properties.health);
 
         const midPointNode = findNode(this._node, "midpoint");
         const endPointNode = findNode(this._node, "endpoint");
@@ -86,17 +85,16 @@ export class Lance {
     }
 
     public update(deltaTime: number): void {
-        if (this._health <= 0) {
-            this._health = this._properties.health;
-            this._node.scaling.z *= 0.6;
-        } else {
-            this._node.scaling.z = decayScalar(this._node.scaling.z, this._targetScale, deltaTime, 0.5);
-            this._health = decayScalar(this._health, this._properties.health, deltaTime, 0.5);
+        this._node.scaling.z = decayScalar(this._node.scaling.z, this._targetScale, deltaTime, 0.5);
+
+        if (!this._health.update(deltaTime)) {
+            this._health.reset();
+            this._node.scaling.z = Math.max(this._node.scaling.z * 0.75, 0.5);
         }
     }
 
     private _takeDamage(other: Entity): void {
-        this._health -= other.damage;
-        this._node.scaling.z *= 0.9;
+        this._health.takeDamage(other);
+        this._node.scaling.z = Math.max(this._node.scaling.z * 0.95, 0.5);
     }
 }

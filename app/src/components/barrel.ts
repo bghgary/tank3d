@@ -1,5 +1,6 @@
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { Entity } from "../entity";
 import { decayScalar } from "../math";
 import { BarrelMetadata } from "../metadata";
@@ -20,12 +21,12 @@ export class Barrel {
         this._scale = (node) => node.scaling.z = 1 - 0.1 / (node.metadata as BarrelMetadata).length;
     }
 
-    public shootBullet(constructor: BulletConstructor, owner: Entity, source: Mesh, properties: Readonly<WeaponProperties>, duration: number): Projectile {
+    public shootBullet(constructor: BulletConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Projectile {
         this._scale(this._node);
         return this._world.bullets.add(constructor, this._node, owner, source, properties, duration);
     }
 
-    public shootTrap(owner: Entity, source: Mesh, properties: Readonly<WeaponProperties>, duration: number): Projectile {
+    public shootTrap(owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Projectile {
         this._scale(this._node);
         return this._world.traps.add(this._node, owner, source, properties, duration);
     }

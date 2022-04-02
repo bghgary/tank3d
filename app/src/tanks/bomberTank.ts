@@ -1,6 +1,7 @@
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { findNode } from "../common";
 import { WeaponProperties, WeaponPropertiesWithMultiplier } from "../components/weapon";
 import { Entity } from "../entity";
@@ -28,9 +29,9 @@ class Bomb extends Bullet {
     private readonly _barrelNodes: Array<TransformNode>;
     private readonly _bullets: Bullets;
     private readonly _bulletSource: Mesh;
-    private readonly _bulletProperties: Readonly<WeaponProperties>;
+    private readonly _bulletProperties: DeepImmutable<WeaponProperties>;
 
-    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: Readonly<WeaponProperties>, duration: number) {
+    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, barrelNode, owner, node, properties, duration);
 
         const bombMetadata = node.metadata as BombMetadata;

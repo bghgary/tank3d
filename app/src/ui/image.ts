@@ -1,4 +1,5 @@
 import { Observable } from "@babylonjs/core/Misc/observable";
+import { DeepImmutable } from "@babylonjs/core/types";
 import { Button } from "@babylonjs/gui/2D/controls/button";
 import { Container } from "@babylonjs/gui/2D/controls/container";
 import { Control } from "@babylonjs/gui/2D/controls/control";
@@ -21,7 +22,7 @@ export interface ImageButtonProperties {
 export class ImageButton {
     private readonly _root: Button;
 
-    public constructor(name: string, parent: Container, url: string, properties: Readonly<ImageButtonProperties>, world: World) {
+    public constructor(name: string, parent: Container, url: string, properties: DeepImmutable<ImageButtonProperties>, world: World) {
         this._root = Button.CreateImageOnlyButton(name, url);
         this._root.widthInPixels = properties.width;
         this._root.heightInPixels = properties.height;
