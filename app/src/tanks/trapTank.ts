@@ -20,7 +20,6 @@ export abstract class TrapTank extends BarrelTank {
             damage: {
                 value: this._properties.weaponDamage,
                 time: 0.2,
-                count: 1,
             },
             health: this._properties.weaponHealth,
         };

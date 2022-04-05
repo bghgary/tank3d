@@ -209,6 +209,7 @@ export class Sources {
         readonly boss: Mesh;
         readonly tankLauncher: Mesh;
         readonly tankBomber: Mesh;
+        readonly tankPoison: Mesh;
     };
 
     public readonly drone: {
@@ -265,6 +266,7 @@ export class Sources {
         readonly artillery: Mesh;
         readonly blaster: Mesh;
         readonly bomber: Mesh;
+        readonly poison: Mesh;
     };
 
     public constructor(world: World) {
@@ -298,8 +300,9 @@ export class Sources {
             tank: this._createBulletSource(bullets, "tank", 8, this._materials.blue),
             crasher: this._createBulletSource(bullets, "crasher", 4, this._materials.pink),
             boss: this._createBulletSource(bullets, "boss", 8, this._materials.orange),
-            tankLauncher: this._createLauncherTankMissileSource(bullets, "tankLauncher"),
-            tankBomber: this._createBomberTankBombSource(bullets, "tankBomber"),
+            tankLauncher: this._createLauncherTankMissileSource(bullets),
+            tankBomber: this._createBomberTankBombSource(bullets),
+            tankPoison: this._createPoisonTankBulletSource(bullets),
         };
 
         const drones = new TransformNode("drones", this._scene);
@@ -368,6 +371,7 @@ export class Sources {
             artillery: this._createArtilleryTankSource(tanks),
             blaster: this._createBlasterTankSource(tanks),
             bomber: this._createBomberTankSource(tanks),
+            poison: this._createPoisonTankSource(tanks),
         };
     }
 
@@ -488,18 +492,18 @@ export class Sources {
         return source;
     }
 
-    private _createLauncherTankMissileSource(parent: TransformNode, name: string): Mesh {
+    private _createLauncherTankMissileSource(parent: TransformNode): Mesh {
         const metadata: MissileMetadata = {
             size: 1,
             barrels: ["barrel"],
             multiplier: {
-                damage: { value: 0.17, time: 1, count: 1 },
+                damage: { value: 0.17, time: 1 },
                 health: 0.17,
             },
             reloadMultiplier: 0.5,
         };
 
-        const source = createSphere(name, metadata.size, this._scene);
+        const source = createSphere("tankLauncher", metadata.size, this._scene);
         source.metadata = metadata;
         source.material = this._materials.blue;
         source.parent = parent;
@@ -512,18 +516,18 @@ export class Sources {
         return source;
     }
 
-    private _createBomberTankBombSource(parent: TransformNode, name: string): Mesh {
+    private _createBomberTankBombSource(parent: TransformNode): Mesh {
         const metadata: BombMetadata = {
             size: 1,
             barrels: ["barrel1", "barrel2", "barrel3", "barrel4", "barrel5"],
             multiplier: {
                 speed: 0.5,
-                damage: { value: 0.5, time: 1, count: 1 },
+                damage: { value: 0.5, time: 1 },
                 health: 0.5,
             },
         };
 
-        const source = createSphere(name, metadata.size, this._scene);
+        const source = createSphere("tankBomber", metadata.size, this._scene);
         source.metadata = metadata;
         source.material = this._materials.blue;
         source.parent = parent;
@@ -545,12 +549,34 @@ export class Sources {
         return source;
     }
 
+    private _createPoisonTankBulletSource(parent: TransformNode): Mesh {
+        const source = this._createBulletSource(parent, "tankPoison", 8, this._materials.blue);
+
+        const icosahedron = MeshBuilder.CreatePolyhedron("icosahedron", { type: 3, size: 0.4 }, this._scene);
+        const positions = icosahedron.getPositionData(false, false)!;
+        icosahedron.dispose();
+
+        const diameter = 0.4;
+        const spheres = new Array<Mesh>();
+        for (let i = 0; i < positions.length; i += 3) {
+            const sphere = MeshBuilder.CreateSphere("tankPoison", { segments: 4, diameter: diameter }, this._scene);
+            sphere.position.set(positions[i]!, positions[i + 1]!, positions[i + 2]!);
+            spheres.push(sphere);
+        }
+        const poison = Mesh.MergeMeshes(spheres, true)!;
+        poison.name = "poison";
+        poison.material = this._materials.green;
+        poison.parent = source;
+
+        return source;
+    }
+
     private _createCubeShapeSource(parent: TransformNode): Mesh {
         const metadata: ShapeMetadata = {
             displayName: "Cube",
             size: 0.6,
             health: 10,
-            damage: { value: 10, time: 1, count: 1 },
+            damage: { value: 10, time: 1 },
             points: 10,
         };
 
@@ -569,7 +595,7 @@ export class Sources {
             displayName: "Tetrahedron",
             size: 0.75,
             health: 30,
-            damage: { value: 20, time: 1, count: 1 },
+            damage: { value: 20, time: 1 },
             points: 25,
         };
 
@@ -588,7 +614,7 @@ export class Sources {
             displayName: "Dodecahedron",
             size: 1,
             health: 125,
-            damage: { value: 50, time: 1, count: 1 },
+            damage: { value: 50, time: 1 },
             points: 120,
         };
 
@@ -606,7 +632,7 @@ export class Sources {
             displayName: "Truncated Isocahedron",
             size: 1.62,
             health: 250,
-            damage: { value: 50, time: 1, count: 1 },
+            damage: { value: 50, time: 1 },
             points: 200,
         };
 
@@ -623,7 +649,7 @@ export class Sources {
             size: 0.5,
             speed: CRASHER_SPEED,
             health: 10,
-            damage: { value: 20, time: 1, count: 1 },
+            damage: { value: 20, time: 1 },
             points: 10,
         };
 
@@ -640,7 +666,7 @@ export class Sources {
             size: 0.7,
             speed: CRASHER_SPEED,
             health: 20,
-            damage: { value: 40, time: 1, count: 1 },
+            damage: { value: 40, time: 1 },
             points: 25,
         };
 
@@ -657,7 +683,7 @@ export class Sources {
             size: 0.7,
             speed: CRASHER_SPEED * 1.1,
             health: 20,
-            damage: { value: 30, time: 1, count: 1 },
+            damage: { value: 30, time: 1 },
             points: 50,
             reload: CRASHER_PROJECTILE_RELOAD,
             barrels: ["barrel"],
@@ -666,7 +692,6 @@ export class Sources {
                 damage: {
                     value: CRASHER_PROJECTILE_DAMAGE_VALUE,
                     time: CRASHER_PROJECTILE_DAMAGE_TIME,
-                    count: 1
                 },
                 health: CRASHER_PROJECTILE_HEALTH,
             },
@@ -677,7 +702,7 @@ export class Sources {
         source.material = this._materials.pink;
         source.parent = parent;
 
-        const barrel = createSimpleBarrel("barrel", 0.2, 0.5, this._scene);
+        const barrel = createSimpleBarrel("barrel", 0.2, 0.55, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
@@ -690,7 +715,7 @@ export class Sources {
             size: 1.4,
             speed: CRASHER_SPEED * 0.6,
             health: MEGA_CRASHER_HEALTH,
-            damage: { value: MEGA_CRASHER_DAMAGE, time: 1, count: 1 },
+            damage: { value: MEGA_CRASHER_DAMAGE, time: 1 },
             points: MEGA_CRASHER_POINTS,
             reload: CRASHER_PROJECTILE_RELOAD * 2,
             barrels: ["barrel"],
@@ -699,7 +724,6 @@ export class Sources {
                 damage: {
                     value: CRASHER_PROJECTILE_DAMAGE_VALUE * 2,
                     time: CRASHER_PROJECTILE_DAMAGE_TIME,
-                    count: 1
                 },
                 health: CRASHER_PROJECTILE_HEALTH,
             },
@@ -727,7 +751,7 @@ export class Sources {
             size: 1.4,
             speed: CRASHER_SPEED * 0.7,
             health: MEGA_CRASHER_HEALTH,
-            damage: { value: MEGA_CRASHER_DAMAGE, time: 1, count: 1 },
+            damage: { value: MEGA_CRASHER_DAMAGE, time: 1 },
             points: MEGA_CRASHER_POINTS,
             reload: CRASHER_PROJECTILE_RELOAD * 0.5,
             barrels: ["barrelL", "barrelR"],
@@ -736,7 +760,6 @@ export class Sources {
                 damage: {
                     value: CRASHER_PROJECTILE_DAMAGE_VALUE,
                     time: CRASHER_PROJECTILE_DAMAGE_TIME,
-                    count: 1
                 },
                 health: CRASHER_PROJECTILE_HEALTH,
             },
@@ -771,7 +794,7 @@ export class Sources {
             size: 1.4,
             speed: CRASHER_SPEED * 0.5,
             health: MEGA_CRASHER_HEALTH,
-            damage: { value: MEGA_CRASHER_DAMAGE, time: 1, count: 1 },
+            damage: { value: MEGA_CRASHER_DAMAGE, time: 1 },
             points: MEGA_CRASHER_POINTS,
             reload: CRASHER_PROJECTILE_RELOAD * 4,
             barrels: ["barrel"],
@@ -780,7 +803,6 @@ export class Sources {
                 damage: {
                     value: CRASHER_PROJECTILE_DAMAGE_VALUE,
                     time: CRASHER_PROJECTILE_DAMAGE_TIME,
-                    count: 1
                 },
                 health: CRASHER_PROJECTILE_HEALTH * 1.25,
             },
@@ -812,7 +834,7 @@ export class Sources {
             height: 2,
             speed: 1,
             health: 2000,
-            damage: { value: 40, time: 1, count: 1 },
+            damage: { value: 40, time: 1 },
             points: 300,
             tanks: ["tank0", "tank1", "tank2", "tank3"],
         };
@@ -822,7 +844,7 @@ export class Sources {
             barrels: ["barrel"],
             bullet: {
                 speed: 8,
-                damage: { value: 20, time: 0.2, count: 1 },
+                damage: { value: 20, time: 0.2 },
                 health: 100,
             },
         };
@@ -1215,7 +1237,7 @@ export class Sources {
         const largeBarrelProperties: BarrelParameters = {
             segments: [{ diameter: 0.45, length: 0.8 }],
             multiplier: {
-                damage: { value: 1.5, time: 1, count: 1 },
+                damage: { value: 1.5, time: 1 },
             },
         };
 
@@ -1335,7 +1357,7 @@ export class Sources {
         const sideBarrelProperties: BarrelParameters = {
             segments: [{ diameter: sideBarrelDiameter, length: sideBarrelLength }],
             multiplier: {
-                damage: { value: 0.3, time: 1, count: 1 },
+                damage: { value: 0.3, time: 1 },
                 health: 0.3,
             },
         };
@@ -1433,6 +1455,29 @@ export class Sources {
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.material = this._materials.gray;
+        barrel.parent = source;
+
+        return source;
+    }
+
+    private _createPoisonTankSource(parent: TransformNode): Mesh {
+        const barrelDiameter = 0.4;
+        const barrelLength = 0.9;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Poison",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponSpeed: 2,
+                reloadTime: 2,
+            },
+        };
+
+        const source = this._createTankBody("poison", metadata, parent);
+
+        const barrel = createSimpleBarrel("barrel", barrelDiameter, barrelLength, this._scene);
+        barrel.material = this._materials.green;
         barrel.parent = source;
 
         return source;

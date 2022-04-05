@@ -21,7 +21,6 @@ export class LancerTank extends PlayerTank {
             damage: {
                 value: this._properties.weaponDamage,
                 time: this._properties.reloadTime,
-                count: 1,
             },
             health: this._properties.weaponHealth,
         };

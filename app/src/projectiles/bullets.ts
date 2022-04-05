@@ -57,6 +57,8 @@ export class Bullet extends Projectile {
 
         decayVector3ToRef(this.velocity, this._targetVelocity, deltaTime, 2, this.velocity);
 
+        this._node.addRotation(0, this._targetVelocity.length() * deltaTime, 0);
+
         this._shadow.update();
 
         if (!this._health.update(deltaTime) || (this._time -= deltaTime) <= 0) {

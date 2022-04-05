@@ -4,45 +4,45 @@ import { Nullable } from "@babylonjs/core/types";
 import { Entity } from "../entity";
 import { SizeMetadata } from "../metadata";
 import { Sources } from "../sources";
-import { Damage } from "./damage";
 
 const REGEN_TIME = 30;
 const REGEN_SPEED = 0.2;
 const RESET_SPEED = 200;
 const DAMAGE_SPEED = 5;
+const POISON_SPEED = 5;
 
 export class Health {
     private readonly _max: number;
-    private _current: number;
-    private _damage: Nullable<Damage> = null;
-    private _damageTime = 0;
-    private _damageCount = 0;
+    private _value: number;
+    private _poisons = new Set<{ time: number, speed: number }>();
 
     public constructor(max: number) {
-        this._max = this._current = max;
+        this._max = this._value = max;
     }
 
     public update(deltaTime: number): boolean {
-        if (this._damage && this._damageCount > 0) {
-            this._damageTime -= deltaTime;
-            if (this._damageTime <= 0) {
-                this._current -= this._damage.value;
-                this._damageTime += this._damage.time;
-                --this._damageCount;
+        if (this._poisons.size > 0) {
+            for (const poison of this._poisons) {
+                this._value -= poison.speed * deltaTime;
+                if ((poison.time -= deltaTime) <= 0) {
+                    this._poisons.delete(poison);
+                }
             }
         }
 
-        return this._current > 0;
+        return this._value > 0;
     }
 
     public takeDamage(entity: Entity): void {
-        this._damage = entity.damage;
-        this._damageTime = 0;
-        this._damageCount = entity.damage.count;
+        if (entity.damage.poison) {
+            this._poisons.add({ time: entity.damage.value * entity.damage.poison / POISON_SPEED, speed: POISON_SPEED });
+        } else {
+            this._value -= entity.damage.value;
+        }
     }
 
     public reset(): void {
-        this._current = this._max;
+        this._value = this._max;
     }
 }
 
@@ -55,9 +55,8 @@ export class BarHealth {
     private _speed = 0;
     private _regenSpeed: number;
     private _regenTime = 0;
-    private _damageEntity: Nullable<Entity> = null;
-    private _damageTime = 0;
-    private _damageCount = 0;
+    private _entity: Nullable<Entity> = null;
+    private _poisons = new Set<{ time: number, speed: number }>();
 
     public constructor(sources: Sources, parent: TransformNode, max: number, regenSpeed = 0) {
         this._node = sources.createHealth();
@@ -102,14 +101,12 @@ export class BarHealth {
     }
 
     public update(deltaTime: number, onZero: (source: Entity) => void): void {
-        if (this._damageEntity && this._damageCount > 0) {
-            this._damageTime -= deltaTime;
-            if (this._damageTime <= 0) {
-                this._target = Math.min(this._current, this._target) - this._damageEntity.damage.value;
-                this._speed = (this._current - this._target) * DAMAGE_SPEED;
-                this._regenTime = REGEN_TIME;
-                this._damageTime += this._damageEntity.damage.time;
-                --this._damageCount;
+        if (this._poisons.size > 0) {
+            for (const poison of this._poisons) {
+                this._target -= poison.speed * deltaTime;
+                if ((poison.time -= deltaTime) <= 0) {
+                    this._poisons.delete(poison);
+                }
             }
         }
 
@@ -119,7 +116,7 @@ export class BarHealth {
             this._node.scaling.x = this._current / this._max * this._size;
             if (this._current === 0) {
                 this._target = this._current;
-                onZero(this._damageEntity!);
+                onZero(this._entity!);
             }
         } else if (this._target > this._current) {
             this._node.setEnabled(true);
@@ -145,13 +142,22 @@ export class BarHealth {
     }
 
     public takeDamage(entity: Entity): void {
-        this._damageEntity = entity;
-        this._damageTime = 0;
-        this._damageCount = entity.damage.count;
+        this._entity = entity;
+        this._regenTime = REGEN_TIME;
+
+        if (entity.damage.poison) {
+            this._poisons.add({ time: entity.damage.value * entity.damage.poison / POISON_SPEED, speed: POISON_SPEED });
+            this._target = Math.min(this._current, this._target);
+            this._speed = Number.MAX_VALUE;
+        } else {
+            this._target = Math.min(this._current, this._target) - this._entity.damage.value;
+            this._speed = (this._current - this._target) * DAMAGE_SPEED;
+        }
     }
 
     public reset(): void {
         this._target = this._max;
         this._speed = RESET_SPEED;
+        this._poisons.clear();
     }
 }

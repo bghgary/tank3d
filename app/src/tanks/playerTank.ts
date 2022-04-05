@@ -74,7 +74,7 @@ export abstract class PlayerTank implements Entity, Collider {
     protected _autoRotate = false;
     protected _autoRotateSpeed = 1;
     protected _properties: DeepImmutable<TankProperties>;
-    protected _damage: Damage = { value: 0, time: 1, count: 1 };
+    protected _damage: Damage = { value: 0, time: 1 };
 
     private readonly _collisionToken: IDisposable;
 
