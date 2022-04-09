@@ -12,7 +12,7 @@ export class HunterTank extends BulletTank {
         super(world, HunterTank.CreateMesh(world.sources, parent), previousTank);
     }
 
-    public override CameraRadiusMultiplier = 1.25;
+    public override cameraRadiusMultiplier = 1.25;
 
     public override shoot(): void {
         if (this._reloadTime === 0) {

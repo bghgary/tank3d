@@ -13,7 +13,7 @@ export class PoisonTank extends BulletTank {
         this._bulletProperties.damage.poison = 1;
     }
 
-    public override CameraRadiusMultiplier = 1.2;
+    public override cameraRadiusMultiplier = 1.2;
 
     public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
         return sources.create(sources.tank.poison, parent);

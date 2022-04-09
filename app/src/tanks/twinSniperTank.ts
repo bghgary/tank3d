@@ -12,7 +12,7 @@ export class TwinSniperTank extends BulletTank {
         super(world, TwinSniperTank.CreateMesh(world.sources, parent), previousTank);
     }
 
-    public override CameraRadiusMultiplier = 1.2;
+    public override cameraRadiusMultiplier = 1.2;
 
     public override shoot(): void {
         if (this._reloadTime === 0) {

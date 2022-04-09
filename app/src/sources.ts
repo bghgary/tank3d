@@ -267,6 +267,7 @@ export class Sources {
         readonly blaster: Mesh;
         readonly bomber: Mesh;
         readonly poison: Mesh;
+        readonly searcher: Mesh;
     };
 
     public constructor(world: World) {
@@ -372,6 +373,7 @@ export class Sources {
             blaster: this._createBlasterTankSource(tanks),
             bomber: this._createBomberTankSource(tanks),
             poison: this._createPoisonTankSource(tanks),
+            searcher: this._createSearcherTankSource(tanks),
         };
     }
 
@@ -1478,6 +1480,39 @@ export class Sources {
 
         const barrel = createSimpleBarrel("barrel", barrelDiameter, barrelLength, this._scene);
         barrel.material = this._materials.green;
+        barrel.parent = source;
+
+        return source;
+    }
+
+    private _createSearcherTankSource(parent: TransformNode): Mesh {
+        const barrelProperties: BarrelParameters = {
+            segments: [
+                { diameter: 0.4, length: 0.15 },
+                { diameter: 0.4, length: 0.05 },
+                { diameter: 0.5, length: 0.05 },
+                { diameter: 0.5, length: 0.35 },
+            ],
+            baseCap: true,
+            baseDiameter: 0.75,
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Searcher",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponDamage: 1.2,
+                weaponSpeed: 2.5,
+                reloadTime: 2.5,
+            },
+        };
+
+        const source = this._createTankBody("searcher", metadata, parent);
+
+        const barrel = createBarrel("barrel", barrelProperties, this._scene);
+        barrel.position.z = 0.35;
+        barrel.material = this._materials.gray;
         barrel.parent = source;
 
         return source;

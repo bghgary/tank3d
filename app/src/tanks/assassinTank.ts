@@ -10,7 +10,7 @@ export class AssassinTank extends BulletTank {
         super(world, AssassinTank.CreateMesh(world.sources, parent), previousTank);
     }
 
-    public override CameraRadiusMultiplier = 1.4;
+    public override cameraRadiusMultiplier = 1.4;
 
     public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
         return sources.create(sources.tank.assassin, parent);
