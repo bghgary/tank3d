@@ -5,6 +5,7 @@ import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
 import { TargetCollider } from "../collisions";
 import { applyRecoil } from "../common";
+import { Barrel } from "../components/barrel";
 import { WeaponProperties, WeaponType } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { SingleTargetDrones } from "../projectiles/drones";
@@ -19,6 +20,7 @@ export class DirectorTank extends BarrelTank {
     private readonly _circleRadius: number;
     private readonly _droneProperties: WeaponProperties;
     private readonly _drones: SingleTargetDrones;
+    private _barrelIndex = 0;
     private _targetCollisionToken: Nullable<IDisposable> = null;
     private _targetDistanceSquared = Number.MAX_VALUE;
     private _defendTime = 0;
@@ -72,10 +74,12 @@ export class DirectorTank extends BarrelTank {
     }
 
     public override shoot(): void {
-        if (this._reloadTime === 0 && this._drones.count < this._maxDroneCount) {
-            for (const barrel of this._barrels) {
-                const drone = barrel.shootDrone(this._drones, this, this._world.sources.drone.tank);
-                applyRecoil(this._recoil, drone);
+        if (this._reloadTime === 0) {
+            for (let i = 0; i < this._barrels.length; ++i) {
+                if (this._drones.count < this._maxDroneCount) {
+                    this._shootFrom(this._barrels[this._barrelIndex]!);
+                    this._barrelIndex = (this._barrelIndex + 1) % this._barrels.length;
+                }
             }
 
             this._reloadTime = this._properties.reloadTime;
@@ -137,6 +141,11 @@ export class DirectorTank extends BarrelTank {
     public override setUpgrades(upgrades: DeepImmutable<TankProperties>): void {
         super.setUpgrades(upgrades);
         this._updateDroneProperties();
+    }
+
+    protected _shootFrom(barrel: Barrel): void {
+        const drone = barrel.shootDrone(this._drones, this, this._world.sources.drone.tank);
+        applyRecoil(this._recoil, drone);
     }
 
     protected _updateDroneProperties(): void {
