@@ -8,8 +8,8 @@ import { PlayerTank } from "./playerTank";
 export class PoisonTank extends BulletTank {
     protected override readonly _bulletSource = this._world.sources.bullet.tankPoison;
 
-    public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, PoisonTank.CreateMesh(world.sources, parent), previousTank);
+    public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
+        super(world, node, previousTank);
         this._bulletProperties.damage.poison = 1;
     }
 

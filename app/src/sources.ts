@@ -269,6 +269,7 @@ export class Sources {
         readonly poison: Mesh;
         readonly searcher: Mesh;
         readonly swarmer: Mesh;
+        readonly overseer: Mesh;
     };
 
     public constructor(world: World) {
@@ -376,6 +377,7 @@ export class Sources {
             poison: this._createPoisonTankSource(tanks),
             searcher: this._createSearcherTankSource(tanks),
             swarmer: this._createSwarmerTankSource(tanks),
+            overseer: this._createOverseerTankSource(tanks),
         };
     }
 
@@ -1549,6 +1551,37 @@ export class Sources {
             barrel.material = this._materials.gray;
             barrel.parent = source;
         }
+
+        return source;
+    }
+
+    private _createOverseerTankSource(parent: TransformNode): Mesh {
+        const barrelProperties: BarrelParameters = {
+            segments: [{ diameter: 0.8, length: 0.7 }],
+            baseDiameter: 0.25,
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Overseer",
+            size: 1,
+            barrels: ["barrelL", "barrelR"],
+            multiplier: {
+                weaponSpeed: 0.5,
+                reloadTime: 3,
+            },
+        };
+
+        const source = this._createTankBody("overseer", metadata, parent);
+
+        const barrelL = createBarrel("barrelL", barrelProperties, this._scene);
+        barrelL.rotationQuaternion = Quaternion.FromEulerAngles(0, -Math.PI / 2, 0);
+        barrelL.material = this._materials.gray;
+        barrelL.parent = source;
+
+        const barrelR = createBarrel("barrelR", barrelProperties, this._scene);
+        barrelR.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
+        barrelR.material = this._materials.gray;
+        barrelR.parent = source;
 
         return source;
     }

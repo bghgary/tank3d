@@ -8,12 +8,12 @@ import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
 
-export class BulletTank extends BarrelTank {
+export abstract class BulletTank extends BarrelTank {
     protected readonly _bulletConstructor: BulletConstructor = Bullet;
     protected readonly _bulletSource = this._world.sources.bullet.tank;
     protected readonly _bulletProperties: WeaponProperties;
 
-    protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
+    public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
         this._bulletProperties = {

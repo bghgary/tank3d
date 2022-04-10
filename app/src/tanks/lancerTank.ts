@@ -13,8 +13,8 @@ export class LancerTank extends PlayerTank {
     private readonly _lances: Array<Lance>;
     private readonly _lanceProperties: WeaponProperties;
 
-    public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, LancerTank.CreateMesh(world.sources, parent), previousTank);
+    public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
+        super(world, node, previousTank);
 
         this._lanceProperties = {
             speed: this._properties.weaponSpeed,

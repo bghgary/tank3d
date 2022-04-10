@@ -1,16 +1,11 @@
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "../sources";
-import { World } from "../worlds/world";
 import { BulletTank } from "./bulletTank";
 import { PlayerTank } from "./playerTank";
 
 export class TwinTank extends BulletTank {
     private _barrelIndex = 0;
-
-    public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, TwinTank.CreateMesh(world.sources, parent), previousTank);
-    }
 
     public override shoot(): void {
         if (this._reloadTime === 0) {

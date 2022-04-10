@@ -12,7 +12,7 @@ import { Bullet } from "../projectiles/bullets";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { BulletTank } from "./bulletTank";
-import { PlayerTank, TankProperties } from "./playerTank";
+import { TankProperties } from "./playerTank";
 
 interface PlayerTankInternal extends Entity {
     _properties: DeepImmutable<TankProperties>;
@@ -21,10 +21,6 @@ interface PlayerTankInternal extends Entity {
 export class LauncherTank extends BulletTank {
     protected override readonly _bulletConstructor = Missile;
     protected override readonly _bulletSource = this._world.sources.bullet.tankLauncher;
-
-    public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, LauncherTank.CreateMesh(world.sources, parent), previousTank);
-    }
 
     public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
         return sources.create(sources.tank.launcher, parent);

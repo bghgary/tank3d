@@ -74,7 +74,9 @@ export class Player {
         this._world = world;
 
         this._root = new TransformNode("player", this._world.scene);
-        this._tank = new EvolutionRootNode.Tank(this._world, this._root);
+
+        const mesh = EvolutionRootNode.Tank.CreateMesh(this._world.sources, this._root);
+        this._tank = new EvolutionRootNode.Tank(this._world, mesh);
 
         const limit = world.size * 0.25;
         this._tank.position.x = Scalar.RandomRange(-limit, limit);
@@ -260,7 +262,8 @@ export class Player {
     }
 
     private _updateTank(evolutionNode: EvolutionNode): void {
-        this._tank = new evolutionNode.Tank(this._world, this._root, this._tank);
+        const mesh = evolutionNode.Tank.CreateMesh(this._world.sources, this._root);
+        this._tank = new evolutionNode.Tank(this._world, mesh, this._tank);
         this._upgrades.setWeaponType(this._tank.weaponType);
         this._level.setTankDisplayName(this._tank.displayName);
         this._setTankUpgrades();

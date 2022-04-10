@@ -15,6 +15,7 @@ import { HunterTank } from "./tanks/hunterTank";
 import { LancerTank } from "./tanks/lancerTank";
 import { LauncherTank } from "./tanks/launcherTank";
 import { MachineGunTank } from "./tanks/machineGunTank";
+import { OverseerTank } from "./tanks/overseerTank";
 import { PlayerTank } from "./tanks/playerTank";
 import { PoisonTank } from "./tanks/poisonTank";
 import { PounderTank } from "./tanks/pounderTank";
@@ -28,7 +29,7 @@ import { World } from "./worlds/world";
 
 interface TankConstructor {
     prototype: PlayerTank;
-    new(world: World, parent: TransformNode, previousTank?: PlayerTank): PlayerTank;
+    new(world: World, node: TransformNode, previousTank?: PlayerTank): PlayerTank;
     CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh;
 }
 
@@ -94,6 +95,9 @@ export const EvolutionRootNode: EvolutionNode = {
         Tank: DirectorTank,
         children: [{
             Tank: SwarmerTank,
+            children: []
+        }, {
+            Tank: OverseerTank,
             children: []
         }]
     }, {

@@ -13,7 +13,6 @@ import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
 
-const MAX_DRONE_COUNT = 4;
 const TARGET_RADIUS = 10;
 
 export class DirectorTank extends BarrelTank {
@@ -24,8 +23,10 @@ export class DirectorTank extends BarrelTank {
     private _targetDistanceSquared = Number.MAX_VALUE;
     private _defendTime = 0;
 
-    public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, DirectorTank.CreateMesh(world.sources, parent), previousTank);
+    protected readonly _maxDroneCount: number = 4;
+
+    public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
+        super(world, node, previousTank);
 
         this._circleRadius = this._metadata.size + 2;
 
@@ -38,6 +39,7 @@ export class DirectorTank extends BarrelTank {
             health: this._properties.weaponHealth,
         };
 
+        const parent = node.parent as TransformNode;
         this._drones = new SingleTargetDrones(world, parent, this._droneProperties);
     }
 
@@ -70,7 +72,7 @@ export class DirectorTank extends BarrelTank {
     }
 
     public override shoot(): void {
-        if (this._reloadTime === 0 && this._drones.count < MAX_DRONE_COUNT) {
+        if (this._reloadTime === 0 && this._drones.count < this._maxDroneCount) {
             for (const barrel of this._barrels) {
                 const drone = barrel.shootDrone(this._drones, this, this._world.sources.drone.tank);
                 applyRecoil(this._recoil, drone);

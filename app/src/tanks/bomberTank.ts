@@ -10,15 +10,10 @@ import { Bullet, Bullets } from "../projectiles/bullets";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { BulletTank } from "./bulletTank";
-import { PlayerTank } from "./playerTank";
 
 export class BomberTank extends BulletTank {
     protected override readonly _bulletConstructor = Bomb;
     protected override readonly _bulletSource = this._world.sources.bullet.tankBomber;
-
-    public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, BomberTank.CreateMesh(world.sources, parent), previousTank);
-    }
 
     public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
         return sources.create(sources.tank.bomber, parent);

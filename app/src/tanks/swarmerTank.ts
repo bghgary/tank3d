@@ -17,8 +17,8 @@ export class SwarmerTank extends BarrelTank {
 
     private _toggle = false;
 
-    public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
-        super(world, SwarmerTank.CreateMesh(world.sources, parent), previousTank);
+    public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
+        super(world, node, previousTank);
 
         this._droneProperties = {
             speed: this._properties.weaponSpeed,
@@ -29,6 +29,7 @@ export class SwarmerTank extends BarrelTank {
             health: this._properties.weaponHealth,
         };
 
+        const parent = node.parent as TransformNode;
         this._singleTargetDrones = new SingleTargetDrones(world, parent, this._droneProperties);
         this._autoTargetDrones = new AutoTargetDrones(world, parent, this._droneProperties);
     }

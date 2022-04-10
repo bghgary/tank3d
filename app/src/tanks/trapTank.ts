@@ -12,7 +12,7 @@ export abstract class TrapTank extends BarrelTank {
     protected abstract readonly _trapSource: Mesh;
     protected readonly _trapProperties: WeaponProperties;
 
-    protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
+    public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
         this._trapProperties = {
