@@ -4,18 +4,15 @@ import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil } from "../common";
 import { WeaponProperties, WeaponType } from "../components/weapon";
 import { Entity } from "../entity";
-import { AutoTargetDrone, AutoTargetDrones, SingleTargetDrone, SingleTargetDrones } from "../projectiles/drones";
+import { AutoTargetDrone, AutoTargetDrones } from "../projectiles/drones";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
 
-export class SwarmerTank extends BarrelTank {
-    private readonly _singleTargetDrones: SingleTargetDrones;
+export class DetectorTank extends BarrelTank {
     private readonly _autoTargetDrones: AutoTargetDrones;
     private readonly _droneProperties: WeaponProperties;
-
-    private _toggle = false;
 
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
@@ -30,12 +27,10 @@ export class SwarmerTank extends BarrelTank {
         };
 
         const parent = node.parent as TransformNode;
-        this._singleTargetDrones = new SingleTargetDrones(world, parent, this._droneProperties);
         this._autoTargetDrones = new AutoTargetDrones(world, parent, this._droneProperties);
     }
 
     public override dispose(): void {
-        this._singleTargetDrones.dispose();
         this._autoTargetDrones.dispose();
         super.dispose();
     }
@@ -45,27 +40,18 @@ export class SwarmerTank extends BarrelTank {
     public override shoot(): void {
         if (this._reloadTime === 0) {
             for (const barrel of this._barrels) {
-                const source = this._world.sources.drone.tank;
-                const duration = 5;
-                const drone = this._toggle
-                    ? barrel.shootDrone(this._autoTargetDrones, AutoTargetDrone, this, source, duration)
-                    : barrel.shootDrone(this._singleTargetDrones, SingleTargetDrone, this, source, duration);
+                const drone = barrel.shootDrone(this._autoTargetDrones, AutoTargetDrone, this, this._world.sources.drone.tank, 5);
                 applyRecoil(this._recoil, drone);
             }
 
             this._reloadTime = this._properties.reloadTime;
-            this._toggle = !this._toggle;
         }
 
         super.shoot();
     }
 
     public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
-        this._singleTargetDrones.target.position.copyFrom(this._world.pointerPosition);
-        this._singleTargetDrones.update(deltaTime);
-
         this._autoTargetDrones.update(deltaTime);
-
         super.update(deltaTime, onDestroy);
     }
 
@@ -77,6 +63,6 @@ export class SwarmerTank extends BarrelTank {
     }
 
     public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
-        return sources.create(sources.tank.swarmer, parent);
+        return sources.create(sources.tank.detector, parent);
     }
 }

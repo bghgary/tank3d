@@ -272,6 +272,7 @@ export class Sources {
         readonly swarmer: Mesh;
         readonly overseer: Mesh;
         readonly spawner: Mesh;
+        readonly detector: Mesh;
     };
 
     public constructor(world: World) {
@@ -382,6 +383,7 @@ export class Sources {
             swarmer: this._createSwarmerTankSource(tanks),
             overseer: this._createOverseerTankSource(tanks),
             spawner: this._createSpawnerTankSource(tanks),
+            detector: this._createDetectorTankSource(tanks),
         };
     }
 
@@ -1640,6 +1642,36 @@ export class Sources {
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.position.z = 0.35;
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
+
+        return source;
+    }
+
+    private _createDetectorTankSource(parent: TransformNode): Mesh {
+        const barrelProperties: BarrelParameters = {
+            segments: [
+                { diameter: 0.6, length: 0.6 },
+                { diameter: 0.75, length: 0.01 },
+                { diameter: 0.6, length: 0.1 },
+            ]
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Detector",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponSpeed: 0.5,
+                weaponDamage: 1.5,
+                weaponHealth: 1.5,
+                reloadTime: 3,
+            },
+        };
+
+        const source = this._createTankBody("detector", metadata, parent);
+
+        const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
