@@ -4,9 +4,9 @@ import { DeepImmutable } from "@babylonjs/core/types";
 import { Entity } from "../entity";
 import { decayScalar } from "../math";
 import { BarrelMetadata } from "../metadata";
-import { BulletConstructor } from "../projectiles/bullets";
-import { Drones } from "../projectiles/drones";
-import { Projectile } from "../projectiles/projectiles";
+import { Bullet, BulletConstructor } from "../projectiles/bullets";
+import { Drone, DroneConstructor, Drones } from "../projectiles/drones";
+import { Trap } from "../projectiles/traps";
 import { World } from "../worlds/world";
 import { WeaponProperties } from "./weapon";
 
@@ -21,19 +21,19 @@ export class Barrel {
         this._scale = (node) => node.scaling.z = 1 - 0.1 / (node.metadata as BarrelMetadata).length;
     }
 
-    public shootBullet(constructor: BulletConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Projectile {
+    public shootBullet(constructor: BulletConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Bullet {
         this._scale(this._node);
         return this._world.bullets.add(constructor, this._node, owner, source, properties, duration);
     }
 
-    public shootTrap(owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Projectile {
+    public shootTrap(owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Trap {
         this._scale(this._node);
         return this._world.traps.add(this._node, owner, source, properties, duration);
     }
 
-    public shootDrone(drones: Drones, owner: Entity, source: Mesh, duration: number = Number.POSITIVE_INFINITY): Projectile {
+    public shootDrone<T extends Drone>(drones: Drones<T>, constructor: DroneConstructor<T>, owner: Entity, source: Mesh, duration: number = Number.POSITIVE_INFINITY): Drone {
         this._scale(this._node);
-        return drones.add(owner, this._node, source, duration);
+        return drones.add(constructor, owner, this._node, source, duration);
     }
 
     public update(deltaTime: number) {

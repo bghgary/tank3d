@@ -8,7 +8,7 @@ import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties, WeaponType } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
-import { SingleTargetDrones } from "../projectiles/drones";
+import { DroneConstructor, SingleTargetDrone, SingleTargetDrones } from "../projectiles/drones";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
@@ -26,6 +26,8 @@ export class DirectorTank extends BarrelTank {
     private _defendTime = 0;
 
     protected readonly _maxDroneCount: number = 4;
+    protected readonly _droneConstructor: DroneConstructor<SingleTargetDrone> = SingleTargetDrone;
+    protected readonly _droneSource = this._world.sources.drone.tank;
 
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
@@ -91,46 +93,49 @@ export class DirectorTank extends BarrelTank {
     public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
         this.shoot();
 
+        const target = this._drones.target;
         if ((this.inBounds && this._autoShoot) || this._autoRotate) {
             if (this._targetCollisionToken) {
                 this._targetCollisionToken.dispose();
                 this._targetCollisionToken = null;
             }
 
-            this._drones.radius = 0;
+            target.radius = 0;
             if (this._autoShoot) {
-                this._drones.target.copyFrom(this._world.pointerPosition);
+                target.position.copyFrom(this._world.pointerPosition);
             } else {
-                this._drones.target.copyFrom(this._node.forward).scaleInPlace(this._circleRadius).addInPlace(this._node.position);
+                target.position.copyFrom(this._node.forward).scaleInPlace(this._circleRadius).addInPlace(this._node.position);
             }
 
             this._droneProperties.speed = this._properties.weaponSpeed;
         } else {
             this._defendTime = Math.max(this._defendTime - deltaTime, 0);
             if (this._defendTime === 0) {
-                this._drones.radius = this._circleRadius;
-                this._drones.target.copyFrom(this._node.position);
+                target.radius = this._circleRadius;
+                target.position.copyFrom(this._node.position);
                 this._droneProperties.speed = this._properties.weaponSpeed * 0.5;
             }
 
             this._targetDistanceSquared = Number.MAX_VALUE;
 
             if (!this._targetCollisionToken) {
-                this._targetCollisionToken = this._world.collisions.register([new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
-                    if (this.inBounds && other.type !== EntityType.Bullet && other !== this && other.owner !== this) {
-                        const distanceSquared =
-                            (other.type === EntityType.Shape ? TARGET_RADIUS * TARGET_RADIUS : 0) +
-                            Vector3.DistanceSquared(this.position, other.position);
+                this._targetCollisionToken = this._world.collisions.register([
+                    new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
+                        if (this.inBounds && other.type !== EntityType.Bullet && other !== this && other.owner !== this) {
+                            const distanceSquared =
+                                (other.type === EntityType.Shape ? TARGET_RADIUS * TARGET_RADIUS : 0) +
+                                Vector3.DistanceSquared(this.position, other.position);
 
-                        if (distanceSquared < this._targetDistanceSquared) {
-                            this._drones.radius = 0;
-                            this._drones.target.copyFrom(other.position);
-                            this._droneProperties.speed = this._properties.weaponSpeed;
-                            this._targetDistanceSquared = distanceSquared;
-                            this._defendTime = 1;
+                            if (distanceSquared < this._targetDistanceSquared) {
+                                target.radius = 0;
+                                target.position.copyFrom(other.position);
+                                this._droneProperties.speed = this._properties.weaponSpeed;
+                                this._targetDistanceSquared = distanceSquared;
+                                this._defendTime = 1;
+                            }
                         }
-                    }
-                })]);
+                    })
+                ]);
             }
         }
 
@@ -144,7 +149,7 @@ export class DirectorTank extends BarrelTank {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const drone = barrel.shootDrone(this._drones, this, this._world.sources.drone.tank);
+        const drone = barrel.shootDrone(this._drones, this._droneConstructor, this, this._droneSource);
         applyRecoil(this._recoil, drone);
     }
 

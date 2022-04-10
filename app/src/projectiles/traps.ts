@@ -32,7 +32,7 @@ export class Traps extends Projectiles<Trap> {
     }
 }
 
-class Trap extends Projectile {
+export class Trap extends Projectile {
     private readonly _shadow: Shadow;
     private _health: Health;
     private _time: number;

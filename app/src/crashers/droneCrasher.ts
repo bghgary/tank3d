@@ -4,7 +4,7 @@ import { applyRecoil } from "../common";
 import { Entity } from "../entity";
 import { BarrelCrasherMetadata, DroneCrasherMetadata } from "../metadata";
 import { Player } from "../player";
-import { SingleTargetDrones } from "../projectiles/drones";
+import { SingleTargetDrone, SingleTargetDrones } from "../projectiles/drones";
 import { World } from "../worlds/world";
 import { BarrelCrasher } from "./barrelCrasher";
 
@@ -29,18 +29,19 @@ export class DroneCrasher extends BarrelCrasher {
     protected override _chase(deltaTime: number, player: Player, direction: Vector3): boolean {
         const chasing = super._chase(deltaTime, player, direction);
 
+        const target = this._drones.target;
         if (player.active && chasing) {
-            this._drones.target.copyFrom(player.position);
-            this._drones.radius = 0;
+            target.position.copyFrom(player.position);
+            target.radius = 0;
         } else {
-            this._drones.target.copyFrom(this._node.position);
-            this._drones.radius = this._metadata.size;
+            target.position.copyFrom(this._node.position);
+            target.radius = this._metadata.size;
         }
         this._drones.update(deltaTime);
 
         if (this._drones.count < MAX_DRONE_COUNT && this._reloadTime === 0) {
             for (const barrel of this._barrels) {
-                const drone = barrel.shootDrone(this._drones, this, this._world.sources.drone.crasher);
+                const drone = barrel.shootDrone(this._drones, SingleTargetDrone, this, this._world.sources.drone.crasher);
                 applyRecoil(this._recoil, drone);
             }
 

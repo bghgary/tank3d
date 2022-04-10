@@ -29,11 +29,11 @@ class Bomb extends Bullet {
     public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, barrelNode, owner, node, properties, duration);
 
-        const bombMetadata = node.metadata as BombMetadata;
-        this._barrelNodes = bombMetadata.barrels.map((name) => findNode(node, name));
+        const metadata = node.metadata as BombMetadata;
+        this._barrelNodes = metadata.barrels.map((name) => findNode(node, name));
         this._bullets = world.bullets;
         this._bulletSource = world.sources.bullet.tank;
-        this._bulletProperties = new WeaponPropertiesWithMultiplier(properties, bombMetadata.multiplier);
+        this._bulletProperties = new WeaponPropertiesWithMultiplier(properties, metadata.multiplier);
     }
 
     public override update(deltaTime: number, onDestroy: () => void): void {

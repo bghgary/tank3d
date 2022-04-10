@@ -113,7 +113,7 @@ export class BarHealth {
         if (this._target < this._current) {
             this._node.setEnabled(true);
             this._current = Math.max(this._current - this._speed * deltaTime, Math.max(this._target, 0));
-            this._node.scaling.x = this._current / this._max * this._size;
+            this._updateBar();
             if (this._current === 0) {
                 this._target = this._current;
                 onZero(this._entity!);
@@ -121,7 +121,7 @@ export class BarHealth {
         } else if (this._target > this._current) {
             this._node.setEnabled(true);
             this._current = Math.min(this._current + this._speed * deltaTime, Math.min(this._target, this._max));
-            this._node.scaling.x = this._current / this._max * this._size;
+            this._updateBar();
             if (this._current === this._max) {
                 this._target = this._current;
                 this._node.setEnabled(false);
@@ -159,5 +159,9 @@ export class BarHealth {
         this._target = this._max;
         this._speed = RESET_SPEED;
         this._poisons.clear();
+    }
+
+    private _updateBar(): void {
+        this._node.scaling.x = Math.max(this._current / this._max * this._size, 0.02);
     }
 }

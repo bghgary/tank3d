@@ -4,7 +4,7 @@ import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil } from "../common";
 import { WeaponProperties, WeaponType } from "../components/weapon";
 import { Entity } from "../entity";
-import { AutoTargetDrones, SingleTargetDrones } from "../projectiles/drones";
+import { AutoTargetDrone, AutoTargetDrones, SingleTargetDrone, SingleTargetDrones } from "../projectiles/drones";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
@@ -45,8 +45,11 @@ export class SwarmerTank extends BarrelTank {
     public override shoot(): void {
         if (this._reloadTime === 0) {
             for (const barrel of this._barrels) {
-                const drones = this._toggle ? this._autoTargetDrones : this._singleTargetDrones;
-                const drone = barrel.shootDrone(drones, this, this._world.sources.drone.tank, 5);
+                const source = this._world.sources.drone.tank;
+                const duration = 5;
+                const drone = this._toggle
+                    ? barrel.shootDrone(this._autoTargetDrones, AutoTargetDrone, this, source, duration)
+                    : barrel.shootDrone(this._singleTargetDrones, SingleTargetDrone, this, source, duration);
                 applyRecoil(this._recoil, drone);
             }
 
@@ -58,7 +61,7 @@ export class SwarmerTank extends BarrelTank {
     }
 
     public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
-        this._singleTargetDrones.target.copyFrom(this._world.pointerPosition);
+        this._singleTargetDrones.target.position.copyFrom(this._world.pointerPosition);
         this._singleTargetDrones.update(deltaTime);
 
         this._autoTargetDrones.update(deltaTime);
