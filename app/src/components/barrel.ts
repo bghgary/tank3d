@@ -31,9 +31,9 @@ export class Barrel {
         return this._world.traps.add(this._node, owner, source, properties, duration);
     }
 
-    public shootDrone(drones: Drones, owner: Entity, source: Mesh): Projectile {
+    public shootDrone(drones: Drones, owner: Entity, source: Mesh, duration: number = Number.POSITIVE_INFINITY): Projectile {
         this._scale(this._node);
-        return drones.add(owner, this._node, source);
+        return drones.add(owner, this._node, source, duration);
     }
 
     public update(deltaTime: number) {

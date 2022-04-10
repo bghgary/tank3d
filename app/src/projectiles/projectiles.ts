@@ -21,6 +21,10 @@ function applySpeedVariance(speed: number, variance = 0): number {
     return speed + Scalar.RandomRange(-variance * speed, variance * speed);
 }
 
+export interface ProjectileConstructor<T extends Projectile> {
+    new(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): T;
+}
+
 export class Projectiles<T extends Projectile> {
     protected readonly _world: World;
     protected readonly _root: TransformNode;

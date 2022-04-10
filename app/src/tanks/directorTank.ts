@@ -2,51 +2,43 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
-import { Nullable } from "@babylonjs/core/types";
-import { Collider } from "../collisions";
+import { DeepImmutable, Nullable } from "@babylonjs/core/types";
+import { TargetCollider } from "../collisions";
+import { applyRecoil } from "../common";
+import { WeaponProperties, WeaponType } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
+import { SingleTargetDrones } from "../projectiles/drones";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
-import { DroneTank } from "./droneTank";
-import { PlayerTank } from "./playerTank";
+import { BarrelTank } from "./barrelTank";
+import { PlayerTank, TankProperties } from "./playerTank";
 
-const TARGET_RADIUS = 20;
+const MAX_DRONE_COUNT = 4;
+const TARGET_RADIUS = 10;
 
-class TargetCollider implements Collider {
-    private readonly _parent: Entity;
-    private readonly _onCollide: (other: Entity) => void;
-
-    constructor(parent: Entity, size: number, onCollide: (other: Entity) => void) {
-        this._parent = parent;
-        this.size = size;
-        this._onCollide = onCollide;
-    }
-
-    // Collider
-    public readonly active = true;
-    public get position() { return this._parent.position; }
-    public readonly size: number;
-    public get x() { return this._parent.position.x - this.size * 0.5; }
-    public get y() { return this._parent.position.z - this.size * 0.5; }
-    public get width() { return this.size; }
-    public get height() { return this.size; }
-
-    public onCollide(other: Entity): number {
-        this._onCollide(other);
-        return 0;
-    }
-}
-
-export class DirectorTank extends DroneTank {
+export class DirectorTank extends BarrelTank {
     private readonly _circleRadius: number;
+    private readonly _droneProperties: WeaponProperties;
+    private readonly _drones: SingleTargetDrones;
     private _targetCollisionToken: Nullable<IDisposable> = null;
-    private _targetDistanceSquared = 0;
+    private _targetDistanceSquared = Number.MAX_VALUE;
     private _defendTime = 0;
 
     public constructor(world: World, parent: TransformNode, previousTank?: PlayerTank) {
         super(world, DirectorTank.CreateMesh(world.sources, parent), previousTank);
 
         this._circleRadius = this._metadata.size + 2;
+
+        this._droneProperties = {
+            speed: this._properties.weaponSpeed,
+            damage: {
+                value: this._properties.weaponDamage,
+                time: 0.2,
+            },
+            health: this._properties.weaponHealth,
+        };
+
+        this._drones = new SingleTargetDrones(world, parent, this._droneProperties);
     }
 
     public override dispose(): void {
@@ -55,8 +47,12 @@ export class DirectorTank extends DroneTank {
             this._targetCollisionToken = null;
         }
 
+        this._drones.dispose();
+
         super.dispose();
     }
+
+    public override readonly weaponType = WeaponType.Drone;
 
     public override toggleAutoShoot(): void {
         super.toggleAutoShoot();
@@ -73,6 +69,19 @@ export class DirectorTank extends DroneTank {
         }
     }
 
+    public override shoot(): void {
+        if (this._reloadTime === 0 && this._drones.count < MAX_DRONE_COUNT) {
+            for (const barrel of this._barrels) {
+                const drone = barrel.shootDrone(this._drones, this, this._world.sources.drone.tank);
+                applyRecoil(this._recoil, drone);
+            }
+
+            this._reloadTime = this._properties.reloadTime;
+        }
+
+        super.shoot();
+    }
+
     public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
         this.shoot();
 
@@ -82,37 +91,35 @@ export class DirectorTank extends DroneTank {
                 this._targetCollisionToken = null;
             }
 
-            this._radius = 0;
-            this._droneProperties.speed = this._properties.weaponSpeed;
-
+            this._drones.radius = 0;
             if (this._autoShoot) {
-                this._target.copyFrom(this._world.pointerPosition);
+                this._drones.target.copyFrom(this._world.pointerPosition);
             } else {
-                this._target.copyFrom(this._node.forward).scaleInPlace(this._circleRadius);
-                this._target.addInPlace(this._node.position);
+                this._drones.target.copyFrom(this._node.forward).scaleInPlace(this._circleRadius).addInPlace(this._node.position);
             }
+
+            this._droneProperties.speed = this._properties.weaponSpeed;
         } else {
             this._defendTime = Math.max(this._defendTime - deltaTime, 0);
             if (this._defendTime === 0) {
-                this._radius = this._circleRadius;
+                this._drones.radius = this._circleRadius;
+                this._drones.target.copyFrom(this._node.position);
                 this._droneProperties.speed = this._properties.weaponSpeed * 0.5;
-
-                this._target.copyFrom(this._node.position);
-                this._targetDistanceSquared = Number.MAX_VALUE;
             }
 
-            if (!this._targetCollisionToken) {
-                this._targetCollisionToken = this._world.collisions.register([new TargetCollider(this, TARGET_RADIUS, (other) => {
-                    if (this.inBounds && other.type !== EntityType.Bullet && other !== this && other.owner !== this) {
-                        this._radius = 0;
-                        this._droneProperties.speed = this._properties.weaponSpeed;
+            this._targetDistanceSquared = Number.MAX_VALUE;
 
+            if (!this._targetCollisionToken) {
+                this._targetCollisionToken = this._world.collisions.register([new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
+                    if (this.inBounds && other.type !== EntityType.Bullet && other !== this && other.owner !== this) {
                         const distanceSquared =
                             (other.type === EntityType.Shape ? TARGET_RADIUS * TARGET_RADIUS : 0) +
                             Vector3.DistanceSquared(this.position, other.position);
 
                         if (distanceSquared < this._targetDistanceSquared) {
-                            this._target.copyFrom(other.position);
+                            this._drones.radius = 0;
+                            this._drones.target.copyFrom(other.position);
+                            this._droneProperties.speed = this._properties.weaponSpeed;
                             this._targetDistanceSquared = distanceSquared;
                             this._defendTime = 1;
                         }
@@ -121,11 +128,19 @@ export class DirectorTank extends DroneTank {
             }
         }
 
+        this._drones.update(deltaTime);
         super.update(deltaTime, onDestroy);
     }
 
-    protected override _updateDroneProperties(): void {
-        super._updateDroneProperties();
+    public override setUpgrades(upgrades: DeepImmutable<TankProperties>): void {
+        super.setUpgrades(upgrades);
+        this._updateDroneProperties();
+    }
+
+    protected _updateDroneProperties(): void {
+        this._droneProperties.speed = this._properties.weaponSpeed;
+        this._droneProperties.damage.value = this._properties.weaponDamage;
+        this._droneProperties.health = this._properties.weaponHealth;
         this._updateAutoRotateSpeed();
     }
 

@@ -4,19 +4,19 @@ import { applyRecoil } from "../common";
 import { Entity } from "../entity";
 import { BarrelCrasherMetadata, DroneCrasherMetadata } from "../metadata";
 import { Player } from "../player";
-import { Drones } from "../projectiles/drones";
+import { SingleTargetDrones } from "../projectiles/drones";
 import { World } from "../worlds/world";
 import { BarrelCrasher } from "./barrelCrasher";
 
 const MAX_DRONE_COUNT = 4;
 
 export class DroneCrasher extends BarrelCrasher {
-    private readonly _drones: Drones;
+    private readonly _drones: SingleTargetDrones;
 
     public constructor(world: World, node: TransformNode) {
         super(world, node);
 
-        this._drones = new Drones(world, node.parent as TransformNode, (node.metadata as DroneCrasherMetadata).drone);
+        this._drones = new SingleTargetDrones(world, node.parent as TransformNode, (node.metadata as DroneCrasherMetadata).drone);
     }
 
     public override update(deltaTime: number, player: Player, onDestroy: (entity: Entity) => void): void {
@@ -30,10 +30,13 @@ export class DroneCrasher extends BarrelCrasher {
         const chasing = super._chase(deltaTime, player, direction);
 
         if (player.active && chasing) {
-            this._drones.update(deltaTime, player.position, 0);
+            this._drones.target.copyFrom(player.position);
+            this._drones.radius = 0;
         } else {
-            this._drones.update(deltaTime, this._node.position, this._metadata.size);
+            this._drones.target.copyFrom(this._node.position);
+            this._drones.radius = this._metadata.size;
         }
+        this._drones.update(deltaTime);
 
         if (this._drones.count < MAX_DRONE_COUNT && this._reloadTime === 0) {
             for (const barrel of this._barrels) {

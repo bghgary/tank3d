@@ -20,6 +20,7 @@ import { PoisonTank } from "./tanks/poisonTank";
 import { PounderTank } from "./tanks/pounderTank";
 import { SearcherTank } from "./tanks/searcherTank";
 import { SniperTank } from "./tanks/sniperTank";
+import { SwarmerTank } from "./tanks/swarmerTank";
 import { TrapperTank } from "./tanks/trapperTank";
 import { TwinSniperTank } from "./tanks/twinSniperTank";
 import { TwinTank } from "./tanks/twinTank";
@@ -91,7 +92,10 @@ export const EvolutionRootNode: EvolutionNode = {
         }]
     }, {
         Tank: DirectorTank,
-        children: []
+        children: [{
+            Tank: SwarmerTank,
+            children: []
+        }]
     }, {
         Tank: TrapperTank,
         children: [{

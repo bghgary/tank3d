@@ -268,6 +268,7 @@ export class Sources {
         readonly bomber: Mesh;
         readonly poison: Mesh;
         readonly searcher: Mesh;
+        readonly swarmer: Mesh;
     };
 
     public constructor(world: World) {
@@ -374,6 +375,7 @@ export class Sources {
             bomber: this._createBomberTankSource(tanks),
             poison: this._createPoisonTankSource(tanks),
             searcher: this._createSearcherTankSource(tanks),
+            swarmer: this._createSwarmerTankSource(tanks),
         };
     }
 
@@ -1514,6 +1516,39 @@ export class Sources {
         barrel.position.z = 0.35;
         barrel.material = this._materials.gray;
         barrel.parent = source;
+
+        return source;
+    }
+
+    private _createSwarmerTankSource(parent: TransformNode): Mesh {
+        const barrelProperties: BarrelParameters = {
+            segments: [
+                { diameter: 0.25, length: 0.65 },
+            ],
+            baseDiameter: 0.55,
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Swarmer",
+            size: 1,
+            barrels: ["barrel0", "barrel1", "barrel2"],
+            multiplier: {
+                weaponSpeed: 0.5,
+                weaponDamage: 0.5,
+                weaponHealth: 0.5,
+                reloadTime: 2.5,
+            },
+        };
+
+        const source = this._createTankBody("base", metadata, parent);
+
+        const angle = Math.PI * 2 / 3;
+        for (let index = 0; index < 3; ++index) {
+            const barrel = createBarrel(`barrel${index}`, barrelProperties, this._scene);
+            barrel.rotationQuaternion = Quaternion.FromEulerAngles(0, angle * index, 0);
+            barrel.material = this._materials.gray;
+            barrel.parent = source;
+        }
 
         return source;
     }

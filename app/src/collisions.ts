@@ -16,6 +16,37 @@ function isEntity(collider: Collider | Entity): collider is Entity {
     return (collider as Entity).type !== undefined;
 }
 
+function intersects(a: Collider, b: Collider): boolean {
+    const collisionDistance = (a.size + b.size) * 0.5;
+    const distanceSquared = Vector3.DistanceSquared(a.position, b.position);
+    return (distanceSquared < collisionDistance * collisionDistance);
+}
+
+export class TargetCollider implements Collider {
+    private readonly _position: Vector3;
+
+    constructor(position: Vector3, size: number, onCollide: (other: Entity) => void) {
+        this._position = position;
+        this.size = size;
+
+        this.onCollide = (other) => {
+            onCollide(other);
+            return 0;
+        };
+    }
+
+    // Collider
+    public readonly active = true;
+    public get position() { return this._position; }
+    public readonly size: number;
+    public get x() { return this._position.x - this.size * 0.5; }
+    public get y() { return this._position.z - this.size * 0.5; }
+    public get width() { return this.size; }
+    public get height() { return this.size; }
+
+    public readonly onCollide: (other: Entity) => number;
+}
+
 export class Collisions {
     private readonly _quadtree: Quadtree;
     private readonly _entries = new Map<number, { colliders: Iterable<Collider> }>();
@@ -51,12 +82,6 @@ export class Collisions {
         }
 
         this._quadtree.clear();
-
-        const intersects = (a: Collider, b: Collider): boolean => {
-            const collisionDistance = (a.size + b.size) * 0.5;
-            const distanceSquared = Vector3.DistanceSquared(a.position, b.position);
-            return (distanceSquared < collisionDistance * collisionDistance);
-        };
 
         for (const entry of this._entries.values()) {
             for (const collider of entry.colliders) {
