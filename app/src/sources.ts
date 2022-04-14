@@ -1576,7 +1576,7 @@ export class Sources {
 
         const angle = Math.PI * 2 / 3;
         for (let index = 0; index < 3; ++index) {
-            const barrel = createBarrel(`barrel${index + 1}`, barrelProperties, this._scene);
+            const barrel = createBarrel(`barrel${index}`, barrelProperties, this._scene);
             barrel.rotationQuaternion = Quaternion.FromEulerAngles(0, angle * index, 0);
             barrel.material = this._materials.gray;
             barrel.parent = source;
