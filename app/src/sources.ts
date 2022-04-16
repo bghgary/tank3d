@@ -273,6 +273,7 @@ export class Sources {
         readonly overseer: Mesh;
         readonly spawner: Mesh;
         readonly detector: Mesh;
+        readonly cruiser: Mesh;
     };
 
     public constructor(world: World) {
@@ -384,6 +385,7 @@ export class Sources {
             overseer: this._createOverseerTankSource(tanks),
             spawner: this._createSpawnerTankSource(tanks),
             detector: this._createDetectorTankSource(tanks),
+            cruiser: this._createCruiserTankSource(tanks),
         };
     }
 
@@ -1674,6 +1676,41 @@ export class Sources {
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.material = this._materials.gray;
         barrel.parent = source;
+
+        return source;
+    }
+
+    private _createCruiserTankSource(parent: TransformNode): Mesh {
+        const barrelProperties: BarrelParameters = {
+            segments: [
+                { diameter: 0.3, length: 0.65 },
+            ],
+            baseDiameter: 0.6,
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Cruiser",
+            size: 1,
+            barrels: ["barrelL", "barrelR"],
+            multiplier: {
+                weaponSpeed: 0.5,
+                weaponDamage: 0.6,
+                weaponHealth: 0.6,
+                reloadTime: 3,
+            },
+        };
+
+        const source = this._createTankBody("cruiser", metadata, parent);
+
+        const barrelL = createBarrel("barrelL", barrelProperties, this._scene);
+        barrelL.rotationQuaternion = Quaternion.FromEulerAngles(0, -Math.PI / 2, 0);
+        barrelL.material = this._materials.gray;
+        barrelL.parent = source;
+
+        const barrelR = createBarrel("barrelR", barrelProperties, this._scene);
+        barrelR.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
+        barrelR.material = this._materials.gray;
+        barrelR.parent = source;
 
         return source;
     }

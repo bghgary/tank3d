@@ -7,6 +7,7 @@ import { BaseTank } from "./tanks/baseTank";
 import { BlasterTank } from "./tanks/blasterTank";
 import { BomberTank } from "./tanks/bomberTank";
 import { BuilderTank } from "./tanks/builderTank";
+import { CruiserTank } from "./tanks/cruiserTank";
 import { DestroyerTank } from "./tanks/destroyerTank";
 import { DetectorTank } from "./tanks/detectorTank";
 import { DirectorTank } from "./tanks/directorTank";
@@ -106,6 +107,9 @@ export const EvolutionRootNode: EvolutionNode = {
             children: []
         }, {
             Tank: DetectorTank,
+            children: []
+        }, {
+            Tank: CruiserTank,
             children: []
         }]
     }, {

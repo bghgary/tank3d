@@ -4,14 +4,14 @@ import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil } from "../common";
 import { WeaponProperties, WeaponType } from "../components/weapon";
 import { Entity } from "../entity";
-import { AutoTargetDrone, AutoTargetDrones } from "../projectiles/drones";
+import { SingleTargetDrone, SingleTargetDrones } from "../projectiles/drones";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
 
-export class DetectorTank extends BarrelTank {
-    private readonly _drones: AutoTargetDrones;
+export class CruiserTank extends BarrelTank {
+    private readonly _drones: SingleTargetDrones;
     private readonly _droneProperties: WeaponProperties;
 
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
@@ -27,7 +27,7 @@ export class DetectorTank extends BarrelTank {
         };
 
         const parent = node.parent as TransformNode;
-        this._drones = new AutoTargetDrones(world, parent, this._droneProperties);
+        this._drones = new SingleTargetDrones(world, parent, this._droneProperties);
     }
 
     public override dispose(): void {
@@ -40,7 +40,7 @@ export class DetectorTank extends BarrelTank {
     public override shoot(): void {
         if (this._reloadTime === 0) {
             for (const barrel of this._barrels) {
-                const drone = barrel.shootDrone(this._drones, AutoTargetDrone, this, this._world.sources.drone.tank, 5);
+                const drone = barrel.shootDrone(this._drones, SingleTargetDrone, this, this._world.sources.drone.tank, 5);
                 applyRecoil(this._recoil, drone);
             }
 
@@ -51,7 +51,9 @@ export class DetectorTank extends BarrelTank {
     }
 
     public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
+        this._drones.target.position.copyFrom(this._world.pointerPosition);
         this._drones.update(deltaTime);
+
         super.update(deltaTime, onDestroy);
     }
 
@@ -63,6 +65,6 @@ export class DetectorTank extends BarrelTank {
     }
 
     public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
-        return sources.create(sources.tank.detector, parent);
+        return sources.create(sources.tank.cruiser, parent);
     }
 }
