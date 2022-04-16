@@ -185,10 +185,10 @@ export abstract class PlayerTank implements Entity, Collider {
 
         this._shield.update(deltaTime);
 
-        this._health.update(deltaTime, (source) => {
-            onDestroy(source);
+        if (!this._health.update(deltaTime)) {
+            onDestroy(this._health.damageEntity);
             this._node.setEnabled(false);
-        });
+        }
     }
 
     public setUpgrades(upgrades: DeepImmutable<TankProperties>): void {

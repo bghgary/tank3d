@@ -12,60 +12,69 @@ const DAMAGE_SPEED = 5;
 const POISON_SPEED = 5;
 
 export class Health {
-    private readonly _max: number;
-    private _value: number;
-    private _poisons = new Set<{ time: number, speed: number }>();
+    protected _max: number;
+    protected _current: number;
+    protected _target: number;
+    protected _damageEntity: Nullable<Entity> = null;
+    protected _poisons = new Set<{ time: number, speed: number }>();
 
     public constructor(max: number) {
-        this._max = this._value = max;
+        this._max = this._current = this._target = max;
     }
 
     public update(deltaTime: number): boolean {
+        this._applyPoisons(deltaTime);
+        this._current = this._target;
+        return this._current > 0;
+    }
+
+    public takeDamage(entity: Entity): void {
+        this._damageEntity = entity;
+
+        if (entity.damage.poison) {
+            this._poisons.add({ time: entity.damage.value * entity.damage.poison / POISON_SPEED, speed: POISON_SPEED });
+        } else {
+            this._target -= entity.damage.value;
+        }
+    }
+
+    public get damageEntity(): Entity {
+        return this._damageEntity!;
+    }
+
+    public reset(): void {
+        this._target = this._max;
+        this._poisons.clear();
+    }
+
+    protected _applyPoisons(deltaTime: number): void {
         if (this._poisons.size > 0) {
             for (const poison of this._poisons) {
-                this._value -= poison.speed * deltaTime;
+                this._target -= poison.speed * deltaTime;
                 if ((poison.time -= deltaTime) <= 0) {
                     this._poisons.delete(poison);
                 }
             }
         }
-
-        return this._value > 0;
-    }
-
-    public takeDamage(entity: Entity): void {
-        if (entity.damage.poison) {
-            this._poisons.add({ time: entity.damage.value * entity.damage.poison / POISON_SPEED, speed: POISON_SPEED });
-        } else {
-            this._value -= entity.damage.value;
-        }
-    }
-
-    public reset(): void {
-        this._value = this._max;
     }
 }
 
-export class BarHealth {
+export class BarHealth extends Health {
     private readonly _node: TransformNode;
     private _size!: number;
-    private _max: number;
-    private _current: number;
-    private _target: number;
     private _speed = 0;
     private _regenSpeed: number;
     private _regenTime = 0;
-    private _entity: Nullable<Entity> = null;
-    private _poisons = new Set<{ time: number, speed: number }>();
 
     public constructor(sources: Sources, parent: TransformNode, max: number, regenSpeed = 0) {
+        super(max);
+
         this._node = sources.createHealth();
         this._node.billboardMode = Mesh.BILLBOARDMODE_Y;
         this._node.setEnabled(false);
 
         this.setParent(parent);
 
-        this._max = this._current = this._target = max;
         this._regenSpeed = regenSpeed;
     }
 
@@ -100,15 +109,8 @@ export class BarHealth {
         this._regenSpeed = regenSpeed;
     }
 
-    public update(deltaTime: number, onZero: (source: Entity) => void): void {
-        if (this._poisons.size > 0) {
-            for (const poison of this._poisons) {
-                this._target -= poison.speed * deltaTime;
-                if ((poison.time -= deltaTime) <= 0) {
-                    this._poisons.delete(poison);
-                }
-            }
-        }
+    public override update(deltaTime: number): boolean {
+        this._applyPoisons(deltaTime);
 
         if (this._target < this._current) {
             this._node.setEnabled(true);
@@ -116,7 +118,7 @@ export class BarHealth {
             this._updateBar();
             if (this._current === 0) {
                 this._target = this._current;
-                onZero(this._entity!);
+                return false;
             }
         } else if (this._target > this._current) {
             this._node.setEnabled(true);
@@ -139,26 +141,25 @@ export class BarHealth {
                 this._target = Math.min(this._target + this._regenSpeed * deltaTime, this._max);
             }
         }
+
+        return true;
     }
 
-    public takeDamage(entity: Entity): void {
-        this._entity = entity;
+    public override takeDamage(entity: Entity): void {
+        super.takeDamage(entity);
+
         this._regenTime = REGEN_TIME;
 
         if (entity.damage.poison) {
-            this._poisons.add({ time: entity.damage.value * entity.damage.poison / POISON_SPEED, speed: POISON_SPEED });
-            this._target = Math.min(this._current, this._target);
             this._speed = Number.MAX_VALUE;
         } else {
-            this._target = Math.min(this._current, this._target) - this._entity.damage.value;
             this._speed = (this._current - this._target) * DAMAGE_SPEED;
         }
     }
 
-    public reset(): void {
-        this._target = this._max;
+    public override reset(): void {
+        super.reset();
         this._speed = RESET_SPEED;
-        this._poisons.clear();
     }
 
     private _updateBar(): void {

@@ -91,11 +91,15 @@ export class AutoTargetDrones extends Drones<AutoTargetDrone> {
 }
 
 export abstract class Drone extends Projectile {
+    protected readonly _health: Health;
     protected readonly _shadow: Shadow;
     private _time: number;
 
     public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(barrelNode, owner, node, properties);
+        this._health = this.size > 0.5
+            ? new BarHealth(world.sources, this._node, this._properties.health)
+            : new Health(this._properties.health);
         this._shadow = new Shadow(world.sources, this._node);
         this._time = duration;
     }
@@ -129,13 +133,15 @@ export abstract class Drone extends Projectile {
 
         this._shadow.update();
 
-        if ((this._time -= deltaTime) <= 0) {
+        if (!this._health.update(deltaTime) || (this._time -= deltaTime) <= 0) {
             onDestroy();
             this._node.dispose();
         }
     }
 
-    protected abstract _takeDamage(other: Entity): void;
+    protected _takeDamage(other: Entity): void {
+        this._health.takeDamage(other);
+    }
 
     public onCollide(other: Entity): number {
         if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
@@ -154,31 +160,17 @@ export abstract class Drone extends Projectile {
 }
 
 export class SingleTargetDrone extends Drone {
-    private readonly _health: BarHealth;
-
-    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
-        super(world, barrelNode, owner, node, properties, duration);
-        this._health = new BarHealth(world.sources, this._node, this._properties.health);
-    }
-
     public update(deltaTime: number, target: DroneTarget, onDestroy: () => void): void {
         super._update(deltaTime, target, onDestroy);
 
-        if (!this._node.isDisposed()) {
-            this._health.update(deltaTime, () => {
-                onDestroy();
-                this._node.dispose();
-            });
+        if (!this._health.update(deltaTime)) {
+            onDestroy();
+            this._node.dispose();
         }
-    }
-
-    protected _takeDamage(other: Entity): void {
-        this._health.takeDamage(other);
     }
 }
 
 export class AutoTargetDrone extends Drone {
-    private readonly _health: Health;
     private readonly _targetVelocity: DeepImmutable<Vector3> = new Vector3();
     private readonly _target: DroneTarget = { position: new Vector3(), radius: 0 };
     private _targetDistanceSquared = Number.MAX_VALUE;
@@ -186,7 +178,6 @@ export class AutoTargetDrone extends Drone {
     public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, barrelNode, owner, node, properties, duration);
 
-        this._health = new Health(properties.health);
         this._targetVelocity.copyFrom(this.velocity).scaleInPlace(properties.speed / this.velocity.length());
 
         this.targetCollider = new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
@@ -218,9 +209,5 @@ export class AutoTargetDrone extends Drone {
         }
 
         this._targetDistanceSquared = Number.MAX_VALUE;
-    }
-
-    protected _takeDamage(other: Entity): void {
-        this._health.takeDamage(other);
     }
 }

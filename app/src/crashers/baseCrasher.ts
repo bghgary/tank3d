@@ -62,10 +62,10 @@ export class BaseCrasher implements Crasher, Collider {
 
             this._shadow.update();
 
-            this._health.update(deltaTime, (source) => {
-                onDestroy(source);
+            if (!this._health.update(deltaTime)) {
+                onDestroy(this._health.damageEntity);
                 this._node.dispose();
-            });
+            }
         }
     }
 
