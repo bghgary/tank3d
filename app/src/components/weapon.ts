@@ -1,13 +1,6 @@
 import { DeepImmutable } from "@babylonjs/core/types";
 import { Damage, DamageWithMultiplier } from "./damage";
 
-export const enum WeaponType {
-    Bullet,
-    Drone,
-    Lance,
-    Trap,
-}
-
 export interface WeaponProperties {
     speed: number;
     damage: Damage;

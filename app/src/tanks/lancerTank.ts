@@ -3,9 +3,10 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { findNode } from "../common";
 import { Lance } from "../components/lance";
-import { WeaponProperties, WeaponType } from "../components/weapon";
+import { WeaponProperties } from "../components/weapon";
 import { Entity } from "../entity";
 import { Sources } from "../sources";
+import { getUpgradeNames } from "../ui/upgrades";
 import { World } from "../worlds/world";
 import { PlayerTank, TankProperties } from "./playerTank";
 
@@ -28,7 +29,7 @@ export class LancerTank extends PlayerTank {
         this._lances = this._metadata.lances!.map((name) => new Lance(world, this, findNode(this._node, name), this._lanceProperties));
     }
 
-    public override readonly weaponType = WeaponType.Lance;
+    public override readonly upgradeNames = getUpgradeNames("Lance", "Length");
 
     public override update(deltaTime: number, onDestroy: (source: Entity) => void): void {
         for (const lance of this._lances) {

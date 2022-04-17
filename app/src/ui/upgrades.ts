@@ -2,7 +2,6 @@ import { Observable } from "@babylonjs/core/Misc/observable";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { StackPanel } from "@babylonjs/gui/2D/controls/stackPanel";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
-import { WeaponType } from "../components/weapon";
 import { World } from "../worlds/world";
 import { BarButton } from "./bar";
 import { Level } from "./level";
@@ -32,16 +31,18 @@ export const enum UpgradeType {
     BodyDamage,
 }
 
-const WeaponName = new Map([
-    [WeaponType.Bullet, "Bullet"],
-    [WeaponType.Drone, "Drone"],
-    [WeaponType.Trap, "Trap"],
-    [WeaponType.Lance, "Lance"],
-]);
-
-const WeaponSpeedName = new Map([
-    [WeaponType.Lance, "Length"],
-]);
+export function getUpgradeNames(weaponName: string, speedName = "Speed", reloadName = "Reload"): Map<UpgradeType, string> {
+    return new Map([
+        [UpgradeType.WeaponSpeed,  `${weaponName} ${speedName}`],
+        [UpgradeType.WeaponDamage, `${weaponName} Damage`      ],
+        [UpgradeType.WeaponHealth, `${weaponName} Health`      ],
+        [UpgradeType.ReloadTime,   reloadName                  ],
+        [UpgradeType.HealthRegen,  "Health Regen"              ],
+        [UpgradeType.MaxHealth,    "Max Health"                ],
+        [UpgradeType.MoveSpeed,    "Move Speed"                ],
+        [UpgradeType.BodyDamage,   "Body Damage"               ],
+    ]);
+}
 
 export class Upgrades {
     private readonly _level: Level;
@@ -49,10 +50,11 @@ export class Upgrades {
     private readonly _barButtons = new Map<UpgradeType, UpgradeBarButton>();
     private readonly _available: TextBlock;
 
-    private _weaponType = WeaponType.Bullet;
+    private _names: Map<UpgradeType, string>;
 
-    public constructor(world: World, level: Level) {
+    public constructor(world: World, level: Level, names: Map<UpgradeType, string>) {
         this._level = level;
+        this._names = names;
 
         this._root = new StackPanel("upgrades");
         this._root.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
@@ -73,14 +75,14 @@ export class Upgrades {
         };
 
         const entries = new Map([
-            [UpgradeType.WeaponSpeed,  { name: "weaponSpeed",  displayName: "Weapon Speed",  barColor: "#FF3F3F7F", key: "1" }],
-            [UpgradeType.WeaponDamage, { name: "weaponDamage", displayName: "Weapon Damage", barColor: "#3FFF3F7F", key: "2" }],
-            [UpgradeType.WeaponHealth, { name: "weaponHealth", displayName: "Weapon Health", barColor: "#3F3FFF7F", key: "3" }],
-            [UpgradeType.ReloadTime,   { name: "reloadTime",   displayName: "Reload",        barColor: "#3FFFFF7F", key: "4" }],
-            [UpgradeType.HealthRegen,  { name: "healthRegen",  displayName: "Heath Regen",   barColor: "#FF3FFF7F", key: "5" }],
-            [UpgradeType.MaxHealth,    { name: "maxHealth",    displayName: "Max Health",    barColor: "#FFFF3F7F", key: "6" }],
-            [UpgradeType.MoveSpeed,    { name: "moveSpeed",    displayName: "Move Speed",    barColor: "#FF8C007F", key: "7" }],
-            [UpgradeType.BodyDamage,   { name: "bodyDamage",   displayName: "Body Damage",   barColor: "#8C008C7F", key: "8" }],
+            [UpgradeType.WeaponSpeed,  { name: "weaponSpeed",  barColor: "#FF3F3F7F", key: "1" }],
+            [UpgradeType.WeaponDamage, { name: "weaponDamage", barColor: "#3FFF3F7F", key: "2" }],
+            [UpgradeType.WeaponHealth, { name: "weaponHealth", barColor: "#3F3FFF7F", key: "3" }],
+            [UpgradeType.ReloadTime,   { name: "reloadTime",   barColor: "#3FFFFF7F", key: "4" }],
+            [UpgradeType.HealthRegen,  { name: "healthRegen",  barColor: "#FF3FFF7F", key: "5" }],
+            [UpgradeType.MaxHealth,    { name: "maxHealth",    barColor: "#FFFF3F7F", key: "6" }],
+            [UpgradeType.MoveSpeed,    { name: "moveSpeed",    barColor: "#FF8C007F", key: "7" }],
+            [UpgradeType.BodyDamage,   { name: "bodyDamage",   barColor: "#8C008C7F", key: "8" }],
         ]);
 
         this._available = new TextBlock("available");
@@ -97,7 +99,6 @@ export class Upgrades {
                 keyInfo: { code: `Digit${value.key}` },
                 keyText: value.key,
             }, world);
-            barButton.text = value.displayName;
             barButton.onClickObservable.add(() => {
                 this._barButtons.get(key)!.value++;
                 this.onUpgradeObservable.notifyObservers(key);
@@ -110,14 +111,12 @@ export class Upgrades {
         this._level.onChangedObservable.add(() => this._update());
     }
 
-    public setWeaponType(value: WeaponType): void {
-        this._weaponType = value;
+    public setNames(names: Map<UpgradeType, string>): void {
+        this._names = names;
         this._update();
     }
 
     public reset(): void {
-        this._weaponType = WeaponType.Bullet;
-
         for (const barButton of this._barButtons.values()) {
             barButton.value = 0;
         }
@@ -154,10 +153,13 @@ export class Upgrades {
             this._root.alpha = 0.5;
         }
 
-        const weaponName = WeaponName.get(this._weaponType) || "Weapon";
-        const weaponSpeedName = WeaponSpeedName.get(this._weaponType) || "Speed";
-        this._barButtons.get(UpgradeType.WeaponSpeed)!.text = `${weaponName} ${weaponSpeedName}`;
-        this._barButtons.get(UpgradeType.WeaponDamage)!.text = `${weaponName} Damage`;
-        this._barButtons.get(UpgradeType.WeaponHealth)!.text = `${weaponName} Health`;
+        for (const [type, name] of this._names) {
+            this._barButtons.get(type)!.text = name;
+        }
+        // const weaponName = WeaponName.get(this._weaponType) || "Weapon";
+        // const weaponSpeedName = WeaponSpeedName.get(this._weaponType) || "Speed";
+        // this._barButtons.get(UpgradeType.WeaponSpeed)!.text = `${weaponName} ${weaponSpeedName}`;
+        // this._barButtons.get(UpgradeType.WeaponDamage)!.text = `${weaponName} Damage`;
+        // this._barButtons.get(UpgradeType.WeaponHealth)!.text = `${weaponName} Health`;
     }
 }

@@ -2,10 +2,11 @@ import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil } from "../common";
-import { WeaponProperties, WeaponType } from "../components/weapon";
+import { WeaponProperties } from "../components/weapon";
 import { Entity } from "../entity";
 import { AutoTargetDrone, AutoTargetDrones } from "../projectiles/drones";
 import { Sources } from "../sources";
+import { getUpgradeNames } from "../ui/upgrades";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
@@ -35,7 +36,7 @@ export class DetectorTank extends BarrelTank {
         super.dispose();
     }
 
-    public override readonly weaponType = WeaponType.Drone;
+    public override readonly upgradeNames = getUpgradeNames("Drone");
 
     public override shoot(): void {
         if (this._reloadTime === 0) {

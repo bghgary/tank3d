@@ -28,6 +28,7 @@ import { SwarmerTank } from "./tanks/swarmerTank";
 import { TrapperTank } from "./tanks/trapperTank";
 import { TwinSniperTank } from "./tanks/twinSniperTank";
 import { TwinTank } from "./tanks/twinTank";
+import { UnderseerTank } from "./tanks/underseerTank";
 import { World } from "./worlds/world";
 
 interface TankConstructor {
@@ -110,6 +111,9 @@ export const EvolutionRootNode: EvolutionNode = {
             children: []
         }, {
             Tank: CruiserTank,
+            children: []
+        }, {
+            Tank: UnderseerTank,
             children: []
         }]
     }, {

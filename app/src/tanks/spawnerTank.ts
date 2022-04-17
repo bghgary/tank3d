@@ -40,8 +40,8 @@ class SpawnerDrone extends SingleTargetDrone {
     private _reloadTime = 0;
     private _recoil = new Vector3();
 
-    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
-        super(world, barrelNode, owner, node, properties, duration);
+    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
+        super(world, owner, node, properties, duration);
 
         const metadata = node.metadata as BarrelProjectileMetadata;
         this._barrels = metadata.barrels.map((name) => new Barrel(world, findNode(node, name)));

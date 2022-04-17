@@ -8,10 +8,10 @@ import { Damage, DamageZero } from "../components/damage";
 import { BarHealth } from "../components/health";
 import { Shadow } from "../components/shadow";
 import { Shield } from "../components/shield";
-import { WeaponType } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { decayVector3ToRef, TmpVector3 } from "../math";
 import { PlayerTankMetadata } from "../metadata";
+import { UpgradeType } from "../ui/upgrades";
 import { World } from "../worlds/world";
 
 export interface TankProperties {
@@ -25,18 +25,29 @@ export interface TankProperties {
     bodyDamage: number;
 }
 
-const BaseProperties: Readonly<TankProperties> = {
-    weaponSpeed: 5,
+const BaseProperties: DeepImmutable<TankProperties> = {
+    weaponSpeed:  5,
     weaponDamage: 6,
     weaponHealth: 10,
-    reloadTime: 0.5,
-    healthRegen: 0,
-    maxHealth: 100,
-    moveSpeed: 5,
-    bodyDamage: 30,
+    reloadTime:   0.5,
+    healthRegen:  0,
+    maxHealth:    100,
+    moveSpeed:    5,
+    bodyDamage:   30,
 };
 
-function add(properties: Readonly<TankProperties>, value: Partial<Readonly<TankProperties>>): TankProperties {
+const UpgradesMultiplier: DeepImmutable<TankProperties> = {
+    weaponSpeed:  1,
+    weaponDamage: 3,
+    weaponHealth: 5,
+    reloadTime:   -0.03,
+    healthRegen:  1.6,
+    maxHealth:    15,
+    moveSpeed:    0.5,
+    bodyDamage:   5,
+};
+
+function add(properties: DeepImmutable<TankProperties>, value: Partial<DeepImmutable<TankProperties>>): TankProperties {
     return {
         weaponSpeed:  properties.weaponSpeed  + (value.weaponSpeed  || 0),
         weaponDamage: properties.weaponDamage + (value.weaponDamage || 0),
@@ -49,7 +60,7 @@ function add(properties: Readonly<TankProperties>, value: Partial<Readonly<TankP
     };
 }
 
-function multiply(properties: Readonly<TankProperties>, value: Partial<Readonly<TankProperties>>): TankProperties {
+function multiply(properties: DeepImmutable<TankProperties>, value: Partial<DeepImmutable<TankProperties>>): TankProperties {
     return {
         weaponSpeed:  properties.weaponSpeed  * (value.weaponSpeed  || 1),
         weaponDamage: properties.weaponDamage * (value.weaponDamage || 1),
@@ -73,7 +84,7 @@ export abstract class PlayerTank implements Entity, Collider {
     protected _autoShoot = false;
     protected _autoRotate = false;
     protected _autoRotateSpeed = 1;
-    protected _properties: DeepImmutable<TankProperties>;
+    protected _properties: TankProperties;
     protected _damage: Damage = { value: 0, time: 1 };
 
     private readonly _collisionToken: IDisposable;
@@ -131,7 +142,7 @@ export abstract class PlayerTank implements Entity, Collider {
     public get width() { return this.size; }
     public get height() { return this.size; }
 
-    public abstract readonly weaponType: WeaponType;
+    public abstract readonly upgradeNames: Map<UpgradeType, string>;
     public readonly cameraRadiusMultiplier: number = 1;
     public readonly cameraTargetOffset = Vector3.Zero();
 
@@ -192,7 +203,7 @@ export abstract class PlayerTank implements Entity, Collider {
     }
 
     public setUpgrades(upgrades: DeepImmutable<TankProperties>): void {
-        this._properties = multiply(add(BaseProperties, upgrades), this._metadata.multiplier);
+        this._properties = multiply(add(BaseProperties, multiply(upgrades, UpgradesMultiplier)), this._metadata.multiplier);
         this._damage.value = this._properties.bodyDamage;
         this._health.setMax(this._properties.maxHealth);
         this._health.setRegenSpeed(this._properties.healthRegen);

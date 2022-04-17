@@ -28,6 +28,44 @@ const MEGA_CRASHER_POINTS = 100;
 
 const MARKER_MAGNIFICATION = 3;
 
+function initRotation(transformNode: TransformNode): void {
+    transformNode.rotationQuaternion = transformNode.rotationQuaternion || Quaternion.FromEulerVector(transformNode.rotation);
+}
+
+function initMesh(mesh: AbstractMesh): void {
+    mesh.doNotSyncBoundingInfo = true;
+    mesh.alwaysSelectAsActiveMesh = true;
+}
+
+export function clone(source: AbstractMesh, parent?: TransformNode): AbstractMesh {
+    const clone = source.clone(source.name, parent || null, true) as AbstractMesh;
+    initRotation(clone);
+    initMesh(clone);
+    clone.id = source.id;
+    clone.metadata = source.metadata;
+    return clone;
+}
+
+export function instantiate(source: TransformNode, parent?: TransformNode): AbstractMesh {
+    const instance = source.instantiateHierarchy(parent, undefined, (source, target) => {
+        target.id = source.id;
+        target.name = source.name;
+        target.metadata = source.metadata;
+        if ((target as AbstractMesh).layerMask && (source as AbstractMesh).layerMask) {
+            (target as AbstractMesh).layerMask = (source as AbstractMesh).layerMask;
+        }
+    }) as AbstractMesh;
+    initRotation(instance);
+    initMesh(instance);
+    for (const mesh of instance.getChildMeshes()) {
+        initMesh(mesh);
+    }
+    instance.id = source.id;
+    instance.name = source.name;
+    instance.parent = parent || null;
+    return instance;
+}
+
 interface BarrelParameters {
     readonly segments: Array<{
         readonly diameter: number;
@@ -216,6 +254,7 @@ export class Sources {
         readonly tank: Mesh;
         readonly crasher: Mesh;
         readonly tankSpawner: Mesh;
+        readonly tankUnderseer: Mesh;
     };
 
     public readonly trap: {
@@ -274,6 +313,7 @@ export class Sources {
         readonly spawner: Mesh;
         readonly detector: Mesh;
         readonly cruiser: Mesh;
+        readonly underseer: Mesh;
     };
 
     public constructor(world: World) {
@@ -318,6 +358,7 @@ export class Sources {
             tank: this._createDroneSource(drones, "tank", this._materials.blue),
             crasher: this._createDroneSource(drones, "crasher", this._materials.pink),
             tankSpawner: this._createSpawnerTankDroneSource(drones),
+            tankUnderseer: this._createUnderseerTankDroneSource(drones),
         };
 
         const traps = new TransformNode("traps", this._scene);
@@ -386,66 +427,30 @@ export class Sources {
             spawner: this._createSpawnerTankSource(tanks),
             detector: this._createDetectorTankSource(tanks),
             cruiser: this._createCruiserTankSource(tanks),
+            underseer: this._createUnderseerTankSource(tanks),
         };
     }
 
     public createShield(parent?: TransformNode): Mesh {
-        return this._clone(this._adornment.shield, parent);
+        return clone(this._adornment.shield, parent) as Mesh;
     }
 
     public createHealth(parent?: TransformNode): AbstractMesh {
-        return this._instantiate(this._adornment.health, parent);
+        return instantiate(this._adornment.health, parent);
     }
 
     public createShadow(parent?: TransformNode): AbstractMesh {
-        return this._instantiate(this._adornment.shadow, parent);
+        return instantiate(this._adornment.shadow, parent);
     }
 
     public create(source: Mesh, parent?: TransformNode): AbstractMesh {
-        return this._instantiate(source, parent);
+        return instantiate(source, parent);
     }
 
     private _createMaterial(name: string, r: number, g: number, b: number): Material {
         const material = new StandardMaterial(name, this._scene);
         material.diffuseColor.set(r, g, b);
         return material;
-    }
-
-    private _clone(source: Mesh, parent?: TransformNode): Mesh {
-        const clone = source.clone(source.name, parent);
-        this._initRotation(clone);
-        this._initMesh(clone);
-        clone.id = source.id;
-        return clone;
-    }
-
-    private _instantiate(source: TransformNode, parent?: TransformNode): AbstractMesh {
-        const instance = source.instantiateHierarchy(parent, undefined, (source, target) => {
-            target.id = source.id;
-            target.name = source.name;
-            target.metadata = source.metadata;
-            if ((target as AbstractMesh).layerMask && (source as AbstractMesh).layerMask) {
-                (target as AbstractMesh).layerMask = (source as AbstractMesh).layerMask;
-            }
-        }) as AbstractMesh;
-        this._initRotation(instance);
-        this._initMesh(instance);
-        for (const mesh of instance.getChildMeshes()) {
-            this._initMesh(mesh);
-        }
-        instance.id = source.id;
-        instance.name = source.name;
-        instance.parent = parent || null;
-        return instance;
-    }
-
-    private _initRotation(transformNode: TransformNode): void {
-        transformNode.rotationQuaternion = transformNode.rotationQuaternion || Quaternion.FromEulerVector(transformNode.rotation);
-    }
-
-    private _initMesh(mesh: AbstractMesh): void {
-        mesh.doNotSyncBoundingInfo = true;
-        mesh.alwaysSelectAsActiveMesh = true;
     }
 
     private _createShieldSource(parent: TransformNode): Mesh {
@@ -515,6 +520,20 @@ export class Sources {
         barrel.material = this._materials.gray;
         barrel.parent = source;
 
+        return source;
+    }
+
+    private _createUnderseerTankDroneSource(parent: TransformNode): Mesh {
+        const metadata: SizeMetadata = {
+            size: 0.9,
+        };
+
+        const source = MeshBuilder.CreateBox("tankUnderseer", { size: 0.7 }, this._scene);
+        source.bakeCurrentTransformIntoVertices();
+        source.metadata = metadata;
+        source.material = this._materials.blue;
+        source.parent = parent;
+ 
         return source;
     }
 
@@ -1489,7 +1508,7 @@ export class Sources {
             },
         };
 
-        const source = this._createTankBody("blaster", metadata, parent);
+        const source = this._createTankBody("bomber", metadata, parent);
 
         const barrel = createBarrel("barrel", barrelProperties, this._scene);
         barrel.material = this._materials.gray;
@@ -1711,6 +1730,37 @@ export class Sources {
         barrelR.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
         barrelR.material = this._materials.gray;
         barrelR.parent = source;
+
+        return source;
+    }
+
+    private _createUnderseerTankSource(parent: TransformNode): Mesh {
+        const barrelProperties: BarrelParameters = {
+            segments: [
+                { diameter: 0.4, length: 0.15 },
+                { diameter: 0.8, length: 0.25 },
+            ],
+            baseCap: true,
+            baseDiameter: 0.75,
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Underseer",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponSpeed: 0.5,
+                weaponDamage: 0.8,
+                weaponHealth: 0.8,
+            },
+        };
+
+        const source = this._createTankBody("underseer", metadata, parent);
+
+        const barrel = createBarrel("barrel", barrelProperties, this._scene);
+        barrel.position.z = 0.35;
+        barrel.material = this._materials.gray;
+        barrel.parent = source;
 
         return source;
     }

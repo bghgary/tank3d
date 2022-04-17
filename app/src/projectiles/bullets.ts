@@ -20,7 +20,7 @@ export class Bullets extends Projectiles<Bullet> {
 
     public add(constructor: BulletConstructor, barrelNode: TransformNode, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Bullet {
         const node = this._world.sources.create(source, this._root);
-        const bullet = new constructor(this._world, barrelNode, owner, node, properties, duration);
+        const bullet = Bullet.FromBarrel(barrelNode, constructor, this._world, owner, node, properties, duration);
         this._projectiles.add(bullet);
         return bullet;
     }
@@ -35,14 +35,14 @@ export class Bullets extends Projectiles<Bullet> {
 }
 
 export class Bullet extends Projectile {
-    private readonly _targetVelocity: DeepImmutable<Vector3> = new Vector3();
-    private readonly _shadow: Shadow;
-    private readonly _health: Health;
-    private _time: number;
+    protected readonly _targetVelocity: DeepImmutable<Vector3> = new Vector3();
+    protected readonly _shadow: Shadow;
+    protected readonly _health: Health;
+    protected _time: number;
 
-    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
-        super(barrelNode, owner, node, properties);
-        this._targetVelocity.copyFrom(this.velocity).scaleInPlace(properties.speed / this.velocity.length());
+    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
+        super(owner, node, properties);
+        this._targetVelocity.copyFrom(this._node.forward).scaleInPlace(properties.speed);
         this._shadow = new Shadow(world.sources, this._node);
         this._health = new Health(this._properties.health);
         this._time = duration;
@@ -54,8 +54,6 @@ export class Bullet extends Projectile {
         applyMovement(deltaTime, this._node.position, this.velocity);
 
         decayVector3ToRef(this.velocity, this._targetVelocity, deltaTime, 2, this.velocity);
-
-        this._node.addRotation(0, this._targetVelocity.length() * deltaTime, 0);
 
         this._shadow.update();
 

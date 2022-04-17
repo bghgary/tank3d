@@ -18,7 +18,7 @@ export class Traps extends Projectiles<Trap> {
 
     public add(barrelNode: TransformNode, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Trap {
         const node = this._world.sources.create(source, this._root);
-        const trap = new Trap(this._world, barrelNode, owner, node, properties, duration);
+        const trap = Trap.FromBarrel(barrelNode, Trap, this._world, owner, node, properties, duration);
         this._projectiles.add(trap);
         return trap;
     }
@@ -37,8 +37,8 @@ export class Trap extends Projectile {
     private _health: Health;
     private _time: number;
 
-    public constructor(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
-        super(barrelNode, owner, node, properties);
+    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
+        super(owner, node, properties);
         this._shadow = new Shadow(world.sources, this._node);
         this._health = new Health(this._properties.health);
         this._time = duration;

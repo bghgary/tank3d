@@ -1,5 +1,6 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import { IDisposable } from "@babylonjs/core/scene";
@@ -9,6 +10,7 @@ import { WeaponProperties, WeaponPropertiesWithMultiplier } from "../components/
 import { Entity, EntityType } from "../entity";
 import { TmpVector3 } from "../math";
 import { BarrelMetadata } from "../metadata";
+import { clone } from "../sources";
 import { World } from "../worlds/world";
 
 function applyAngleVariance(forward: DeepImmutable<Vector3>, variance = Tools.ToRadians(2), result: Vector3): Vector3 {
@@ -22,7 +24,7 @@ function applySpeedVariance(speed: number, variance = 0): number {
 }
 
 export interface ProjectileConstructor<T extends Projectile> {
-    new(world: World, barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): T;
+    new(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): T;
 }
 
 export class Projectiles<T extends Projectile> {
@@ -45,29 +47,40 @@ export class Projectiles<T extends Projectile> {
 
 export abstract class Projectile implements Entity, Collider {
     protected readonly _node: TransformNode;
-    protected readonly _properties: WeaponPropertiesWithMultiplier;
+    protected readonly _properties: DeepImmutable<WeaponProperties>;
 
-    public constructor(barrelNode: TransformNode, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>) {
+    public constructor(owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>) {
+        this.owner = owner;
+        this._node = node;
+        this._properties = properties;
+
+        const scaling = this._node.scaling;
+        this.size = Math.max(scaling.x, scaling.y, scaling.z);
+    }
+
+    public static FromBarrel<T extends Projectile>(barrelNode: TransformNode, constructor: ProjectileConstructor<T>, world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): T {
         const barrelMetadata = barrelNode.metadata as BarrelMetadata;
+        const barrelForward = applyAngleVariance(barrelNode.forward, barrelMetadata.angleVariance, TmpVector3[0]);
         const barrelDiameter = barrelMetadata.diameter * barrelNode.absoluteScaling.x;
         const barrelLength = barrelMetadata.length * barrelNode.absoluteScaling.z;
 
-        this.owner = owner;
-        this.size = barrelDiameter * 0.75;
+        node.setDirection(barrelForward);
+        node.scaling.setAll(barrelDiameter * 0.75);
+        properties = new WeaponPropertiesWithMultiplier(properties, barrelMetadata.multiplier);
+        const projectile = new constructor(world, owner, node, properties, duration);
 
-        this._node = node;
-        this._node.scaling.setAll(this.size);
-
-        const forward = applyAngleVariance(barrelNode.forward, barrelMetadata.angleVariance, TmpVector3[0]);
-        forward.scaleToRef(barrelLength + this.size * 0.5, this._node.position).addInPlace(barrelNode.absolutePosition);
-
-        this._node.rotationQuaternion!.copyFrom(barrelNode.absoluteRotationQuaternion);
+        barrelForward.scaleToRef(barrelLength + projectile.size * 0.5, projectile._node.position).addInPlace(barrelNode.absolutePosition);
 
         const speed = applySpeedVariance(properties.speed, barrelMetadata.speedVariance);
-        const initialSpeed = Math.max(Vector3.Dot(this.owner.velocity, forward) + speed, 0.1);
-        this.velocity.copyFrom(forward).scaleInPlace(initialSpeed);
+        const initialSpeed = Math.max(Vector3.Dot(owner.velocity, barrelForward) + speed, 0.1);
+        projectile.velocity.copyFrom(barrelForward).scaleInPlace(initialSpeed);
 
-        this._properties = new WeaponPropertiesWithMultiplier(properties, barrelMetadata.multiplier);
+        return projectile;
+    }
+
+    public clone<T extends Projectile>(constructor: ProjectileConstructor<T>, world: World, duration: number): T {
+        const node = clone(this._node as AbstractMesh, this._node.parent as TransformNode);
+        return new constructor(world, this.owner, node, this._properties, duration);
     }
 
     // Entity

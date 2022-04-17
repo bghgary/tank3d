@@ -2,8 +2,9 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
-import { WeaponProperties, WeaponType } from "../components/weapon";
+import { WeaponProperties } from "../components/weapon";
 import { Bullet, BulletConstructor } from "../projectiles/bullets";
+import { getUpgradeNames } from "../ui/upgrades";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
@@ -26,7 +27,7 @@ export abstract class BulletTank extends BarrelTank {
         };
     }
 
-    public override readonly weaponType = WeaponType.Bullet;
+    public override readonly upgradeNames = getUpgradeNames("Bullet");
 
     public override shoot(): void {
         if (this._reloadTime === 0) {

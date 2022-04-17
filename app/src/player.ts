@@ -94,7 +94,7 @@ export class Player {
         this._level = new Level(bottomPanel, this._score, this._tank.displayName);
         this._level.onChangedObservable.add((value) => this.onLevelChangedObservable.notifyObservers(value));
 
-        this._upgrades = new Upgrades(this._world, this._level);
+        this._upgrades = new Upgrades(this._world, this._level, this._tank.upgradeNames);
         this._upgrades.onUpgradeObservable.add(() => this._setTankUpgrades());
 
         this._evolutions = new Evolutions(this._world, this._level);
@@ -177,7 +177,7 @@ export class Player {
             }
         });
 
-        world.onEnemyDestroyedObservable.add(([source, target]) => {
+        this._world.onEnemyDestroyedObservable.add(([source, target]) => {
             if (source === this._tank || source.owner === this._tank) {
                 this._score.add(target.points);
             }
@@ -250,21 +250,21 @@ export class Player {
 
     private _setTankUpgrades(): void {
         this._tank.setUpgrades({
-            weaponSpeed:  this._upgrades.getUpgradeValue(UpgradeType.WeaponSpeed)  * 1,
-            weaponDamage: this._upgrades.getUpgradeValue(UpgradeType.WeaponDamage) * 3,
-            weaponHealth: this._upgrades.getUpgradeValue(UpgradeType.WeaponHealth) * 5,
-            reloadTime:   this._upgrades.getUpgradeValue(UpgradeType.ReloadTime)   * -0.03,
-            healthRegen:  this._upgrades.getUpgradeValue(UpgradeType.HealthRegen)  * 1.6,
-            maxHealth:    this._upgrades.getUpgradeValue(UpgradeType.MaxHealth)    * 15,
-            moveSpeed:    this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed)    * 0.5,
-            bodyDamage:   this._upgrades.getUpgradeValue(UpgradeType.BodyDamage)   * 5,
+            weaponSpeed:  this._upgrades.getUpgradeValue(UpgradeType.WeaponSpeed),
+            weaponDamage: this._upgrades.getUpgradeValue(UpgradeType.WeaponDamage),
+            weaponHealth: this._upgrades.getUpgradeValue(UpgradeType.WeaponHealth),
+            reloadTime:   this._upgrades.getUpgradeValue(UpgradeType.ReloadTime),
+            healthRegen:  this._upgrades.getUpgradeValue(UpgradeType.HealthRegen),
+            maxHealth:    this._upgrades.getUpgradeValue(UpgradeType.MaxHealth),
+            moveSpeed:    this._upgrades.getUpgradeValue(UpgradeType.MoveSpeed),
+            bodyDamage:   this._upgrades.getUpgradeValue(UpgradeType.BodyDamage),
         });
     }
 
     private _updateTank(evolutionNode: EvolutionNode): void {
         const mesh = evolutionNode.Tank.CreateMesh(this._world.sources, this._root);
         this._tank = new evolutionNode.Tank(this._world, mesh, this._tank);
-        this._upgrades.setWeaponType(this._tank.weaponType);
+        this._upgrades.setNames(this._tank.upgradeNames);
         this._level.setTankDisplayName(this._tank.displayName);
         this._setTankUpgrades();
     }

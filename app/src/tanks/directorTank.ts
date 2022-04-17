@@ -6,10 +6,11 @@ import { DeepImmutable, Nullable } from "@babylonjs/core/types";
 import { TargetCollider } from "../collisions";
 import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
-import { WeaponProperties, WeaponType } from "../components/weapon";
+import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { DroneConstructor, SingleTargetDrone, SingleTargetDrones } from "../projectiles/drones";
 import { Sources } from "../sources";
+import { getUpgradeNames } from "../ui/upgrades";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
@@ -17,17 +18,17 @@ import { PlayerTank, TankProperties } from "./playerTank";
 const TARGET_RADIUS = 10;
 
 export class DirectorTank extends BarrelTank {
+    protected readonly _droneProperties: WeaponProperties;
+    protected readonly _drones: SingleTargetDrones;
+    protected readonly _maxDroneCount: number = 4;
+    protected readonly _droneConstructor: DroneConstructor<SingleTargetDrone> = SingleTargetDrone;
+    protected readonly _droneSource = this._world.sources.drone.tank;
+
     private readonly _circleRadius: number;
-    private readonly _droneProperties: WeaponProperties;
-    private readonly _drones: SingleTargetDrones;
     private _barrelIndex = 0;
     private _targetCollisionToken: Nullable<IDisposable> = null;
     private _targetDistanceSquared = Number.MAX_VALUE;
     private _defendTime = 0;
-
-    protected readonly _maxDroneCount: number = 4;
-    protected readonly _droneConstructor: DroneConstructor<SingleTargetDrone> = SingleTargetDrone;
-    protected readonly _droneSource = this._world.sources.drone.tank;
 
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
@@ -58,7 +59,7 @@ export class DirectorTank extends BarrelTank {
         super.dispose();
     }
 
-    public override readonly weaponType = WeaponType.Drone;
+    public override readonly upgradeNames = getUpgradeNames("Drone");
 
     public override toggleAutoShoot(): void {
         super.toggleAutoShoot();
