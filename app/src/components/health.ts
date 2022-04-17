@@ -153,7 +153,7 @@ export class BarHealth extends Health {
         if (entity.damage.poison) {
             this._speed = Number.MAX_VALUE;
         } else {
-            this._speed = (this._current - this._target) * DAMAGE_SPEED;
+            this._speed = Math.abs(this._current - this._target) * DAMAGE_SPEED;
         }
     }
 
