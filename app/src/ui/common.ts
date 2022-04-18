@@ -43,3 +43,7 @@ export function registerKeyboard(world: World, keyInfo: KeyInfo, onDown?: () => 
         }
     });
 }
+
+export function unregisterKeyboard(world: World, observer: Nullable<Observer<KeyboardInfo>>): void {
+    world.scene.onKeyboardObservable.remove(observer);
+}

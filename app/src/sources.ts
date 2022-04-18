@@ -476,24 +476,14 @@ export class Sources {
     }
 
     private _createBulletSource(parent: TransformNode, name: string, segments: number, material: Material): Mesh {
-        const metadata: SizeMetadata = {
-            size: 1,
-        };
-
         const source = MeshBuilder.CreateSphere(name, { segments: segments }, this._scene);
-        source.metadata = metadata;
         source.material = material;
         source.parent = parent;
         return source;
     }
 
     private _createDroneSource(parent: TransformNode, name: string, material: Material): Mesh {
-        const metadata: SizeMetadata = {
-            size: 1,
-        };
-
-        const source = createTetrahedron(name, metadata.size, this._scene);
-        source.metadata = metadata;
+        const source = createTetrahedron(name, 1, this._scene);
         source.material = material;
         source.parent = parent;
         return source;
@@ -501,7 +491,6 @@ export class Sources {
 
     private _createSpawnerTankDroneSource(parent: TransformNode): Mesh {
         const metadata: BarrelProjectileMetadata = {
-            size: 1,
             barrels: [ "barrel" ],
             multiplier: {
                 speed: 1.2,
@@ -511,7 +500,7 @@ export class Sources {
             reloadMultiplier: 0.4,
         };
 
-        const source = createTetrahedron("tankSpawner", metadata.size, this._scene);
+        const source = createTetrahedron("tankSpawner", 1, this._scene);
         source.metadata = metadata;
         source.material = this._materials.blue;
         source.parent = parent;
@@ -538,12 +527,7 @@ export class Sources {
     }
 
     private _createTrapSource(parent: TransformNode, name: string, material: Material, sides: number): Mesh {
-        const metadata: SizeMetadata = {
-            size: 1,
-        };
-
-        const source = createPrism(name, metadata.size, sides, this._scene);
-        source.metadata = metadata;
+        const source = createPrism(name, 1, sides, this._scene);
         source.material = material;
         source.parent = parent;
         return source;
@@ -551,7 +535,6 @@ export class Sources {
 
     private _createLauncherTankMissileSource(parent: TransformNode): Mesh {
         const metadata: BarrelProjectileMetadata = {
-            size: 1,
             barrels: ["barrel"],
             multiplier: {
                 damage: { value: 0.17, time: 1 },
@@ -560,7 +543,7 @@ export class Sources {
             reloadMultiplier: 0.5,
         };
 
-        const source = createSphere("tankLauncher", metadata.size, this._scene);
+        const source = createSphere("tankLauncher", 1, this._scene);
         source.metadata = metadata;
         source.material = this._materials.blue;
         source.parent = parent;
@@ -575,7 +558,6 @@ export class Sources {
 
     private _createBomberTankBombSource(parent: TransformNode): Mesh {
         const metadata: BombMetadata = {
-            size: 1,
             barrels: ["barrel0", "barrel1", "barrel2", "barrel3", "barrel4"],
             multiplier: {
                 speed: 0.5,
@@ -584,7 +566,7 @@ export class Sources {
             },
         };
 
-        const source = createSphere("tankBomber", metadata.size, this._scene);
+        const source = createSphere("tankBomber", 1, this._scene);
         source.metadata = metadata;
         source.material = this._materials.blue;
         source.parent = parent;
@@ -1420,7 +1402,7 @@ export class Sources {
         };
 
         const metadata: PlayerTankMetadata = {
-            displayName: "Builder",
+            displayName: "Artillery",
             size: 1,
             barrels: ["barrel", "barrelL", "barrelR"],
             multiplier: {
@@ -1750,8 +1732,7 @@ export class Sources {
             barrels: ["barrel"],
             multiplier: {
                 weaponSpeed: 0.5,
-                weaponDamage: 0.8,
-                weaponHealth: 0.8,
+                weaponHealth: 1.5,
             },
         };
 

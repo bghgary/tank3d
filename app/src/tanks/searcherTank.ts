@@ -1,12 +1,10 @@
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "../sources";
-import { BulletTank } from "./bulletTank";
+import { SniperTank } from "./sniperTank";
 
-export class SearcherTank extends BulletTank {
+export class SearcherTank extends SniperTank {
     private _secondaryActive = false;
-
-    public override cameraRadiusMultiplier = 1.2;
 
     public override secondary(active: boolean): void {
         if (active) {
@@ -20,7 +18,7 @@ export class SearcherTank extends BulletTank {
         }
     }
 
-    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static override CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
         return sources.create(sources.tank.searcher, parent);
     }
 }

@@ -9,18 +9,17 @@ import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { decayVector3ToRef } from "../math";
 import { World } from "../worlds/world";
-import { Projectile, Projectiles } from "./projectiles";
+import { Projectile, ProjectileConstructor, Projectiles } from "./projectiles";
+
+export type TrapConstructor = ProjectileConstructor<Trap>;
 
 export class Traps extends Projectiles<Trap> {
     public constructor(world: World) {
         super(world, "traps");
     }
 
-    public add(barrelNode: TransformNode, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Trap {
-        const node = this._world.sources.create(source, this._root);
-        const trap = Trap.FromBarrel(barrelNode, Trap, this._world, owner, node, properties, duration);
-        this._projectiles.add(trap);
-        return trap;
+    public add(constructor: TrapConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Trap {
+        return this._add(constructor, owner, source, properties, duration);
     }
 
     public update(deltaTime: number): void {
@@ -34,7 +33,7 @@ export class Traps extends Projectiles<Trap> {
 
 export class Trap extends Projectile {
     private readonly _shadow: Shadow;
-    private _health: Health;
+    private readonly _health: Health;
     private _time: number;
 
     public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {

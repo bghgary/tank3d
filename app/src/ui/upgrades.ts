@@ -156,10 +156,5 @@ export class Upgrades {
         for (const [type, name] of this._names) {
             this._barButtons.get(type)!.text = name;
         }
-        // const weaponName = WeaponName.get(this._weaponType) || "Weapon";
-        // const weaponSpeedName = WeaponSpeedName.get(this._weaponType) || "Speed";
-        // this._barButtons.get(UpgradeType.WeaponSpeed)!.text = `${weaponName} ${weaponSpeedName}`;
-        // this._barButtons.get(UpgradeType.WeaponDamage)!.text = `${weaponName} Damage`;
-        // this._barButtons.get(UpgradeType.WeaponHealth)!.text = `${weaponName} Health`;
     }
 }

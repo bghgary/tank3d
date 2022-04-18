@@ -7,7 +7,7 @@ import { Control } from "@babylonjs/gui/2D/controls/control";
 import { Rectangle } from "@babylonjs/gui/2D/controls/rectangle";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { World } from "../worlds/world";
-import { isHierarchyEnabled, KeyInfo, registerKeyboard } from "./common";
+import { isHierarchyEnabled, KeyInfo, registerKeyboard, unregisterKeyboard } from "./common";
 
 const CORNER_RADIUS = 15;
 const BORDER = 3;
@@ -112,10 +112,14 @@ export class BarButton extends BarBase<Button> {
         key.shadowBlur = 4;
         this._root.addControl(key);
 
-        registerKeyboard(world, properties.keyInfo, () => {
+        const observer = registerKeyboard(world, properties.keyInfo, () => {
             if (isHierarchyEnabled(this._root)) {
                 this.onClickObservable.notifyObservers(this);
             }
+        });
+
+        this._root.onDisposeObservable.add(() => {
+            unregisterKeyboard(world, observer);
         });
     }
 

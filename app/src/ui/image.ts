@@ -5,7 +5,7 @@ import { Container } from "@babylonjs/gui/2D/controls/container";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { World } from "../worlds/world";
-import { isHierarchyEnabled, KeyInfo, registerKeyboard } from "./common";
+import { isHierarchyEnabled, KeyInfo, registerKeyboard, unregisterKeyboard } from "./common";
 
 const CORNER_RADIUS = 15;
 
@@ -48,10 +48,14 @@ export class ImageButton {
         key.shadowBlur = 4;
         this._root.addControl(key);
 
-        registerKeyboard(world, properties.keyInfo, undefined, () => {
+        const observer = registerKeyboard(world, properties.keyInfo, undefined, () => {
             if (isHierarchyEnabled(this._root)) {
                 this.onClickObservable.notifyObservers(this);
             }
+        });
+
+        this._root.onDisposeObservable.add(() => {
+            unregisterKeyboard(world, observer);
         });
     }
 

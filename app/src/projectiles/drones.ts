@@ -26,21 +26,8 @@ export abstract class Drones<T extends Drone> extends Projectiles<T> {
         this._properties = properties;
     }
 
-    public get count(): number {
-        return this._projectiles.size;
-    }
-
-    public add(constructor: DroneConstructor<T>, owner: Entity, barrelNode: TransformNode, source: Mesh, duration: number): T {
-        const node = this._world.sources.create(source, this._root);
-        const drone = Drone.FromBarrel(barrelNode, constructor, this._world, owner, node, this._properties, duration);
-        this._projectiles.add(drone);
-        return drone;
-    }
-
-    public clone(source: T, constructor: DroneConstructor<T>, duration: number): T {
-        const drone = source.clone(constructor, this._world, duration);
-        this._projectiles.add(drone);
-        return drone;
+    public add(constructor: DroneConstructor<T>, owner: Entity, source: Mesh, duration: number): Drone {
+        return super._add(constructor, owner, source, this._properties, duration);
     }
 }
 
@@ -143,10 +130,6 @@ export abstract class Drone extends Projectile {
         decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
     }
 
-    protected _takeDamage(other: Entity): void {
-        this._health.takeDamage(other);
-    }
-
     public onCollide(other: Entity): number {
         if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
             if (other.type == EntityType.Bullet) {
@@ -158,7 +141,7 @@ export abstract class Drone extends Projectile {
         }
 
         applyCollisionForce(this, other);
-        this._takeDamage(other);
+        this._health.takeDamage(other);
         return other.damage.time;
     }
 }
@@ -166,8 +149,8 @@ export abstract class Drone extends Projectile {
 export class SingleTargetDrone extends Drone {
     public update(deltaTime: number, target: DroneTarget, onDestroy: () => void): void {
         applyMovement(deltaTime, this._node.position, this.velocity);
-        super._chase(deltaTime, target);
-        super._update(deltaTime, onDestroy);
+        this._chase(deltaTime, target);
+        this._update(deltaTime, onDestroy);
     }
 }
 
@@ -178,8 +161,6 @@ export class AutoTargetDrone extends Drone {
 
     public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, owner, node, properties, duration);
-
-        this._targetVelocity.copyFrom(this.velocity).scaleInPlace(properties.speed / this.velocity.length());
 
         this.targetCollider = new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
             if (other.type !== EntityType.Bullet && other !== this.owner && other.owner !== this.owner) {
@@ -192,6 +173,11 @@ export class AutoTargetDrone extends Drone {
         });
     }
 
+    public override shootFrom(barrelNode: TransformNode): void {
+        super.shootFrom(barrelNode);
+        this._targetVelocity.copyFrom(this._node.forward).scaleInPlace(this._properties.speed);
+    }
+
     public readonly targetCollider: TargetCollider;
 
     public update(deltaTime: number, onDestroy: () => void): void {
@@ -199,10 +185,10 @@ export class AutoTargetDrone extends Drone {
 
         if (this._targetDistanceSquared === Number.MAX_VALUE) {
             decayVector3ToRef(this.velocity, this._targetVelocity, deltaTime, 2, this.velocity);
-            super._update(deltaTime, onDestroy);
+            this._update(deltaTime, onDestroy);
         } else {
-            super._chase(deltaTime, this._target);
-            super._update(deltaTime, onDestroy);
+            this._chase(deltaTime, this._target);
+            this._update(deltaTime, onDestroy);
         }
 
         this._targetDistanceSquared = Number.MAX_VALUE;

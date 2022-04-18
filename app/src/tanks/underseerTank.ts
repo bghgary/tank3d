@@ -1,19 +1,21 @@
+import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { DeepImmutable, DeepImmutableObject, Nullable } from "@babylonjs/core/types";
+import { DeepImmutable, DeepImmutableObject } from "@babylonjs/core/types";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { DroneConstructor, DroneTarget, SingleTargetDrone } from "../projectiles/drones";
+import { Shape } from "../shapes";
 import { Sources } from "../sources";
 import { getUpgradeNames } from "../ui/upgrades";
 import { World } from "../worlds/world";
 import { DirectorTank } from "./directorTank";
-import { TankProperties } from "./playerTank";
+import { PlayerTank, TankProperties } from "./playerTank";
 
 const BASE_MAX_CLONE_COUNT = 10;
 
 interface UnderseerTankInternal extends Entity {
-    _cloneDrone(drone: SingleTargetDrone): Nullable<SingleTargetDrone>;
+    _addDrone(position: DeepImmutable<Vector3>, rotation: DeepImmutable<Quaternion>): void;
 }
 
 export class UnderseerTank extends DirectorTank {
@@ -21,7 +23,27 @@ export class UnderseerTank extends DirectorTank {
     protected override readonly _droneConstructor: DroneConstructor<SingleTargetDrone> = UnderseerDrone;
     protected override readonly _droneSource = this._world.sources.drone.tankUnderseer;
 
+    private readonly _removeEmptyDestroyedObserver: () => void;
     private _maxCloneCount = BASE_MAX_CLONE_COUNT;
+
+    public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
+        super(world, node, previousTank);
+
+        const observer = world.onEnemyDestroyedObservable.add(([source, target]) => {
+            if (source === this && target.type === EntityType.Shape && target.points === 10) {
+                this._addDrone(target.position, target.rotation);
+            }
+        });
+
+        this._removeEmptyDestroyedObserver = () => {
+            world.onEnemyDestroyedObservable.remove(observer);
+        };
+    }
+
+    public override dispose(): void {
+        this._removeEmptyDestroyedObserver();
+        super.dispose();
+    }
 
     public override readonly upgradeNames = getUpgradeNames("Drone", undefined, "Max Drone Count");
 
@@ -35,17 +57,18 @@ export class UnderseerTank extends DirectorTank {
         this._properties.reloadTime = 3;
     }
 
-    protected _cloneDrone(source: SingleTargetDrone): Nullable<SingleTargetDrone> {
-        if (this._drones.count >= this._maxCloneCount) {
-            return null;
+    protected _addDrone(position: DeepImmutable<Vector3>, rotation: DeepImmutable<Quaternion>): void {
+        if (this._drones.count < this._maxCloneCount) {
+            const drone = this._barrels[0]!.shootDrone(this._drones, this._droneConstructor, this, this._droneSource);
+            drone.position.copyFrom(position);
+            drone.rotation.copyFrom(rotation);
+            drone.velocity.setAll(0);
         }
-
-        return this._drones.clone(source, this._droneConstructor, Number.POSITIVE_INFINITY);
     }
 }
 
 class UnderseerDrone extends SingleTargetDrone {
-    private readonly _removeEmptyDestroyedObservable: () => void;
+    private readonly _removeEmptyDestroyedObserver: () => void;
 
     public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, owner, node, properties, duration);
@@ -53,23 +76,27 @@ class UnderseerDrone extends SingleTargetDrone {
         const observer = world.onEnemyDestroyedObservable.add(([source, target]) => {
             if (source === this && target.type === EntityType.Shape && target.points === 10) {
                 const underseerTank = (owner as UnderseerTankInternal);
-                const clone = underseerTank._cloneDrone(this);
-                if (clone) {
-                    clone.position.copyFrom(this.position);
-                    clone.rotation.copyFrom(this.rotation);
-                }
+                underseerTank._addDrone(target.position, target.rotation);
             }
         });
 
-        this._removeEmptyDestroyedObservable = () => {
+        this._removeEmptyDestroyedObserver = () => {
             world.onEnemyDestroyedObservable.remove(observer);
         };
     }
 
     public override update(deltaTime: number, target: DroneTarget, onDestroy: () => void): void {
         super.update(deltaTime, target, () => {
-            this._removeEmptyDestroyedObservable();
+            this._removeEmptyDestroyedObserver();
             onDestroy();
         });
+    }
+
+    public override onCollide(other: Entity): number {
+        if (other.type === EntityType.Shape && (other as Shape).points === 10) {
+            return 1;
+        }
+
+        return super.onCollide(other);
     }
 }

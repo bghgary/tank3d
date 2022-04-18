@@ -111,6 +111,8 @@ export class Evolutions {
             return;
         }
 
+        // TODO: must unregister keyboard
+
         this._root.dispose();
         this._root = null;
     }

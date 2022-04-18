@@ -79,8 +79,8 @@ export class BarHealth extends Health {
     }
 
     public setParent(parent: TransformNode): void {
-        const size = (parent.metadata as SizeMetadata).size;
-        const height = (parent.metadata as SizeMetadata).height;
+        const height = (parent.metadata as SizeMetadata)?.height;
+        const size = (parent.metadata as SizeMetadata)?.size || 1;
 
         this._node.parent = parent;
         this._node.position.y = (height || size) * 0.9;

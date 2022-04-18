@@ -24,12 +24,12 @@ export interface LanceMetadata {
     readonly diameter: number;
 }
 
-export interface BombMetadata extends SizeMetadata {
+export interface BombMetadata {
     readonly barrels: Array<string>;
     readonly multiplier: Partial<DeepImmutable<WeaponProperties>>;
 }
 
-export interface BarrelProjectileMetadata extends SizeMetadata {
+export interface BarrelProjectileMetadata {
     readonly barrels: Array<string>;
     readonly multiplier: Partial<DeepImmutable<WeaponProperties>>;
     readonly reloadMultiplier?: number;

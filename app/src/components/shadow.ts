@@ -8,7 +8,7 @@ export class Shadow {
 
     public constructor(sources: Sources, parent: TransformNode) {
         this._node = sources.createShadow(parent);
-        this._size = (parent.metadata as SizeMetadata).size;
+        this._size = (parent.metadata as SizeMetadata)?.size || 1;
         this.update();
     }
 

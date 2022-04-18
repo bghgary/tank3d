@@ -23,17 +23,23 @@ export class Barrel {
 
     public shootBullet(constructor: BulletConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Bullet {
         this._scale(this._node);
-        return this._world.bullets.add(constructor, this._node, owner, source, properties, duration);
+        const bullet = this._world.bullets.add(constructor, owner, source, properties, duration);
+        bullet.shootFrom(this._node);
+        return bullet;
     }
 
     public shootTrap(owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Trap {
         this._scale(this._node);
-        return this._world.traps.add(this._node, owner, source, properties, duration);
+        const trap = this._world.traps.add(Trap, owner, source, properties, duration);
+        trap.shootFrom(this._node);
+        return trap;
     }
 
-    public shootDrone<T extends Drone>(drones: Drones<T>, constructor: DroneConstructor<T>, owner: Entity, source: Mesh, duration: number = Number.POSITIVE_INFINITY): Drone {
+    public shootDrone<T extends Drone>(drones: Drones<T>, constructor: DroneConstructor<T>, owner: Entity, source: Mesh, duration = Number.POSITIVE_INFINITY): Drone {
         this._scale(this._node);
-        return drones.add(constructor, owner, this._node, source, duration);
+        const drone = drones.add(constructor, owner, source, duration);
+        drone.shootFrom(this._node);
+        return drone;
     }
 
     public update(deltaTime: number) {

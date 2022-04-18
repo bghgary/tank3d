@@ -39,7 +39,7 @@ class Bomb extends Bullet {
     public override update(deltaTime: number, onDestroy: () => void): void {
         super.update(deltaTime, () => {
             for (const barrelNode of this._barrelNodes) {
-                this._bullets.add(Bullet, barrelNode, this.owner, this._bulletSource, this._bulletProperties, 2);
+                this._bullets.add(Bullet, this.owner, this._bulletSource, this._bulletProperties, 2).shootFrom(barrelNode);
             }
 
             onDestroy();

@@ -1,13 +1,13 @@
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "../sources";
-import { BulletTank } from "./bulletTank";
 import { PlayerTank } from "./playerTank";
+import { SniperTank } from "./sniperTank";
 
-export class HunterTank extends BulletTank {
+export class HunterTank extends SniperTank {
     private _barrelIndex = 0;
 
-    public override cameraRadiusMultiplier = 1.25;
+    public override readonly cameraRadiusMultiplier: number = this.cameraRadiusMultiplier * 1.05;
 
     public override shoot(): void {
         if (this._reloadTime === 0) {
@@ -19,7 +19,7 @@ export class HunterTank extends BulletTank {
         PlayerTank.prototype.shoot.call(this);
     }
 
-    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static override CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
         return sources.create(sources.tank.hunter, parent);
     }
 }

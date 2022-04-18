@@ -18,11 +18,8 @@ export class Bullets extends Projectiles<Bullet> {
         super(world, "bullets");
     }
 
-    public add(constructor: BulletConstructor, barrelNode: TransformNode, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Bullet {
-        const node = this._world.sources.create(source, this._root);
-        const bullet = Bullet.FromBarrel(barrelNode, constructor, this._world, owner, node, properties, duration);
-        this._projectiles.add(bullet);
-        return bullet;
+    public add(constructor: BulletConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Bullet {
+        return this._add(constructor, owner, source, properties, duration);
     }
 
     public update(deltaTime: number): void {
@@ -42,10 +39,14 @@ export class Bullet extends Projectile {
 
     public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(owner, node, properties);
-        this._targetVelocity.copyFrom(this._node.forward).scaleInPlace(properties.speed);
         this._shadow = new Shadow(world.sources, this._node);
         this._health = new Health(this._properties.health);
         this._time = duration;
+    }
+
+    public override shootFrom(barrelNode: TransformNode): void {
+        super.shootFrom(barrelNode);
+        this._targetVelocity.copyFrom(this._node.forward).scaleInPlace(this._properties.speed);
     }
 
     public type = EntityType.Bullet;

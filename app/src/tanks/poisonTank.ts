@@ -3,10 +3,10 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Bullet } from "../projectiles/bullets";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
-import { BulletTank } from "./bulletTank";
 import { PlayerTank } from "./playerTank";
+import { SniperTank } from "./sniperTank";
 
-export class PoisonTank extends BulletTank {
+export class PoisonTank extends SniperTank {
     protected override readonly _bulletConstructor = PoisonBullet;
     protected override readonly _bulletSource = this._world.sources.bullet.tankPoison;
 
@@ -15,9 +15,7 @@ export class PoisonTank extends BulletTank {
         this._bulletProperties.damage.poison = 1;
     }
 
-    public override cameraRadiusMultiplier = 1.2;
-
-    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static override CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
         return sources.create(sources.tank.poison, parent);
     }
 }
