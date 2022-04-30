@@ -31,7 +31,7 @@ Effect.ShadersStore["shadowPixelShader"] = `precision highp float;
 varying vec3 vPosition;
 
 void main(void) {
-    float value = exp(pow(length(vPosition) * 2.0, 4.0) * -10.0) * 0.25;
+    float value = exp(pow(length(vPosition), 4.0) * -10.0) * 0.25;
     gl_FragColor = vec4(0.0, 0.0, 0.0, value);
 }`;
 

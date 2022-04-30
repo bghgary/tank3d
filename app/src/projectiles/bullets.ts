@@ -4,7 +4,6 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { applyCollisionForce, applyMovement } from "../common";
 import { Health } from "../components/health";
-import { Shadow } from "../components/shadow";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { decayVector3ToRef } from "../math";
@@ -18,50 +17,31 @@ export class Bullets extends Projectiles<Bullet> {
         super(world, "bullets");
     }
 
-    public add(constructor: BulletConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Bullet {
-        return this._add(constructor, owner, source, properties, duration);
-    }
-
-    public update(deltaTime: number): void {
-        for (const projectile of this._projectiles) {
-            projectile.update(deltaTime, () => {
-                this._projectiles.delete(projectile);
-            });
-        }
+    public add(constructor: BulletConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): Bullet {
+        return super._add(constructor, owner, source, properties, barrelNode, duration);
     }
 }
 
 export class Bullet extends Projectile {
     protected readonly _targetVelocity: DeepImmutable<Vector3> = new Vector3();
-    protected readonly _shadow: Shadow;
     protected readonly _health: Health;
-    protected _time: number;
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
-        super(owner, node, properties);
-        this._shadow = new Shadow(world.sources, this._node);
+    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
+        super(world, owner, node, properties, barrelNode, duration);
         this._health = new Health(this._properties.health);
-        this._time = duration;
     }
 
-    public override shootFrom(barrelNode: TransformNode): void {
-        super.shootFrom(barrelNode);
+    public override shoot(barrelNode: TransformNode): void {
+        super.shoot(barrelNode);
         this._targetVelocity.copyFrom(this._node.forward).scaleInPlace(this._properties.speed);
     }
 
     public type = EntityType.Bullet;
 
-    public update(deltaTime: number, onDestroy: () => void): void {
+    public override update(deltaTime: number, onDestroy: () => void): void {
         applyMovement(deltaTime, this._node.position, this.velocity);
-
         decayVector3ToRef(this.velocity, this._targetVelocity, deltaTime, 2, this.velocity);
-
-        this._shadow.update();
-
-        if (!this._health.update(deltaTime) || (this._time -= deltaTime) <= 0) {
-            onDestroy();
-            this._node.dispose();
-        }
+        super.update(deltaTime, onDestroy);
     }
 
     public onCollide(other: Entity): number {

@@ -467,7 +467,7 @@ export class Sources {
     }
 
     private _createShadowSource(parent: TransformNode): Mesh {
-        const source = MeshBuilder.CreatePlane("shadow", { size: 1 }, this._scene);
+        const source = MeshBuilder.CreatePlane("shadow", { size: 2 }, this._scene);
         source.rotation.x = Math.PI / 2;
         source.bakeCurrentTransformIntoVertices();
         source.material = this._materials.shadow;

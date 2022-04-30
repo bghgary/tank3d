@@ -4,7 +4,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable, DeepImmutableObject } from "@babylonjs/core/types";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
-import { DroneConstructor, DroneTarget, SingleTargetDrone } from "../projectiles/drones";
+import { DroneConstructor, SingleTargetDrone } from "../projectiles/drones";
 import { Shape } from "../shapes";
 import { Sources } from "../sources";
 import { getUpgradeNames } from "../ui/upgrades";
@@ -59,7 +59,7 @@ export class UnderseerTank extends DirectorTank {
 
     protected _addDrone(position: DeepImmutable<Vector3>, rotation: DeepImmutable<Quaternion>): void {
         if (this._drones.count < this._maxCloneCount) {
-            const drone = this._barrels[0]!.shootDrone(this._drones, this._droneConstructor, this, this._droneSource);
+            const drone = this._barrels[0]!.addDrone(this._drones, this._droneConstructor, this, this._droneSource);
             drone.position.copyFrom(position);
             drone.rotation.copyFrom(rotation);
             drone.velocity.setAll(0);
@@ -68,10 +68,10 @@ export class UnderseerTank extends DirectorTank {
 }
 
 class UnderseerDrone extends SingleTargetDrone {
-    private readonly _removeEmptyDestroyedObserver: () => void;
+    private readonly _removeEntityDestroyedObserver: () => void;
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
-        super(world, owner, node, properties, duration);
+    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
+        super(world, owner, node, properties, barrelNode, duration);
 
         const observer = world.onEnemyDestroyedObservable.add(([source, target]) => {
             if (source === this && target.type === EntityType.Shape && target.points === 10) {
@@ -80,14 +80,14 @@ class UnderseerDrone extends SingleTargetDrone {
             }
         });
 
-        this._removeEmptyDestroyedObserver = () => {
+        this._removeEntityDestroyedObserver = () => {
             world.onEnemyDestroyedObservable.remove(observer);
         };
     }
 
-    public override update(deltaTime: number, target: DroneTarget, onDestroy: () => void): void {
-        super.update(deltaTime, target, () => {
-            this._removeEmptyDestroyedObserver();
+    public override update(deltaTime: number, onDestroy: () => void): void {
+        super.update(deltaTime, () => {
+            this._removeEntityDestroyedObserver();
             onDestroy();
         });
     }

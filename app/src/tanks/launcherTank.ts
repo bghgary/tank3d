@@ -35,8 +35,8 @@ class Missile extends Bullet {
     private _reloadTime: number;
     private _recoil = new Vector3();
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
-        super(world, owner, node, properties, duration);
+    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
+        super(world, owner, node, properties, barrelNode, duration);
 
         const metadata = node.metadata as BarrelProjectileMetadata;
         this._barrels = metadata.barrels.map((name) => new Barrel(world, findNode(node, name)));

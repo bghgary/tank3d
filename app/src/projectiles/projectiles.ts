@@ -6,6 +6,8 @@ import { Tools } from "@babylonjs/core/Misc/tools";
 import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { Collider } from "../collisions";
+import { Health } from "../components/health";
+import { Shadow } from "../components/shadow";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { TmpVector3 } from "../math";
@@ -23,7 +25,7 @@ function applySpeedVariance(speed: number, variance = 0): number {
 }
 
 export interface ProjectileConstructor<T extends Projectile> {
-    new(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): T;
+    new(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): T;
 }
 
 export class Projectiles<T extends Projectile> {
@@ -47,38 +49,64 @@ export class Projectiles<T extends Projectile> {
         return this._projectiles.size;
     }
 
-    protected _add(constructor: ProjectileConstructor<T>, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): T {
+    protected _add(constructor: ProjectileConstructor<T>, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): T {
         const node = this._world.sources.create(source, this._root);
-        const projectile = new constructor(this._world, owner, node, properties, duration);
+        const projectile = new constructor(this._world, owner, node, properties, barrelNode, duration);
         this._projectiles.add(projectile);
         return projectile;
+    }
+
+    public update(deltaTime: number): void {
+        for (const projectile of this._projectiles) {
+            projectile.update(deltaTime, () => {
+                this._projectiles.delete(projectile);
+            });
+        }
     }
 }
 
 export abstract class Projectile implements Entity, Collider {
     protected readonly _node: TransformNode;
     protected readonly _properties: DeepImmutable<WeaponProperties>;
+    protected abstract readonly _health: Health;
+    protected readonly _shadow: Shadow;
 
-    public constructor(owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>) {
+    protected _time: number;
+
+    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
         this.owner = owner;
+
         this._node = node;
         this._properties = properties;
-    }
 
-    public shootFrom(barrelNode: TransformNode): void {
         const barrelMetadata = barrelNode.metadata as BarrelMetadata;
-        const barrelForward = applyAngleVariance(barrelNode.forward, barrelMetadata.angleVariance, TmpVector3[0]);
         const barrelDiameter = barrelMetadata.diameter * barrelNode.absoluteScaling.x;
-        const barrelLength = barrelMetadata.length * barrelNode.absoluteScaling.z;
-
-        this._node.setDirection(barrelForward);
         this._node.scaling.setAll(barrelDiameter * 0.75);
 
+        this._shadow = new Shadow(world.sources, this._node);
+        this._time = duration;
+    }
+
+    public shoot(barrelNode: TransformNode): void {
+        const barrelMetadata = barrelNode.metadata as BarrelMetadata;
+
+        const barrelForward = applyAngleVariance(barrelNode.forward, barrelMetadata.angleVariance, TmpVector3[0]);
+        const barrelLength = barrelMetadata.length * barrelNode.absoluteScaling.z;
         barrelForward.scaleToRef(barrelLength + this.size * 0.5, this._node.position).addInPlace(barrelNode.absolutePosition);
+        this._node.setDirection(barrelForward);
 
         const speed = applySpeedVariance(this._properties.speed, barrelMetadata.speedVariance);
         const initialSpeed = Math.max(Vector3.Dot(this.owner.velocity, barrelForward) + speed, 0.1);
         this.velocity.copyFrom(barrelForward).scaleInPlace(initialSpeed);
+    }
+
+    public update(deltaTime: number, onDestroy: () => void): void {
+        this._shadow.update();
+
+        if (!this._health.update(deltaTime) || (this._time -= deltaTime) <= 0) {
+            onDestroy();
+            this._node.dispose();
+        }
     }
 
     // Entity

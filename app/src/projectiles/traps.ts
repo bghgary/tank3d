@@ -4,7 +4,6 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { applyCollisionForce, applyMovement } from "../common";
 import { Health } from "../components/health";
-import { Shadow } from "../components/shadow";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { decayVector3ToRef } from "../math";
@@ -18,44 +17,25 @@ export class Traps extends Projectiles<Trap> {
         super(world, "traps");
     }
 
-    public add(constructor: TrapConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, duration: number): Trap {
-        return this._add(constructor, owner, source, properties, duration);
-    }
-
-    public update(deltaTime: number): void {
-        for (const projectile of this._projectiles) {
-            projectile.update(deltaTime, () => {
-                this._projectiles.delete(projectile);
-            });
-        }
+    public add(constructor: TrapConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): Trap {
+        return this._add(constructor, owner, source, properties, barrelNode, duration);
     }
 }
 
 export class Trap extends Projectile {
-    private readonly _shadow: Shadow;
-    private readonly _health: Health;
-    private _time: number;
+    protected readonly _health: Health;
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
-        super(owner, node, properties);
-        this._shadow = new Shadow(world.sources, this._node);
+    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
+        super(world, owner, node, properties, barrelNode, duration);
         this._health = new Health(this._properties.health);
-        this._time = duration;
     }
 
     public type = EntityType.Trap;
 
-    public update(deltaTime: number, onDestroy: () => void): void {
+    public override update(deltaTime: number, onDestroy: () => void): void {
         applyMovement(deltaTime, this._node.position, this.velocity);
-
         decayVector3ToRef(this.velocity, Vector3.ZeroReadOnly, deltaTime, 2, this.velocity);
-
-        this._shadow.update();
-
-        if (!this._health.update(deltaTime) || (this._time -= deltaTime) <= 0) {
-            onDestroy();
-            this._node.dispose();
-        }
+        super.update(deltaTime, onDestroy);
     }
 
     public onCollide(other: Entity): number {

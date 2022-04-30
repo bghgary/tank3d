@@ -26,8 +26,8 @@ class Bomb extends Bullet {
     private readonly _bulletSource: Mesh;
     private readonly _bulletProperties: DeepImmutable<WeaponProperties>;
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
-        super(world, owner, node, properties, duration);
+    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
+        super(world, owner, node, properties, barrelNode, duration);
 
         const metadata = node.metadata as BombMetadata;
         this._barrelNodes = metadata.barrels.map((name) => findNode(node, name));
@@ -39,7 +39,8 @@ class Bomb extends Bullet {
     public override update(deltaTime: number, onDestroy: () => void): void {
         super.update(deltaTime, () => {
             for (const barrelNode of this._barrelNodes) {
-                this._bullets.add(Bullet, this.owner, this._bulletSource, this._bulletProperties, 2).shootFrom(barrelNode);
+                const bullet = this._bullets.add(Bullet, this.owner, this._bulletSource, this._bulletProperties, barrelNode, 2);
+                bullet.shoot(barrelNode);
             }
 
             onDestroy();

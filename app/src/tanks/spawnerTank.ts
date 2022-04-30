@@ -10,7 +10,7 @@ import { Entity } from "../entity";
 import { TmpVector3 } from "../math";
 import { BarrelProjectileMetadata } from "../metadata";
 import { Bullet } from "../projectiles/bullets";
-import { DroneTarget, SingleTargetDrone } from "../projectiles/drones";
+import { SingleTargetDrone } from "../projectiles/drones";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { DirectorTank } from "./directorTank";
@@ -40,8 +40,8 @@ class SpawnerDrone extends SingleTargetDrone {
     private _reloadTime = 0;
     private _recoil = new Vector3();
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
-        super(world, owner, node, properties, duration);
+    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
+        super(world, owner, node, properties, barrelNode, duration);
 
         const metadata = node.metadata as BarrelProjectileMetadata;
         this._barrels = metadata.barrels.map((name) => new Barrel(world, findNode(node, name)));
@@ -51,17 +51,19 @@ class SpawnerDrone extends SingleTargetDrone {
         this._reloadTime = this._getReloadTime() * 0.5;
     }
 
-    public override update(deltaTime: number, target: DroneTarget, onDestroy: () => void): void {
-        if (this._reloadTime === 0 && target.radius === 0) {
-            const direction = target.position.subtractToRef(this._node.position, TmpVector3[0]).normalize();
-            const angle = Math.acos(Vector3.Dot(this._node.forward, direction));
-            if (angle < SHOOT_ANGLE) {
-                for (const barrel of this._barrels) {
-                    const bullet = barrel.shootBullet(Bullet, this.owner, this._bulletSource, this._bulletProperties, 3);
-                    applyRecoil(this._recoil, bullet);
-                }
+    public override update(deltaTime: number, onDestroy: () => void): void {
+        if (this.target) {
+            if (this._reloadTime === 0 && this.target.radius === 0) {
+                const direction = this.target.position.subtractToRef(this._node.position, TmpVector3[0]).normalize();
+                const angle = Math.acos(Vector3.Dot(this._node.forward, direction));
+                if (angle < SHOOT_ANGLE) {
+                    for (const barrel of this._barrels) {
+                        const bullet = barrel.shootBullet(Bullet, this.owner, this._bulletSource, this._bulletProperties, 3);
+                        applyRecoil(this._recoil, bullet);
+                    }
 
-                this._reloadTime = this._getReloadTime();
+                    this._reloadTime = this._getReloadTime();
+                }
             }
         }
 
@@ -74,6 +76,6 @@ class SpawnerDrone extends SingleTargetDrone {
         this.velocity.subtractInPlace(this._recoil);
         this._recoil.setAll(0);
 
-        super.update(deltaTime, target, onDestroy);
+        super.update(deltaTime, onDestroy);
     }
 }
