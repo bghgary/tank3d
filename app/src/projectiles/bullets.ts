@@ -1,8 +1,8 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { applyCollisionForce, applyMovement } from "../common";
+import { FlashState } from "../components/flash";
 import { Health } from "../components/health";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
@@ -17,7 +17,7 @@ export class Bullets extends Projectiles<Bullet> {
         super(world, "bullets");
     }
 
-    public add(constructor: BulletConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): Bullet {
+    public add(constructor: BulletConstructor, owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): Bullet {
         return super._add(constructor, owner, source, properties, barrelNode, duration);
     }
 }
@@ -50,6 +50,7 @@ export class Bullet extends Projectile {
         }
 
         applyCollisionForce(this, other, 2);
+        this._flash.setState(FlashState.Damage);
         this._health.takeDamage(other);
         return other.damage.time;
     }

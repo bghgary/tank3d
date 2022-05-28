@@ -1,4 +1,3 @@
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "../sources";
 import { BulletTank } from "./bulletTank";
@@ -17,7 +16,7 @@ export class TwinTank extends BulletTank {
         PlayerTank.prototype.shoot.call(this);
     }
 
-    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static Create(sources: Sources, parent?: TransformNode): TransformNode {
         return sources.create(sources.tank.twin, parent);
     }
 }

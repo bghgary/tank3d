@@ -1,4 +1,3 @@
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "../sources";
 import { PlayerTank } from "./playerTank";
@@ -17,7 +16,7 @@ export class TwinSniperTank extends SniperTank {
         PlayerTank.prototype.shoot.call(this);
     }
 
-    public static override CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static override Create(sources: Sources, parent?: TransformNode): TransformNode {
         return sources.create(sources.tank.twinSniper, parent);
     }
 }

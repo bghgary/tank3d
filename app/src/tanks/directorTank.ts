@@ -1,5 +1,4 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
@@ -165,7 +164,7 @@ export class DirectorTank extends BarrelTank {
         this._autoRotateSpeed = this._properties.weaponSpeed * 0.5 / this._circleRadius;
     }
 
-    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static Create(sources: Sources, parent?: TransformNode): TransformNode {
         return sources.create(sources.tank.director, parent);
     }
 }

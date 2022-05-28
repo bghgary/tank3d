@@ -1,5 +1,4 @@
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable, DeepImmutableObject } from "@babylonjs/core/types";
 import { WeaponProperties } from "../components/weapon";
@@ -47,7 +46,7 @@ export class UnderseerTank extends DirectorTank {
 
     public override readonly upgradeNames = getUpgradeNames("Drone", undefined, "Max Drone Count");
 
-    public static override CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static override Create(sources: Sources, parent?: TransformNode): TransformNode {
         return sources.create(sources.tank.underseer, parent);
     }
 

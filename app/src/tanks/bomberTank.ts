@@ -1,5 +1,3 @@
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { findNode } from "../common";
@@ -15,7 +13,7 @@ export class BomberTank extends BulletTank {
     protected override readonly _bulletConstructor = Bomb;
     protected override readonly _bulletSource = this._world.sources.bullet.tankBomber;
 
-    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static Create(sources: Sources, parent?: TransformNode): TransformNode {
         return sources.create(sources.tank.bomber, parent);
     }
 }
@@ -23,7 +21,7 @@ export class BomberTank extends BulletTank {
 class Bomb extends Bullet {
     private readonly _barrelNodes: Array<TransformNode>;
     private readonly _bullets: Bullets;
-    private readonly _bulletSource: Mesh;
+    private readonly _bulletSource: TransformNode;
     private readonly _bulletProperties: DeepImmutable<WeaponProperties>;
 
     public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {

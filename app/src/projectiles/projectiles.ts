@@ -1,11 +1,11 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { Collider } from "../collisions";
+import { Flash } from "../components/flash";
 import { Health } from "../components/health";
 import { Shadow } from "../components/shadow";
 import { WeaponProperties } from "../components/weapon";
@@ -49,7 +49,7 @@ export class Projectiles<T extends Projectile> {
         return this._projectiles.size;
     }
 
-    protected _add(constructor: ProjectileConstructor<T>, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): T {
+    protected _add(constructor: ProjectileConstructor<T>, owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): T {
         const node = this._world.sources.create(source, this._root);
         const projectile = new constructor(this._world, owner, node, properties, barrelNode, duration);
         this._projectiles.add(projectile);
@@ -68,8 +68,9 @@ export class Projectiles<T extends Projectile> {
 export abstract class Projectile implements Entity, Collider {
     protected readonly _node: TransformNode;
     protected readonly _properties: DeepImmutable<WeaponProperties>;
-    protected abstract readonly _health: Health;
     protected readonly _shadow: Shadow;
+    protected readonly _flash: Flash;
+    protected abstract readonly _health: Health;
 
     protected _time: number;
 
@@ -84,6 +85,8 @@ export abstract class Projectile implements Entity, Collider {
         this._node.scaling.setAll(barrelDiameter * 0.75);
 
         this._shadow = new Shadow(world.sources, this._node);
+        this._flash = new Flash(this._node);
+
         this._time = duration;
     }
 
@@ -94,6 +97,7 @@ export abstract class Projectile implements Entity, Collider {
         const barrelLength = barrelMetadata.length * barrelNode.absoluteScaling.z;
         barrelForward.scaleToRef(barrelLength + this.size * 0.5, this._node.position).addInPlace(barrelNode.absolutePosition);
         this._node.setDirection(barrelForward);
+        this._node.computeWorldMatrix();
 
         const speed = applySpeedVariance(this._properties.speed, barrelMetadata.speedVariance);
         const initialSpeed = Math.max(Vector3.Dot(this.owner.velocity, barrelForward) + speed, 0.1);
@@ -101,7 +105,7 @@ export abstract class Projectile implements Entity, Collider {
     }
 
     public update(deltaTime: number, onDestroy: () => void): void {
-        this._shadow.update();
+        this._flash.update(deltaTime);
 
         if (!this._health.update(deltaTime) || (this._time -= deltaTime) <= 0) {
             onDestroy();

@@ -1,4 +1,3 @@
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil } from "../common";
@@ -10,7 +9,7 @@ import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
 
 export abstract class TrapTank extends BarrelTank {
-    protected abstract readonly _trapSource: Mesh;
+    protected abstract readonly _trapSource: TransformNode;
     protected readonly _trapProperties: WeaponProperties;
 
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {

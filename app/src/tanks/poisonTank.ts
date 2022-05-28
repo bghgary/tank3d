@@ -1,4 +1,3 @@
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Bullet } from "../projectiles/bullets";
 import { Sources } from "../sources";
@@ -15,7 +14,7 @@ export class PoisonTank extends SniperTank {
         this._bulletProperties.damage.poison = 1;
     }
 
-    public static override CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static override Create(sources: Sources, parent?: TransformNode): TransformNode {
         return sources.create(sources.tank.poison, parent);
     }
 }

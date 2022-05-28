@@ -52,7 +52,7 @@ class BarBase<T extends Rectangle> {
         this._root.addControl(this._bar);
 
         this._text = new TextBlock("text");
-        this._text.fontSizeInPixels = (properties.height - BORDER) * 0.7;
+        this._text.fontSizeInPixels = Math.round((properties.height - BORDER) * 0.7);
         this._text.color = "white";
         this._text.shadowBlur = 5;
         this._root.addControl(this._text);
@@ -106,7 +106,7 @@ export class BarButton extends BarBase<Button> {
         key.resizeToFit = true;
         key.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_RIGHT;
         key.paddingRightInPixels = 5;
-        key.fontSizeInPixels = this._text.fontSizeInPixels * 0.8;
+        key.fontSizeInPixels = Math.round(this._text.fontSizeInPixels * 0.8);
         key.fontFamily = "monospace";
         key.color = "lightgray";
         key.shadowBlur = 4;

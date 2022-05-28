@@ -1,4 +1,3 @@
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { findNode } from "../common";
@@ -49,7 +48,7 @@ export class LancerTank extends PlayerTank {
         }
     }
 
-    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static Create(sources: Sources, parent?: TransformNode): TransformNode {
         return sources.create(sources.tank.lancer, parent);
     }
 

@@ -3,6 +3,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Boss } from "../bosses";
 import { Collider } from "../collisions";
 import { applyCollisionForce, applyGravity, applyMovement, applyWallClamp } from "../common";
+import { Flash, FlashState } from "../components/flash";
 import { BarHealth } from "../components/health";
 import { Shadow } from "../components/shadow";
 import { Entity, EntityType } from "../entity";
@@ -14,15 +15,17 @@ export abstract class BaseBoss implements Boss, Collider {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
     protected readonly _metadata: BossMetadata;
-    protected readonly _health: BarHealth;
     protected readonly _shadow: Shadow;
+    protected readonly _flash: Flash;
+    protected readonly _health: BarHealth;
 
     protected constructor(world: World, node: TransformNode) {
         this._world = world;
         this._node = node;
         this._metadata = this._node.metadata;
-        this._health = new BarHealth(this._world.sources, node, this._metadata.health);
         this._shadow = new Shadow(this._world.sources, node);
+        this._flash = new Flash(this._node);
+        this._health = new BarHealth(this._world.sources, node, this._metadata.health);
     }
 
     // Entity
@@ -52,8 +55,7 @@ export abstract class BaseBoss implements Boss, Collider {
 
             this._update(deltaTime, player);
 
-            this._shadow.update();
-
+            this._flash.update(deltaTime);
             if (!this._health.update(deltaTime)) {
                 onDestroy(this._health.damageEntity);
                 this._node.dispose();
@@ -70,6 +72,7 @@ export abstract class BaseBoss implements Boss, Collider {
                 return 0;
             }
         } else {
+            this._flash.setState(FlashState.Damage);
             this._health.takeDamage(other);
             applyCollisionForce(this, other);
         }

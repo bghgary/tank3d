@@ -1,4 +1,3 @@
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil } from "../common";
@@ -65,7 +64,7 @@ export class CruiserTank extends BarrelTank {
         this._droneProperties.health = this._properties.weaponHealth;
     }
 
-    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static Create(sources: Sources, parent?: TransformNode): TransformNode {
         return sources.create(sources.tank.cruiser, parent);
     }
 }

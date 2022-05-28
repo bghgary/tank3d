@@ -3,6 +3,7 @@ import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Collider } from "./collisions";
 import { applyCollisionForce, applyGravity, applyMovement, applyWallBounce } from "./common";
+import { Flash, FlashState } from "./components/flash";
 import { BarHealth } from "./components/health";
 import { Shadow } from "./components/shadow";
 import { Entity, EntityType } from "./entity";
@@ -77,7 +78,7 @@ export class Shapes {
         shape.velocity.x = Math.cos(randomAngle) * speed;
         shape.velocity.y = Math.sin(randomAngle) * speed;
 
-        Quaternion.RotationYawPitchRollToRef(Scalar.RandomRange(0, Scalar.TwoPi), 0, 0, shape.rotation);
+        Quaternion.FromEulerAnglesToRef(0, Scalar.RandomRange(0, Scalar.TwoPi), 0, shape.rotation);
 
         const rotationSpeed = IDLE_ROTATION_SPEED / shape.mass;
         shape.rotationVelocity = Math.sign(Math.random() - 0.5) * rotationSpeed;
@@ -90,15 +91,17 @@ class ShapeImpl implements Shape, Collider {
     private readonly _world: World;
     private readonly _node: TransformNode;
     private readonly _metadata: ShapeMetadata;
-    private readonly _health: BarHealth;
     private readonly _shadow: Shadow;
+    private readonly _flash: Flash;
+    private readonly _health: BarHealth;
 
     public constructor(world: World, node: TransformNode) {
         this._world = world;
         this._node = node;
         this._metadata = this._node.metadata;
-        this._health = new BarHealth(this._world.sources, node, this._metadata.health);
-        this._shadow = new Shadow(this._world.sources, node);
+        this._flash = new Flash(this._node);
+        this._health = new BarHealth(this._world.sources, this._node, this._metadata.health);
+        this._shadow = new Shadow(this._world.sources, this._node);
     }
 
     public dispose(): void {
@@ -139,8 +142,7 @@ class ShapeImpl implements Shape, Collider {
 
             this._node.addRotation(0, this.rotationVelocity * deltaTime, 0);
 
-            this._shadow.update();
-
+            this._flash.update(deltaTime);
             if (!this._health.update(deltaTime)) {
                 onDestroy(this._health.damageEntity);
                 this._node.dispose();
@@ -155,6 +157,7 @@ class ShapeImpl implements Shape, Collider {
             return 0;
         }
 
+        this._flash.setState(FlashState.Damage);
         this._health.takeDamage(other);
         applyCollisionForce(this, other);
         return other.damage.time;

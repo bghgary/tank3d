@@ -15,6 +15,7 @@ export interface ImageButtonProperties {
     backgroundColor: string;
     pressColor: string;
     hoverColor: string;
+    label: string;
     keyInfo: KeyInfo;
     keyText: string;
 }
@@ -38,15 +39,24 @@ export class ImageButton {
         });
         parent.addControl(this._root);
 
-        const key = new TextBlock("key", `[Shift+${properties.keyText}]`);
+        const key = new TextBlock("key", properties.keyText);
         key.resizeToFit = true;
-        key.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
-        key.paddingBottomInPixels = 5;
+        key.verticalAlignment = Control.VERTICAL_ALIGNMENT_TOP;
+        key.paddingTopInPixels = 5;
         key.fontSizeInPixels = 12;
         key.fontFamily = "monospace";
         key.color = "lightgray";
         key.shadowBlur = 4;
         this._root.addControl(key);
+
+        const label = new TextBlock("label", properties.label);
+        label.resizeToFit = true;
+        label.verticalAlignment = Control.VERTICAL_ALIGNMENT_BOTTOM;
+        label.paddingBottomInPixels = 5;
+        label.fontSizeInPixels = 15;
+        label.color = "white";
+        label.shadowBlur = 4;
+        this._root.addControl(label);
 
         const observer = registerKeyboard(world, properties.keyInfo, undefined, () => {
             if (isHierarchyEnabled(this._root)) {

@@ -5,6 +5,7 @@ import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
 import { Collider, TargetCollider } from "../collisions";
 import { applyCollisionForce, applyMovement } from "../common";
+import { FlashState } from "../components/flash";
 import { BarHealth, Health } from "../components/health";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
@@ -25,7 +26,7 @@ export abstract class Drones<T extends Drone> extends Projectiles<T> {
         this._properties = properties;
     }
 
-    public add(constructor: DroneConstructor<T>, owner: Entity, source: Mesh, barrelNode: TransformNode, duration: number): T {
+    public add(constructor: DroneConstructor<T>, owner: Entity, source: TransformNode, barrelNode: TransformNode, duration: number): T {
         return super._add(constructor, owner, source, this._properties, barrelNode, duration);
     }
 }
@@ -117,6 +118,7 @@ export abstract class Drone extends Projectile {
         }
 
         applyCollisionForce(this, other);
+        this._flash.setState(FlashState.Damage);
         this._health.takeDamage(other);
         return other.damage.time;
     }

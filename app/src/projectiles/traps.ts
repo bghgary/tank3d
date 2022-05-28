@@ -1,8 +1,8 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { applyCollisionForce, applyMovement } from "../common";
+import { FlashState } from "../components/flash";
 import { Health } from "../components/health";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
@@ -17,7 +17,7 @@ export class Traps extends Projectiles<Trap> {
         super(world, "traps");
     }
 
-    public add(constructor: TrapConstructor, owner: Entity, source: Mesh, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): Trap {
+    public add(constructor: TrapConstructor, owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): Trap {
         return this._add(constructor, owner, source, properties, barrelNode, duration);
     }
 }
@@ -45,6 +45,7 @@ export class Trap extends Projectile {
         }
 
         applyCollisionForce(this, other, 2);
+        this._flash.setState(FlashState.Damage);
         this._health.takeDamage(other);
         return other.damage.time;
     }

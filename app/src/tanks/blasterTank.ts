@@ -1,4 +1,3 @@
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Barrel } from "../components/barrel";
 import { Sources } from "../sources";
@@ -13,7 +12,7 @@ export class BlasterTank extends BulletTank {
         }
     }
 
-    public static CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static Create(sources: Sources, parent?: TransformNode): TransformNode {
         return sources.create(sources.tank.blaster, parent);
     }
 }

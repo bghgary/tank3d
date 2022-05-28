@@ -1,4 +1,3 @@
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "./sources";
 import { ArtilleryTank } from "./tanks/artilleryTank";
@@ -34,7 +33,7 @@ import { World } from "./worlds/world";
 interface TankConstructor {
     prototype: PlayerTank;
     new(world: World, node: TransformNode, previousTank?: PlayerTank): PlayerTank;
-    CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh;
+    Create(sources: Sources, parent?: TransformNode): TransformNode;
 }
 
 export interface EvolutionNode {

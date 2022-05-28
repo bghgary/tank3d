@@ -2,6 +2,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Collider } from "../collisions";
 import { applyCollisionForce, applyGravity, applyMovement, applyWallClamp } from "../common";
+import { Flash, FlashState } from "../components/flash";
 import { BarHealth } from "../components/health";
 import { Shadow } from "../components/shadow";
 import { Crasher } from "../crashers";
@@ -19,15 +20,17 @@ export class BaseCrasher implements Crasher, Collider {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
     protected readonly _metadata: CrasherMetadata;
-    protected readonly _health: BarHealth;
     protected readonly _shadow: Shadow;
+    protected readonly _flash: Flash;
+    protected readonly _health: BarHealth;
 
     public constructor(world: World, node: TransformNode) {
         this._world = world;
         this._node = node;
         this._metadata = this._node.metadata;
-        this._health = new BarHealth(this._world.sources, node, this._metadata.health);
         this._shadow = new Shadow(this._world.sources, node);
+        this._flash = new Flash(this._node);
+        this._health = new BarHealth(this._world.sources, node, this._metadata.health);
     }
 
     // Entity
@@ -60,8 +63,7 @@ export class BaseCrasher implements Crasher, Collider {
             const targetVelocity = TmpVector3[1].copyFrom(this._node.forward).scaleInPlace(speed);
             decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
 
-            this._shadow.update();
-
+            this._flash.update(deltaTime);
             if (!this._health.update(deltaTime)) {
                 onDestroy(this._health.damageEntity);
                 this._node.dispose();
@@ -92,6 +94,7 @@ export class BaseCrasher implements Crasher, Collider {
                 return 0;
             }
         } else {
+            this._flash.setState(FlashState.Damage);
             this._health.takeDamage(other);
             applyCollisionForce(this, other);
         }

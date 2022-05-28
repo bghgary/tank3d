@@ -1,6 +1,4 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
-import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil, findNode } from "../common";
@@ -23,7 +21,7 @@ export class SpawnerTank extends DirectorTank {
     protected override readonly _droneConstructor = SpawnerDrone;
     protected override readonly _droneSource = this._world.sources.drone.tankSpawner;
 
-    public static override CreateMesh(sources: Sources, parent?: TransformNode): AbstractMesh {
+    public static override Create(sources: Sources, parent?: TransformNode): TransformNode {
         return sources.create(sources.tank.spawner, parent);
     }
 }
@@ -34,7 +32,7 @@ interface PlayerTankInternal extends Entity {
 
 class SpawnerDrone extends SingleTargetDrone {
     private readonly _barrels: Array<Barrel>;
-    private readonly _bulletSource: Mesh;
+    private readonly _bulletSource: TransformNode;
     private readonly _bulletProperties: DeepImmutable<WeaponProperties>;
     private readonly _getReloadTime: () => number;
     private _reloadTime = 0;
