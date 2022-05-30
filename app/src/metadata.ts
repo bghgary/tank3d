@@ -21,7 +21,11 @@ export interface BarrelMetadata {
 }
 
 export interface LanceMetadata {
-    readonly diameter: number;
+    readonly colliders: Array<string>;
+}
+
+export interface ShieldMetadata {
+    readonly colliders: Array<string>;
 }
 
 export interface BombMetadata {
@@ -78,5 +82,6 @@ export interface BossMetadata extends DisplayNameMetadata, SizeMetadata {
 export interface PlayerTankMetadata extends DisplayNameMetadata, SizeMetadata {
     readonly barrels?: Array<string>;
     readonly lances?: Array<string>;
+    readonly shields?: Array<string>;
     readonly multiplier: Partial<DeepImmutable<TankProperties>>;
 }

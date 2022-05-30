@@ -157,8 +157,11 @@ class ShapeImpl implements Shape, Collider {
             return 0;
         }
 
-        this._flash.setState(FlashState.Damage);
-        this._health.takeDamage(other);
+        if (other.damage.value > 0) {
+            this._flash.setState(FlashState.Damage);
+            this._health.takeDamage(other);
+        }
+
         applyCollisionForce(this, other);
         return other.damage.time;
     }

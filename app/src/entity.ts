@@ -10,6 +10,7 @@ export const enum EntityType {
     Lance,
     Missile,
     Shape,
+    Shield,
     Tank,
     Trap,
 }

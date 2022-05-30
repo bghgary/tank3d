@@ -11,7 +11,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { WeaponProperties } from "./components/weapon";
 import { createShadowMaterial } from "./materials/shadowMaterial";
-import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LanceMetadata, PlayerTankMetadata, ShapeMetadata, SizeMetadata } from "./metadata";
+import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LanceMetadata, PlayerTankMetadata, ShapeMetadata, ShieldMetadata, SizeMetadata } from "./metadata";
 import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
@@ -146,10 +146,6 @@ function createFakeBarrel(name: string, metadata: BarrelMetadata, scene: Scene):
 }
 
 function createLance(name: string, diameter: number, length: number, scene: Scene): Mesh {
-    const metadata: LanceMetadata = {
-        diameter: diameter
-    };
-
     const mesh = MeshBuilder.CreateCylinder(name, {
         tessellation: Math.round(36 * diameter),
         cap: Mesh.NO_CAP,
@@ -161,15 +157,66 @@ function createLance(name: string, diameter: number, length: number, scene: Scen
     mesh.rotation.x = Math.PI / 2;
     mesh.bakeCurrentTransformIntoVertices();
     mesh.position.z = 0.4;
-    mesh.metadata = metadata;
+    (mesh.metadata as LanceMetadata) = {
+        colliders: ["collider0", "collider1", "collider2"],
+    };
 
-    const midpoint = new TransformNode("midpoint", scene);
-    midpoint.position.z = length / 2;
-    midpoint.parent = mesh;
+    const createCollider = (name: string, z: number): void => {
+        const node = new TransformNode(name, scene);
+        node.position.z = z;
+        (node.metadata as SizeMetadata) = {
+            size: diameter * (1 - z / length),
+        };
+        node.parent = mesh;
+    };
 
-    const endpoint = new TransformNode("endpoint", scene);
-    endpoint.position.z = length;
-    endpoint.parent = mesh;
+    createCollider("collider0", 0);
+    createCollider("collider1", length * 0.5);
+    createCollider("collider2", length);
+
+    return mesh;
+}
+
+function createShield(name: string, diameter: number, slice: number, scene: Scene): Mesh {
+    const discRadius = diameter / 2;
+    const theta = slice * Math.PI;
+    const sphereRadius = discRadius / Math.sin(theta);
+    const offset = Math.cos(theta) * sphereRadius;
+
+    const segments = Math.round(16 * sphereRadius);
+    const sphere = MeshBuilder.CreateSphere("sphere", {
+        segments: segments,
+        slice: slice,
+        diameter: sphereRadius * 2,
+    }, scene);
+    sphere.position.z = -offset;
+    sphere.rotation.x = Math.PI / 2;
+
+    const disc = MeshBuilder.CreateDisc("disc", {
+        tessellation: 6 + (segments - 1) * 2,
+        radius: discRadius,
+    }, scene);
+
+    const mesh = Mesh.MergeMeshes([sphere, disc])!;
+    mesh.name = name;
+    (mesh.metadata as ShieldMetadata) = {
+        colliders: ["collider0", "collider1", "collider2", "collider3", "collider4"],
+    };
+
+    const createCollider = (name: string, x: number): void => {
+        const node = new TransformNode(name, scene);
+        node.position.x = x;
+        (node.metadata as SizeMetadata) = {
+            size: (sphereRadius - Math.sqrt(x * x + offset * offset)) * 2
+        };
+        node.parent = mesh;
+    };
+
+    createCollider("collider0", discRadius * -1.0);
+    createCollider("collider1", discRadius * -0.6);
+    createCollider("collider2", discRadius * 0.0);
+    createCollider("collider3", discRadius * 0.6);
+    createCollider("collider4", discRadius * 1.0);
 
     return mesh;
 }
@@ -287,7 +334,7 @@ export class Sources {
         readonly detector: TransformNode;
         readonly cruiser: TransformNode;
         readonly underseer: TransformNode;
-        //readonly shield: TransformNode;
+        readonly shield: TransformNode;
     };
 
     public constructor(world: World) {
@@ -422,7 +469,7 @@ export class Sources {
             detector: this._createDetectorTankSource(tanks),
             cruiser: this._createCruiserTankSource(tanks),
             underseer: this._createUnderseerTankSource(tanks),
-            //shield: this._createShieldTankSource(tanks),
+            shield: this._createShieldTankSource(tanks),
         };
     }
 
@@ -1085,7 +1132,7 @@ export class Sources {
         const metadata: PlayerTankMetadata = {
             displayName: "Flank Guard",
             size: 1,
-            barrels: ["barrelF", "barrelR"],
+            barrels: ["barrelF", "barrelB"],
             multiplier: {},
         };
 
@@ -1747,30 +1794,33 @@ export class Sources {
         return source;
     }
 
-    // private _createShieldTankSource(parent: TransformNode): TransformNode {
-    //     const barrelDiameter = 0.45;
-    //     const barrelLength = 0.75;
+    private _createShieldTankSource(parent: TransformNode): TransformNode {
+        const barrelDiameter = 0.45;
+        const barrelLength = 0.75;
+        const shieldBarrelDiameter = 0.35;
+        const shieldBarrelLength = 0.55;
 
-    //     const metadata: PlayerTankMetadata = {
-    //         displayName: "Shield",
-    //         size: 1,
-    //         barrels: ["barrel"],
-    //         multiplier: {
-    //             weaponSpeed: 0.5,
-    //             weaponHealth: 1.5,
-    //         },
-    //     };
+        const metadata: PlayerTankMetadata = {
+            displayName: "Shield",
+            size: 1,
+            barrels: ["barrel"],
+            shields: ["shield"],
+            multiplier: {},
+        };
 
-    //     const source = this._createTankBody("shield", metadata, parent);
+        const source = this._createTankBody(parent, "shield", metadata);
 
-    //     const barrel = createSimpleBarrel("barrel", barrelDiameter, barrelLength, this._scene);
-    //     barrel.material = this._material.gray;
-    //     barrel.parent = source;
+        this._createSimpleBarrel(source, "barrel", barrelDiameter, barrelLength);
 
-    //     const cylinder = createSimpleBarrel("cylinder", barrelDiameter, barrelLength, this._scene);
-    //     barrel.material = this._material.gray;
-    //     barrel.parent = source;
+        const sheildBarrel = this._createSimpleBarrel(source, "shieldBarrel", shieldBarrelDiameter, shieldBarrelLength);
+        sheildBarrel.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI, 0);
 
-    //     return source;
-    // }
+        const shield = createShield("shield", metadata.size, 0.3, this._scene);
+        shield.material = this._material.gray;
+        shield.position.z = -shieldBarrelLength;
+        shield.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI, 0);
+        shield.parent = source;
+
+        return source;
+    }
 }

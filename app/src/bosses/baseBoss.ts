@@ -72,8 +72,11 @@ export abstract class BaseBoss implements Boss, Collider {
                 return 0;
             }
         } else {
-            this._flash.setState(FlashState.Damage);
-            this._health.takeDamage(other);
+            if (other.damage.value > 0) {
+                this._flash.setState(FlashState.Damage);
+                this._health.takeDamage(other);
+            }
+
             applyCollisionForce(this, other);
         }
 

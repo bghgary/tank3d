@@ -110,6 +110,9 @@ export abstract class PlayerTank implements Entity, Collider {
             this._health = previousTank._health;
             this._health.setParent(this._node);
 
+            this._active = previousTank._active;
+            this._flash.setState(this._active ? FlashState.None : FlashState.Inactive);
+
             previousTank.dispose();
         } else {
             this._shadow = new Shadow(this._world.sources, this._node);
@@ -194,7 +197,6 @@ export abstract class PlayerTank implements Entity, Collider {
     }
 
     public update(deltaTime: number, onDestroy: (source: Entity) => void): void {
-
         if (this._autoShoot && this.inBounds) {
             this.shoot();
         }
@@ -225,7 +227,7 @@ export abstract class PlayerTank implements Entity, Collider {
     }
 
     public onCollide(other: Entity): number {
-        if (other.owner === this && (other.type === EntityType.Lance || other.type === EntityType.Bullet)) {
+        if (other.owner === this && (other.type === EntityType.Bullet || other.type === EntityType.Lance || other.type === EntityType.Shield)) {
             return 0;
         }
 
@@ -234,8 +236,11 @@ export abstract class PlayerTank implements Entity, Collider {
             return 0;
         }
 
-        this._flash.setState(FlashState.Damage);
-        this._health.takeDamage(other);
+        if (other.damage.value > 0) {
+            this._flash.setState(FlashState.Damage);
+            this._health.takeDamage(other);
+        }
+
         applyCollisionForce(this, other);
         return other.damage.time;
     }

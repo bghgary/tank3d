@@ -21,6 +21,7 @@ import { PlayerTank } from "./tanks/playerTank";
 import { PoisonTank } from "./tanks/poisonTank";
 import { PounderTank } from "./tanks/pounderTank";
 import { SearcherTank } from "./tanks/searcherTank";
+import { ShieldTank } from "./tanks/shieldTank";
 import { SniperTank } from "./tanks/sniperTank";
 import { SpawnerTank } from "./tanks/spawnerTank";
 import { SwarmerTank } from "./tanks/swarmerTank";
@@ -38,7 +39,7 @@ interface TankConstructor {
 
 export interface EvolutionNode {
     readonly Tank: TankConstructor;
-    readonly children: Array<EvolutionNode>;
+    readonly children?: Array<EvolutionNode>;
 }
 
 export const EvolutionRootNode: EvolutionNode = {
@@ -47,91 +48,73 @@ export const EvolutionRootNode: EvolutionNode = {
         Tank: SniperTank,
         children: [{
             Tank: AssassinTank,
-            children: [],
         }, {
             Tank: TwinSniperTank,
-            children: [],
         }, {
             Tank: GatlingGunTank,
-            children: [],
         }, {
             Tank: HunterTank,
-            children: [],
         }, {
             Tank: PoisonTank,
-            children: [],
         }, {
             Tank: SearcherTank,
-            children: [],
         }]
     }, {
         Tank: TwinTank,
         children: [{
             Tank: TwinSniperTank,
-            children: [],
         }]
     }, {
         Tank: FlankGuardTank,
-        children: []
+        children: [{
+            Tank: ShieldTank,
+        }]
     }, {
         Tank: PounderTank,
         children: [{
             Tank: LauncherTank,
-            children: []
         }, {
             Tank: DestroyerTank,
-            children: []
         }, {
             Tank: BuilderTank,
-            children: []
         }, {
             Tank: ArtilleryTank,
-            children: []
         }, {
             Tank: BlasterTank,
-            children: [],
         }, {
             Tank: BomberTank,
-            children: [],
         }]
     }, {
         Tank: DirectorTank,
         children: [{
             Tank: SwarmerTank,
-            children: []
         }, {
             Tank: OverseerTank,
-            children: []
         }, {
             Tank: SpawnerTank,
-            children: []
         }, {
             Tank: DetectorTank,
-            children: []
         }, {
             Tank: CruiserTank,
-            children: []
         }, {
             Tank: UnderseerTank,
-            children: []
         }]
     }, {
         Tank: TrapperTank,
         children: [{
             Tank: BuilderTank,
-            children: []
         }]
     }, {
         Tank: MachineGunTank,
         children: [{
             Tank: GatlingGunTank,
-            children: [],
         }, {
             Tank: BlasterTank,
-            children: [],
         }]
     }, {
         Tank: LancerTank,
-        children: []
+        children: [{
+            Tank: ShieldTank,
+        }]
     }],
 };

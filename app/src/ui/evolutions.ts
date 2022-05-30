@@ -74,39 +74,41 @@ export class Evolutions {
         this._root.spacing = 4;
         this._world.uiContainer.addControl(this._root);
 
-        const cache = await this._cachePromise;
+        if (this._evolutionNode.children) {
+            const cache = await this._cachePromise;
 
-        let row: Nullable<StackPanel> = null;
-        for (let index = 0; index < this._evolutionNode.children.length; ++index) {
-            const child = this._evolutionNode.children[index]!;
-            if (!row || row.children.length === MAX_BUTTONS_PER_ROW) {
-                row = new StackPanel("row");
-                row.isVertical = false;
-                row.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
-                row.adaptHeightToChildren = true;
-                row.spacing = 4;
-                this._root.addControl(row);
+            let row: Nullable<StackPanel> = null;
+            for (let index = 0; index < this._evolutionNode.children.length; ++index) {
+                const child = this._evolutionNode.children[index]!;
+                if (!row || row.children.length === MAX_BUTTONS_PER_ROW) {
+                    row = new StackPanel("row");
+                    row.isVertical = false;
+                    row.horizontalAlignment = Control.HORIZONTAL_ALIGNMENT_LEFT;
+                    row.adaptHeightToChildren = true;
+                    row.spacing = 4;
+                    this._root.addControl(row);
+                }
+
+                const entry = cache.get(child)!;
+                const screenshotButton = new ImageButton(`button`, row, entry.imageUrl, {
+                    width: BUTTON_SIZE,
+                    height: BUTTON_SIZE,
+                    backgroundColor: Theme.BackgroundColor,
+                    pressColor: Theme.PressColor,
+                    hoverColor: Theme.HoverColor,
+                    label: entry.displayName,
+                    keyInfo: { shift: true, code: `Digit${index + 1}` },
+                    keyText: `[Shift+${index + 1}]`,
+                }, this._world);
+
+                screenshotButton.onClickObservable.add(() => {
+                    ++this._evolutionDepth;
+                    this._evolutionNode = child;
+                    this.onEvolveObservable.notifyObservers(this._evolutionNode);
+                    this._hide();
+                    this._update();
+                });
             }
-
-            const entry = cache.get(child)!;
-            const screenshotButton = new ImageButton(`button`, row, entry.imageUrl, {
-                width: BUTTON_SIZE,
-                height: BUTTON_SIZE,
-                backgroundColor: Theme.BackgroundColor,
-                pressColor: Theme.PressColor,
-                hoverColor: Theme.HoverColor,
-                label: entry.displayName,
-                keyInfo: { shift: true, code: `Digit${index + 1}` },
-                keyText: `[Shift+${index + 1}]`,
-            }, this._world);
-
-            screenshotButton.onClickObservable.add(() => {
-                ++this._evolutionDepth;
-                this._evolutionNode = child;
-                this.onEvolveObservable.notifyObservers(this._evolutionNode);
-                this._hide();
-                this._update();
-            });
         }
     }
 
@@ -120,16 +122,18 @@ export class Evolutions {
     }
 
     private async _initCacheAsync(cache: Cache, evolutionNode: EvolutionNode): Promise<Cache> {
-        for (const child of evolutionNode.children) {
-            const tank = child.Tank.Create(this._world.sources);
-            Quaternion.RotationYawPitchRollToRef(Math.PI * 0.6, 0, 0, tank.rotationQuaternion!);
-            const size = BUTTON_SIZE * 2;
-            cache.set(child, {
-                displayName: (tank.metadata as DisplayNameMetadata).displayName,
-                imageUrl: await captureScreenshotAsync(tank, size, size)
-            });
-            tank.dispose();
-            await this._initCacheAsync(cache, child);
+        if (evolutionNode.children) {
+            for (const child of evolutionNode.children) {
+                const tank = child.Tank.Create(this._world.sources);
+                Quaternion.RotationYawPitchRollToRef(Math.PI * 0.6, 0, 0, tank.rotationQuaternion!);
+                const size = BUTTON_SIZE * 2;
+                cache.set(child, {
+                    displayName: (tank.metadata as DisplayNameMetadata).displayName,
+                    imageUrl: await captureScreenshotAsync(tank, size, size)
+                });
+                tank.dispose();
+                await this._initCacheAsync(cache, child);
+            }
         }
 
         return cache;

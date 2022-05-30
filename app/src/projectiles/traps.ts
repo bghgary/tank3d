@@ -44,9 +44,12 @@ export class Trap extends Projectile {
             return 0;
         }
 
-        applyCollisionForce(this, other, 2);
-        this._flash.setState(FlashState.Damage);
-        this._health.takeDamage(other);
+        if (other.damage.value > 0) {
+            this._flash.setState(FlashState.Damage);
+            this._health.takeDamage(other);
+        }
+
+        applyCollisionForce(this, other);
         return other.damage.time;
     }
 }

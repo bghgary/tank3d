@@ -1,19 +1,34 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { Entity } from "./entity";
+import { Entity, EntityType } from "./entity";
 
 const GRAVITY = 9.8;
 
-export function applyCollisionForce(target: Entity, other: Entity, strength = 1): void {
+export function applyCollisionForce(target: Entity, other: DeepImmutable<Entity>): void {
     const position = target.position;
     const velocity = target.velocity;
     const dx = position.x - other.position.x;
     const dz = position.z - other.position.z;
-    const length = Math.sqrt(dx * dx + dz * dz);
-    const factor = strength * other.mass / (target.mass + other.mass) / Math.max(length, 0.01);
-    velocity.x += dx * factor;
-    velocity.z += dz * factor;
+    const distance = Math.sqrt(dx * dx + dz * dz);
+    const contactDistance = (target.size + other.size) * 0.5;
+    const strength = distance < contactDistance ? contactDistance / Math.max(distance, 0.01): 1;
+    const factor = 2 * other.mass / (target.mass + other.mass) * strength;
+    setTimeout(() => {
+        velocity.x += dx * factor;
+        velocity.z += dz * factor;
+    }, 0);
+
+    // Certain objects are impenetrable.
+    if (other.type === EntityType.Lance || other.type === EntityType.Shield) {
+        if (distance < contactDistance) {
+            const factor = (contactDistance - distance) / distance;
+            setTimeout(() => {
+                position.x += dx * factor;
+                position.z += dz * factor;
+            }, 0);
+        }
+    }
 }
 
 export function applyMovement(deltaTime: number, position: Vector3, velocity: DeepImmutable<Vector3>): void {

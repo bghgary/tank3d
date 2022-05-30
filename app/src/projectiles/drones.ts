@@ -117,9 +117,12 @@ export abstract class Drone extends Projectile {
             return 0;
         }
 
+        if (other.damage.value > 0) {
+            this._flash.setState(FlashState.Damage);
+            this._health.takeDamage(other);
+        }
+
         applyCollisionForce(this, other);
-        this._flash.setState(FlashState.Damage);
-        this._health.takeDamage(other);
         return other.damage.time;
     }
 }
