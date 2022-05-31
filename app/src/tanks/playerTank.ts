@@ -81,7 +81,7 @@ export abstract class PlayerTank implements Entity, Collider {
     protected readonly _flash: Flash;
     protected readonly _health: BarHealth;
 
-    protected _active = false;
+    protected _idle = true;
     protected _autoShoot = false;
     protected _autoRotate = false;
     protected _autoRotateSpeed = 1;
@@ -110,15 +110,15 @@ export abstract class PlayerTank implements Entity, Collider {
             this._health = previousTank._health;
             this._health.setParent(this._node);
 
-            this._active = previousTank._active;
-            this._flash.setState(this._active ? FlashState.None : FlashState.Inactive);
+            this._idle = previousTank._idle;
+            this._flash.setState(this._idle ? FlashState.Idle : FlashState.None);
 
             previousTank.dispose();
         } else {
             this._shadow = new Shadow(this._world.sources, this._node);
             this._health = new BarHealth(this._world.sources, this._node, this._properties.maxHealth, this._properties.healthRegen);
-            this._flash.setState(FlashState.Inactive);
-            this._active = false;
+            this._flash.setState(FlashState.Idle);
+            this._idle = true;
         }
 
         this._collisionToken = this._world.collisions.register([this]);
@@ -132,10 +132,10 @@ export abstract class PlayerTank implements Entity, Collider {
     // Entity
     public get displayName() { return this._metadata.displayName; }
     public readonly type = EntityType.Tank;
-    public get active() { return this._active && this.inBounds && this._node.isEnabled(); }
+    public get active() { return !this._idle && this.inBounds && this._node.isEnabled(); }
     public get size() { return this._metadata.size; }
     public readonly mass = 2;
-    public get damage() { return this._active ? this._damage : DamageZero; }
+    public get damage() { return this._idle ? DamageZero : this._damage; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
@@ -178,7 +178,7 @@ export abstract class PlayerTank implements Entity, Collider {
             const moveFactor = this._properties.moveSpeed / Math.sqrt(x * x + z * z);
             targetVelocity.set(x * moveFactor, 0, z * moveFactor);
             this._flash.setState(FlashState.None);
-            this._active = true;
+            this._idle = false;
         }
 
         decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
@@ -189,7 +189,7 @@ export abstract class PlayerTank implements Entity, Collider {
 
     public shoot(): void {
         this._flash.setState(FlashState.None);
-        this._active = true;
+        this._idle = false;
     }
 
     public secondary(_active: boolean): void {
@@ -197,7 +197,7 @@ export abstract class PlayerTank implements Entity, Collider {
     }
 
     public update(deltaTime: number, onDestroy: (source: Entity) => void): void {
-        if (this._autoShoot && this.inBounds) {
+        if (this._autoShoot && this.active) {
             this.shoot();
         }
 
@@ -220,8 +220,8 @@ export abstract class PlayerTank implements Entity, Collider {
         this._node.position.setAll(0);
         this.velocity.setAll(0);
         this._node.setEnabled(true);
-        this._flash.setState(FlashState.Inactive);
-        this._active = false;
+        this._flash.setState(FlashState.Idle);
+        this._idle = true;
         this._autoRotate = false;
         this._autoShoot = false;
     }
@@ -231,7 +231,7 @@ export abstract class PlayerTank implements Entity, Collider {
             return 0;
         }
 
-        if (!this._active || other.owner === this) {
+        if (this._idle || other.owner === this) {
             applyCollisionForce(this, other);
             return 0;
         }

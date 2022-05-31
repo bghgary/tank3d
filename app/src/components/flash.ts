@@ -10,7 +10,7 @@ const FLASH_INACTIVE_SPEED = 8;
 export const enum FlashState {
     None,
     Damage,
-    Inactive
+    Idle
 }
 
 interface Color {

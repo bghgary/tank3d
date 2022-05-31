@@ -2,7 +2,6 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { applyCollisionForce, applyMovement } from "../common";
-import { FlashState } from "../components/flash";
 import { Health } from "../components/health";
 import { WeaponProperties } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
@@ -50,7 +49,7 @@ export class Bullet extends Projectile {
         }
 
         if (other.damage.value > 0) {
-            this._flash.setState(FlashState.Damage);
+            // No flash for bullet.
             this._health.takeDamage(other);
         }
 

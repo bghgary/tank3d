@@ -21,7 +21,8 @@ export class Barrel {
         this._node = node;
 
         this._originalScale = this._node.scaling.z;
-        this._shootScale = 0.9 * this._originalScale / (node.metadata as BarrelMetadata).length;
+        const length = (node.metadata as BarrelMetadata).length;
+        this._shootScale = (length - 0.1) / length * this._originalScale;
     }
 
     public addBullet(constructor: BulletConstructor, owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): Bullet {

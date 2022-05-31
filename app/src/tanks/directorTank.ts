@@ -91,7 +91,9 @@ export class DirectorTank extends BarrelTank {
     }
 
     public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
-        this.shoot();
+        if (this.active) {
+            this.shoot();
+        }
 
         const target = this._drones.target;
         if ((this.inBounds && this._autoShoot) || this._autoRotate) {

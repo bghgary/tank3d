@@ -12,8 +12,7 @@ export function applyCollisionForce(target: Entity, other: DeepImmutable<Entity>
     const dz = position.z - other.position.z;
     const distance = Math.sqrt(dx * dx + dz * dz);
     const contactDistance = (target.size + other.size) * 0.5;
-    const strength = distance < contactDistance ? contactDistance / Math.max(distance, 0.01): 1;
-    const factor = 2 * other.mass / (target.mass + other.mass) * strength;
+    const factor = Math.min(contactDistance / distance, 10) * 2 * other.mass / (target.mass + other.mass);
     setTimeout(() => {
         velocity.x += dx * factor;
         velocity.z += dz * factor;
