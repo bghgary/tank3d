@@ -24,6 +24,7 @@ import { SearcherTank } from "./tanks/searcherTank";
 import { ShieldTank } from "./tanks/shieldTank";
 import { SniperTank } from "./tanks/sniperTank";
 import { SpawnerTank } from "./tanks/spawnerTank";
+import { SpinnerTank } from "./tanks/spinnerTank";
 import { SwarmerTank } from "./tanks/swarmerTank";
 import { TrapperTank } from "./tanks/trapperTank";
 import { TwinSniperTank } from "./tanks/twinSniperTank";
@@ -68,6 +69,8 @@ export const EvolutionRootNode: EvolutionNode = {
         Tank: FlankGuardTank,
         children: [{
             Tank: ShieldTank,
+        }, {
+            Tank: SpinnerTank,
         }]
     }, {
         Tank: PounderTank,
@@ -115,6 +118,8 @@ export const EvolutionRootNode: EvolutionNode = {
         Tank: LancerTank,
         children: [{
             Tank: ShieldTank,
+        }, {
+            Tank: SpinnerTank,
         }]
     }],
 };

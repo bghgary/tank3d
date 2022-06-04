@@ -145,7 +145,7 @@ function createFakeBarrel(name: string, metadata: BarrelMetadata, scene: Scene):
     return node;
 }
 
-function createLance(name: string, diameter: number, length: number, scene: Scene): Mesh {
+function createCone(name: string, diameter: number, length: number, scene: Scene): Mesh {
     const mesh = MeshBuilder.CreateCylinder(name, {
         tessellation: Math.round(36 * diameter),
         cap: Mesh.NO_CAP,
@@ -156,6 +156,11 @@ function createLance(name: string, diameter: number, length: number, scene: Scen
     mesh.position.z = length / 2;
     mesh.rotation.x = Math.PI / 2;
     mesh.bakeCurrentTransformIntoVertices();
+    return mesh;
+}
+
+function createLance(name: string, diameter: number, length: number, scene: Scene): Mesh {
+    const mesh = createCone(name, diameter, length, scene);
     mesh.position.z = 0.4;
     (mesh.metadata as LanceMetadata) = {
         colliders: ["collider0", "collider1", "collider2"],
@@ -335,6 +340,7 @@ export class Sources {
         readonly cruiser: TransformNode;
         readonly underseer: TransformNode;
         readonly shield: TransformNode;
+        readonly spinner: TransformNode;
     };
 
     public constructor(world: World) {
@@ -470,6 +476,7 @@ export class Sources {
             cruiser: this._createCruiserTankSource(tanks),
             underseer: this._createUnderseerTankSource(tanks),
             shield: this._createShieldTankSource(tanks),
+            spinner: this._createSpinnerTankSource(tanks),
         };
     }
 
@@ -1821,6 +1828,43 @@ export class Sources {
         shield.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI, 0);
         shield.parent = source;
 
+        return source;
+    }
+
+    private _createSpinnerTankSource(parent: TransformNode): TransformNode {
+        const coneDiameter = 0.4;
+        const coneLength = 0.5;
+        const sphereDiameter = 0.4;
+        const barrelDiameter = 0.3;
+        const barrelLength = 0.65;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Spinner",
+            size: 1,
+            barrels: ["barrelL", "barrelR"],
+            spinners: ["spinner"],
+            multiplier: {
+                reloadTime: 0.5,
+            },
+        };
+
+        const source = this._createTankBody(parent, "spinner", metadata);
+
+        const cone = createCone("cone", coneDiameter, coneLength, this._scene);
+        cone.position.z = 0.4;
+        cone.material = this._material.gray;
+        cone.parent = source;
+
+        const sphere = createInstance(this._component.sphere, "spinner", source, this._color.gray);
+        sphere.position.z = cone.position.z + coneLength;
+        sphere.scaling.setAll(sphereDiameter);
+
+        const barrelL = this._createSimpleBarrel(sphere, "barrelL", barrelDiameter, barrelLength);
+        barrelL.rotation.y = -Math.PI / 2;
+
+        const barrelR = this._createSimpleBarrel(sphere, "barrelR", barrelDiameter, barrelLength);
+        barrelR.rotation.y = Math.PI / 2;
+    
         return source;
     }
 }

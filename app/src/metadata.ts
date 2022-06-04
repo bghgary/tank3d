@@ -83,5 +83,6 @@ export interface PlayerTankMetadata extends DisplayNameMetadata, SizeMetadata {
     readonly barrels?: Array<string>;
     readonly lances?: Array<string>;
     readonly shields?: Array<string>;
+    readonly spinners?: Array<string>;
     readonly multiplier: Partial<DeepImmutable<TankProperties>>;
 }
