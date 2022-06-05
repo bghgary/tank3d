@@ -342,6 +342,7 @@ export class Sources {
         readonly shield: TransformNode;
         readonly spinner: TransformNode;
         readonly propeller: TransformNode;
+        readonly doubleTwin: TransformNode;
     };
 
     public constructor(world: World) {
@@ -479,6 +480,7 @@ export class Sources {
             shield: this._createShieldTankSource(tanks),
             spinner: this._createSpinnerTankSource(tanks),
             propeller: this._createPropellerTankSource(tanks),
+            doubleTwin: this._createDoubleTwinTankSource(tanks),
         };
     }
 
@@ -1121,9 +1123,7 @@ export class Sources {
             displayName: "Twin",
             size: 1,
             barrels: ["barrelL", "barrelR"],
-            multiplier: {
-                reloadTime: 1.2,
-            },
+            multiplier: {},
         };
 
         const source = this._createTankBody(parent, "twin", metadata);
@@ -1849,9 +1849,7 @@ export class Sources {
             size: 1,
             barrels: ["barrelL", "barrelR"],
             spinners: ["spinner"],
-            multiplier: {
-                reloadTime: 0.5,
-            },
+            multiplier: {},
         };
 
         const source = this._createTankBody(parent, "spinner", metadata);
@@ -1903,6 +1901,38 @@ export class Sources {
 
         const barrelBR = this._createSimpleBarrel(source, "barrelBR", barrelDiameter, barrelLengthB, multiplier);
         barrelBR.rotation.y = Tools.ToRadians(150);
+
+        return source;
+    }
+
+    private _createDoubleTwinTankSource(parent: TransformNode): TransformNode {
+        const barrelDiameter = 0.4;
+        const barrelLengthF = 0.75;
+        const barrelLengthB = 0.65;
+        const barrelOffset = barrelDiameter * 0.51;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Double Twin",
+            size: 1,
+            barrels: ["barrelFL", "barrelFR", "barrelBR", "barrelBL"],
+            multiplier: {},
+        };
+
+        const source = this._createTankBody(parent, "doubleTwin", metadata);
+
+        const barrelFL = this._createSimpleBarrel(source, "barrelFL", barrelDiameter, barrelLengthF);
+        barrelFL.position.x = -barrelOffset;
+
+        const barrelFR = this._createSimpleBarrel(source, "barrelFR", barrelDiameter, barrelLengthF);
+        barrelFR.position.x = +barrelOffset;
+
+        const barrelBR = this._createSimpleBarrel(source, "barrelBR", barrelDiameter, barrelLengthB);
+        barrelBR.position.x = +barrelOffset;
+        barrelBR.rotation.y = Math.PI;
+
+        const barrelBL = this._createSimpleBarrel(source, "barrelBL", barrelDiameter, barrelLengthB);
+        barrelBL.position.x = -barrelOffset;
+        barrelBL.rotation.y = Math.PI;
 
         return source;
     }
