@@ -25,8 +25,8 @@ export class Bullet extends Projectile {
     protected readonly _targetVelocity: DeepImmutable<Vector3> = new Vector3();
     protected readonly _health: Health;
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
-        super(world, owner, node, properties, barrelNode, duration);
+    public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
+        super(world, owner, node, barrelNode, properties, duration);
         this._health = new Health(this._properties.health);
     }
 

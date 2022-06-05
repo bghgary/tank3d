@@ -8,7 +8,7 @@ import { Collider } from "../collisions";
 import { Flash } from "../components/flash";
 import { Health } from "../components/health";
 import { Shadow } from "../components/shadow";
-import { WeaponProperties } from "../components/weapon";
+import { WeaponProperties, WeaponPropertiesWithMultiplier } from "../components/weapon";
 import { Entity, EntityType } from "../entity";
 import { TmpVector3 } from "../math";
 import { BarrelMetadata } from "../metadata";
@@ -25,7 +25,7 @@ function applySpeedVariance(speed: number, variance = 0): number {
 }
 
 export interface ProjectileConstructor<T extends Projectile> {
-    new(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): T;
+    new(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): T;
 }
 
 export class Projectiles<T extends Projectile> {
@@ -51,7 +51,7 @@ export class Projectiles<T extends Projectile> {
 
     protected _add(constructor: ProjectileConstructor<T>, owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number): T {
         const node = this._world.sources.create(source, this._root);
-        const projectile = new constructor(this._world, owner, node, properties, barrelNode, duration);
+        const projectile = new constructor(this._world, owner, node, barrelNode, properties, duration);
         this._projectiles.add(projectile);
         return projectile;
     }
@@ -67,20 +67,19 @@ export class Projectiles<T extends Projectile> {
 
 export abstract class Projectile implements Entity, Collider {
     protected readonly _node: TransformNode;
-    protected readonly _properties: DeepImmutable<WeaponProperties>;
+    protected readonly _properties: WeaponPropertiesWithMultiplier;
     protected readonly _shadow: Shadow;
     protected readonly _flash: Flash;
     protected abstract readonly _health: Health;
 
     protected _time: number;
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
+    public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         this.owner = owner;
 
         this._node = node;
-        this._properties = properties;
-
         const barrelMetadata = barrelNode.metadata as BarrelMetadata;
+        this._properties = new WeaponPropertiesWithMultiplier(properties, barrelMetadata.multiplier);
         const barrelDiameter = barrelMetadata.diameter * barrelNode.absoluteScaling.x;
         this._node.scaling.setAll(barrelDiameter * 0.75);
 

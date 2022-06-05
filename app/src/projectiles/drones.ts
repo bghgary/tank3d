@@ -76,8 +76,8 @@ export class AutoTargetDrones extends Drones<AutoTargetDrone> {
 export abstract class Drone extends Projectile {
     protected readonly _health: Health;
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
-        super(world, owner, node, properties, barrelNode, duration);
+    public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
+        super(world, owner, node, barrelNode, properties, duration);
         this._health = this.size > 0.5
             ? new BarHealth(world.sources, this._node, this._properties.health)
             : new Health(this._properties.health);
@@ -146,8 +146,8 @@ export class AutoTargetDrone extends Drone {
     private readonly _target: DroneTarget = { position: new Vector3(), radius: 0 };
     private _targetDistanceSquared = Number.MAX_VALUE;
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
-        super(world, owner, node, properties, barrelNode, duration);
+    public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
+        super(world, owner, node, barrelNode, properties, duration);
 
         this.targetCollider = new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
             if (other.type !== EntityType.Bullet && other !== this.owner && other.owner !== this.owner) {

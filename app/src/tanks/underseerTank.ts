@@ -69,8 +69,8 @@ export class UnderseerTank extends DirectorTank {
 class UnderseerDrone extends SingleTargetDrone {
     private readonly _removeEntityDestroyedObserver: () => void;
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
-        super(world, owner, node, properties, barrelNode, duration);
+    public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
+        super(world, owner, node, barrelNode, properties, duration);
 
         const observer = world.onEnemyDestroyedObservable.add(([source, target]) => {
             if (source === this && target.type === EntityType.Shape && target.points === 10) {

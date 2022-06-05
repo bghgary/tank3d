@@ -20,6 +20,7 @@ import { OverseerTank } from "./tanks/overseerTank";
 import { PlayerTank } from "./tanks/playerTank";
 import { PoisonTank } from "./tanks/poisonTank";
 import { PounderTank } from "./tanks/pounderTank";
+import { PropellerTank } from "./tanks/propellerTank";
 import { SearcherTank } from "./tanks/searcherTank";
 import { ShieldTank } from "./tanks/shieldTank";
 import { SniperTank } from "./tanks/sniperTank";
@@ -44,82 +45,128 @@ export interface EvolutionNode {
 }
 
 export const EvolutionRootNode: EvolutionNode = {
-    Tank: BaseTank,
-    children: [{
-        Tank: SniperTank,
-        children: [{
-            Tank: AssassinTank,
-        }, {
-            Tank: TwinSniperTank,
-        }, {
-            Tank: GatlingGunTank,
-        }, {
-            Tank: HunterTank,
-        }, {
-            Tank: PoisonTank,
-        }, {
-            Tank: SearcherTank,
-        }]
-    }, {
-        Tank: TwinTank,
-        children: [{
-            Tank: TwinSniperTank,
-        }]
-    }, {
-        Tank: FlankGuardTank,
-        children: [{
-            Tank: ShieldTank,
-        }, {
-            Tank: SpinnerTank,
-        }]
-    }, {
-        Tank: PounderTank,
-        children: [{
-            Tank: LauncherTank,
-        }, {
-            Tank: DestroyerTank,
-        }, {
-            Tank: BuilderTank,
-        }, {
-            Tank: ArtilleryTank,
-        }, {
-            Tank: BlasterTank,
-        }, {
-            Tank: BomberTank,
-        }]
-    }, {
-        Tank: DirectorTank,
-        children: [{
-            Tank: SwarmerTank,
-        }, {
-            Tank: OverseerTank,
-        }, {
-            Tank: SpawnerTank,
-        }, {
-            Tank: DetectorTank,
-        }, {
-            Tank: CruiserTank,
-        }, {
-            Tank: UnderseerTank,
-        }]
-    }, {
-        Tank: TrapperTank,
-        children: [{
-            Tank: BuilderTank,
-        }]
-    }, {
-        Tank: MachineGunTank,
-        children: [{
-            Tank: GatlingGunTank,
-        }, {
-            Tank: BlasterTank,
-        }]
-    }, {
-        Tank: LancerTank,
-        children: [{
-            Tank: ShieldTank,
-        }, {
-            Tank: SpinnerTank,
-        }]
-    }],
+  Tank: BaseTank,
+  children: [
+    {
+      Tank: SniperTank,
+      children: [
+        {
+          Tank: AssassinTank,
+        },
+        {
+          Tank: TwinSniperTank,
+        },
+        {
+          Tank: GatlingGunTank,
+        },
+        {
+          Tank: HunterTank,
+        },
+        {
+          Tank: PoisonTank,
+        },
+        {
+          Tank: SearcherTank,
+        },
+      ],
+    },
+    {
+      Tank: TwinTank,
+      children: [
+        {
+          Tank: TwinSniperTank,
+        },
+      ],
+    },
+    {
+      Tank: FlankGuardTank,
+      children: [
+        {
+          Tank: ShieldTank,
+        },
+        {
+          Tank: SpinnerTank,
+        },
+        {
+          Tank: PropellerTank,
+        },
+      ],
+    },
+    {
+      Tank: PounderTank,
+      children: [
+        {
+          Tank: LauncherTank,
+        },
+        {
+          Tank: DestroyerTank,
+        },
+        {
+          Tank: BuilderTank,
+        },
+        {
+          Tank: ArtilleryTank,
+        },
+        {
+          Tank: BlasterTank,
+        },
+        {
+          Tank: BomberTank,
+        },
+      ],
+    },
+    {
+      Tank: DirectorTank,
+      children: [
+        {
+          Tank: SwarmerTank,
+        },
+        {
+          Tank: OverseerTank,
+        },
+        {
+          Tank: SpawnerTank,
+        },
+        {
+          Tank: DetectorTank,
+        },
+        {
+          Tank: CruiserTank,
+        },
+        {
+          Tank: UnderseerTank,
+        },
+      ],
+    },
+    {
+      Tank: TrapperTank,
+      children: [
+        {
+          Tank: BuilderTank,
+        },
+      ],
+    },
+    {
+      Tank: MachineGunTank,
+      children: [
+        {
+          Tank: GatlingGunTank,
+        },
+        {
+          Tank: BlasterTank,
+        },
+      ],
+    },
+    {
+      Tank: LancerTank,
+      children: [
+        {
+          Tank: ShieldTank,
+        },
+        {
+          Tank: SpinnerTank,
+        },
+      ],
+    },
+  ],
 };

@@ -3,7 +3,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { applyRecoil, findNode } from "../common";
 import { Barrel } from "../components/barrel";
-import { WeaponProperties, WeaponPropertiesWithMultiplier } from "../components/weapon";
+import { WeaponProperties } from "../components/weapon";
 import { Entity } from "../entity";
 import { TmpVector3 } from "../math";
 import { BarrelProjectileMetadata } from "../metadata";
@@ -33,18 +33,16 @@ interface PlayerTankInternal extends Entity {
 class SpawnerDrone extends SingleTargetDrone {
     private readonly _barrels: Array<Barrel>;
     private readonly _bulletSource: TransformNode;
-    private readonly _bulletProperties: DeepImmutable<WeaponProperties>;
     private readonly _getReloadTime: () => number;
     private _reloadTime = 0;
     private _recoil = new Vector3();
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
-        super(world, owner, node, properties, barrelNode, duration);
+    public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
+        super(world, owner, node, barrelNode, properties, duration);
 
         const metadata = node.metadata as BarrelProjectileMetadata;
         this._barrels = metadata.barrels.map((name) => new Barrel(world, findNode(node, name)));
         this._bulletSource = world.sources.bullet.tank;
-        this._bulletProperties = new WeaponPropertiesWithMultiplier(this._properties, metadata.multiplier);
         this._getReloadTime = () => (owner as PlayerTankInternal)._properties.reloadTime * (metadata.reloadMultiplier || 1);
         this._reloadTime = this._getReloadTime() * 0.5;
     }
@@ -56,7 +54,7 @@ class SpawnerDrone extends SingleTargetDrone {
                 const angle = Math.acos(Vector3.Dot(this._node.forward, direction));
                 if (angle < SHOOT_ANGLE) {
                     for (const barrel of this._barrels) {
-                        const bullet = barrel.shootBullet(Bullet, this.owner, this._bulletSource, this._bulletProperties, 3);
+                        const bullet = barrel.shootBullet(Bullet, this.owner, this._bulletSource, this._properties, 3);
                         applyRecoil(this._recoil, bullet);
                     }
 

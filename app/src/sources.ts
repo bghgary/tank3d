@@ -341,6 +341,7 @@ export class Sources {
         readonly underseer: TransformNode;
         readonly shield: TransformNode;
         readonly spinner: TransformNode;
+        readonly propeller: TransformNode;
     };
 
     public constructor(world: World) {
@@ -477,6 +478,7 @@ export class Sources {
             underseer: this._createUnderseerTankSource(tanks),
             shield: this._createShieldTankSource(tanks),
             spinner: this._createSpinnerTankSource(tanks),
+            propeller: this._createPropellerTankSource(tanks),
         };
     }
 
@@ -622,9 +624,15 @@ export class Sources {
         return this._createStarComponent("quadstar", 4, parent);
     }
 
-    private _createSimpleBarrel(parent: TransformNode, name: string, diameter: number, length: number): TransformNode {
+    private _createSimpleBarrel(parent: TransformNode, name: string, diameter: number, length: number, multiplier?: Partial<DeepImmutable<WeaponProperties>>): TransformNode {
         const source = createInstance(this._component.barrel.simple, name, parent);
         source.scaling.set(diameter, diameter, length);
+        if (multiplier) {
+            (source.metadata as BarrelMetadata) = {
+                ...source.metadata,
+                multiplier: multiplier,
+            };
+        }
         return source;
     }
 
@@ -652,12 +660,7 @@ export class Sources {
 
     private _createSpawnerTankDroneSource(parent: TransformNode): TransformNode {
         const metadata: BarrelProjectileMetadata = {
-            barrels: [ "barrel" ],
-            multiplier: {
-                speed: 1.2,
-                damage: { value: 0.1, time: 1 },
-                health: 0.1,
-            },
+            barrels: ["barrel"],
             reloadMultiplier: 0.4,
         };
 
@@ -666,7 +669,11 @@ export class Sources {
         const body = createInstance(this._component.tetrahedron, "body", source, this._color.blue);
         body.scaling.setAll(0.4);
 
-        this._createSimpleBarrel(source, "barrel", 0.29, 0.79);
+        this._createSimpleBarrel(source, "barrel", 0.29, 0.79, {
+            speed: 1.2,
+            damage: { value: 0.1, time: 1 },
+            health: 0.1,
+        });
 
         return source;
     }
@@ -696,17 +703,16 @@ export class Sources {
     private _createLauncherTankMissileSource(parent: TransformNode): TransformNode {
         const metadata: BarrelProjectileMetadata = {
             barrels: ["barrel"],
-            multiplier: {
-                damage: { value: 0.17, time: 1 },
-                health: 0.17,
-            },
             reloadMultiplier: 0.5,
         };
 
         const source = createInstance(this._component.sphere, "tankLauncher", parent, this._color.blue);
         source.metadata = metadata;
 
-        const barrel = this._createSimpleBarrel(source, "barrel", 0.45, 0.75);
+        const barrel = this._createSimpleBarrel(source, "barrel", 0.45, 0.75, {
+            damage: { value: 0.17, time: 1 },
+            health: 0.17,
+        });
         barrel.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI, 0);
 
         return source;
@@ -1503,7 +1509,7 @@ export class Sources {
 
         const barrelR = this._createBarrel(source, "barrelR", sideBarrelParameters);
         barrelR.position.x = mainBarrelDiameter * 0.5;
-        barrelR.rotationQuaternion = Quaternion.FromEulerAngles(0, -sideBarrelAngle, 0);
+        barrelR.rotationQuaternion = Quaternion.FromEulerAngles(0, sideBarrelAngle, 0);
 
         return source;
     }
@@ -1864,7 +1870,40 @@ export class Sources {
 
         const barrelR = this._createSimpleBarrel(sphere, "barrelR", barrelDiameter, barrelLength);
         barrelR.rotation.y = Math.PI / 2;
-    
+
+        return source;
+    }
+
+    private _createPropellerTankSource(parent: TransformNode): TransformNode {
+        const barrelDiameter = 0.45;
+        const barrelLengthF = 0.75;
+        const barrelLengthB = 0.65;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Propeller",
+            size: 1,
+            barrels: ["barrelF", "barrelBL", "barrelBR"],
+            multiplier: {},
+        };
+
+        const source = this._createTankBody(parent, "propeller", metadata);
+
+        this._createSimpleBarrel(source, "barrelF", barrelDiameter, barrelLengthF, {
+            damage: { value: 1.5, time: 1 },
+            health: 1.5,
+        });
+
+        const multiplier = {
+            damage: { value: 0.5, time: 1 },
+            health: 0.5,
+        };
+
+        const barrelBL = this._createSimpleBarrel(source, "barrelBL", barrelDiameter, barrelLengthB, multiplier);
+        barrelBL.rotation.y = -Tools.ToRadians(150);
+
+        const barrelBR = this._createSimpleBarrel(source, "barrelBR", barrelDiameter, barrelLengthB, multiplier);
+        barrelBR.rotation.y = Tools.ToRadians(150);
+
         return source;
     }
 }

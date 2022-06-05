@@ -35,7 +35,6 @@ export interface BombMetadata {
 
 export interface BarrelProjectileMetadata {
     readonly barrels: Array<string>;
-    readonly multiplier: Partial<DeepImmutable<WeaponProperties>>;
     readonly reloadMultiplier?: number;
 }
 

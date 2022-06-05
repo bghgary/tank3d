@@ -24,8 +24,8 @@ class Bomb extends Bullet {
     private readonly _bulletSource: TransformNode;
     private readonly _bulletProperties: DeepImmutable<WeaponProperties>;
 
-    public constructor(world: World, owner: Entity, node: TransformNode, properties: DeepImmutable<WeaponProperties>, barrelNode: TransformNode, duration: number) {
-        super(world, owner, node, properties, barrelNode, duration);
+    public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
+        super(world, owner, node, barrelNode, properties, duration);
 
         const metadata = node.metadata as BombMetadata;
         this._barrelNodes = metadata.barrels.map((name) => findNode(node, name));
