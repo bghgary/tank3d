@@ -27,3 +27,15 @@ export interface Entity {
     readonly velocity: Vector3;
     readonly owner?: Entity;
 }
+
+export function IsWeapon(type: EntityType): boolean {
+    switch (type) {
+        case EntityType.Bullet:
+        case EntityType.Lance:
+        case EntityType.Shield: {
+            return true;
+        }
+    }
+
+    return false;
+}

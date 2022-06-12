@@ -2,6 +2,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Sources } from "./sources";
 import { ArtilleryTank } from "./tanks/artilleryTank";
 import { AssassinTank } from "./tanks/assassinTank";
+import { AutoTwoTank } from "./tanks/autoTwoTank";
 import { BaseTank } from "./tanks/baseTank";
 import { BlasterTank } from "./tanks/blasterTank";
 import { BomberTank } from "./tanks/bomberTank";
@@ -96,6 +97,9 @@ export const EvolutionRootNode: EvolutionNode = {
                 },
                 {
                     Tank: DoubleTwinTank,
+                },
+                {
+                    Tank: AutoTwoTank,
                 },
             ],
         },

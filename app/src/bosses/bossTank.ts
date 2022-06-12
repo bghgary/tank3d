@@ -39,13 +39,13 @@ export class BossTank {
         if (!active || !this._shoot(deltaTime, player)) {
             const rotation = this._node.rotationQuaternion!;
             decayQuaternionToRef(rotation, QuaternionIdentity, deltaTime, 2, rotation);
-            rotation.normalize();
         }
     }
 
     private _shoot(deltaTime: number, player: Player): boolean {
         const playerDirection = TmpVector3[0];
-        player.position.subtractToRef(this._node.absolutePosition, playerDirection).normalize();
+        player.position.subtractToRef(this._node.absolutePosition, playerDirection);
+        playerDirection.normalize();
 
         const parent = this._node.parent! as TransformNode;
         const tankAngle = Math.acos(Vector3.Dot(parent.forward, playerDirection));
@@ -61,7 +61,7 @@ export class BossTank {
         Vector3.TransformNormalToRef(direction, invWorldMatrix, direction);
         this._node.setDirection(direction.normalize());
 
-        const angle = Math.acos(Vector3.Dot(playerDirection, forward));
+        const angle = Math.acos(Vector3.Dot(playerDirection, this._node.forward));
         if (this._reloadTime === 0 && angle < SHOOT_ANGLE) {
             for (const barrel of this._barrels) {
                 barrel.shootBullet(Bullet, this._owner, this._world.sources.bullet.boss, this._metadata.bullet, 3);

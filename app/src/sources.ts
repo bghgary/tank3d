@@ -343,6 +343,7 @@ export class Sources {
         readonly spinner: TransformNode;
         readonly propeller: TransformNode;
         readonly doubleTwin: TransformNode;
+        readonly autoTwo: TransformNode;
     };
 
     public constructor(world: World) {
@@ -481,6 +482,7 @@ export class Sources {
             spinner: this._createSpinnerTankSource(tanks),
             propeller: this._createPropellerTankSource(tanks),
             doubleTwin: this._createDoubleTwinTankSource(tanks),
+            autoTwo: this._createAutoTwoTankSource(tanks),
         };
     }
 
@@ -1065,7 +1067,7 @@ export class Sources {
         return source;
     }
 
-    private _createTankBody(parent: TransformNode, name: string, metadata: PlayerTankMetadata): AbstractMesh {
+    private _createTankBody(parent: TransformNode, name: string, metadata: any): AbstractMesh {
         const body = createInstance(this._component.sphere, name, parent, this._color.blue);
         body.scaling.setAll(metadata.size);
         body.metadata = metadata;
@@ -1933,6 +1935,40 @@ export class Sources {
         const barrelBL = this._createSimpleBarrel(source, "barrelBL", barrelDiameter, barrelLengthB);
         barrelBL.position.x = -barrelOffset;
         barrelBL.rotation.y = Math.PI;
+
+        return source;
+    }
+
+    private _createAutoTwoTankSource(parent: TransformNode): TransformNode {
+        const autoTankSize = 0.5;
+        const barrelDiameter = 0.45;
+        const barrelLength = 0.75;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Auto-2",
+            size: 1,
+            barrels: ["barrelL", "barrelR"],
+            tanks: ["tankL", "tankR"],
+            multiplier: {},
+        };
+
+        const source = this._createTankBody(parent, "autoTwo", metadata);
+
+        const offsetL = new TransformNode("offsetL", this._scene);
+        offsetL.position.x = -0.55;
+        offsetL.rotationQuaternion = Quaternion.FromEulerAngles(0, -Math.PI / 2, 0);
+        offsetL.parent = source;
+        const tankL = this._createTankBody(offsetL, "tankL", { size: autoTankSize });
+        tankL.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
+        this._createSimpleBarrel(tankL, "barrelL", barrelDiameter, barrelLength);
+
+        const offsetR = new TransformNode("offsetR", this._scene);
+        offsetR.position.x = 0.55;
+        offsetR.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
+        offsetR.parent = source;
+        const tankR = this._createTankBody(offsetR, "tankR", { size: autoTankSize });
+        tankR.rotationQuaternion = Quaternion.FromEulerAngles(0, -Math.PI / 2, 0);
+        this._createSimpleBarrel(tankR, "barrelR", barrelDiameter, barrelLength);
 
         return source;
     }

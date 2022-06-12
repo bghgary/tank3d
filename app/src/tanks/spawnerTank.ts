@@ -50,8 +50,9 @@ class SpawnerDrone extends SingleTargetDrone {
     public override update(deltaTime: number, onDestroy: () => void): void {
         if (this.target) {
             if (this._reloadTime === 0 && this.target.radius === 0) {
-                const direction = this.target.position.subtractToRef(this._node.position, TmpVector3[0]).normalize();
-                const angle = Math.acos(Vector3.Dot(this._node.forward, direction));
+                const direction = TmpVector3[0];
+                this.target.position.subtractToRef(this._node.position, direction);
+                const angle = Math.acos(Vector3.Dot(this._node.forward, direction.normalize()));
                 if (angle < SHOOT_ANGLE) {
                     for (const barrel of this._barrels) {
                         const bullet = barrel.shootBullet(Bullet, this.owner, this._bulletSource, this._properties, 3);

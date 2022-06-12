@@ -6,7 +6,7 @@ import { TargetCollider } from "../collisions";
 import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties } from "../components/weapon";
-import { Entity, EntityType } from "../entity";
+import { Entity, EntityType, IsWeapon } from "../entity";
 import { DroneConstructor, SingleTargetDrone, SingleTargetDrones } from "../projectiles/drones";
 import { Sources } from "../sources";
 import { getUpgradeNames } from "../ui/upgrades";
@@ -75,8 +75,8 @@ export class DirectorTank extends BarrelTank {
         }
     }
 
-    public override shoot(): void {
-        if (this._reloadTime === 0) {
+    public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
+        if (this.active && this._reloadTime === 0) {
             for (let i = 0; i < this._barrels.length; ++i) {
                 if (this._drones.count < this._maxDroneCount) {
                     this._shootFrom(this._barrels[this._barrelIndex]!);
@@ -85,14 +85,6 @@ export class DirectorTank extends BarrelTank {
             }
 
             this._reloadTime = this._properties.reloadTime;
-        }
-
-        super.shoot();
-    }
-
-    public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
-        if (this.active) {
-            this.shoot();
         }
 
         const target = this._drones.target;
@@ -123,7 +115,7 @@ export class DirectorTank extends BarrelTank {
             if (!this._targetCollisionToken) {
                 this._targetCollisionToken = this._world.collisions.register([
                     new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
-                        if (this.inBounds && other.type !== EntityType.Bullet && other !== this && other.owner !== this) {
+                        if (this.inBounds && !IsWeapon(other.type) && other !== this && other.owner !== this) {
                             const distanceSquared =
                                 (other.type === EntityType.Shape ? TARGET_RADIUS * TARGET_RADIUS : 0) +
                                 Vector3.DistanceSquared(this.position, other.position);

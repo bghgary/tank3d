@@ -14,10 +14,9 @@ import { TmpVector3 } from "../math";
 import { BarrelMetadata } from "../metadata";
 import { World } from "../worlds/world";
 
-function applyAngleVariance(forward: DeepImmutable<Vector3>, variance = Tools.ToRadians(2), result: Vector3): Vector3 {
+function applyAngleVariance(forward: DeepImmutable<Vector3>, variance = Tools.ToRadians(2), result: Vector3): void {
     const angle = Scalar.RandomRange(-variance, variance);
     forward.rotateByQuaternionToRef(Quaternion.FromEulerAngles(0, angle, 0), result);
-    return result;
 }
 
 function applySpeedVariance(speed: number, variance = 0): number {
@@ -92,9 +91,11 @@ export abstract class Projectile implements Entity, Collider {
     public shoot(barrelNode: TransformNode): void {
         const barrelMetadata = barrelNode.metadata as BarrelMetadata;
 
-        const barrelForward = applyAngleVariance(barrelNode.forward, barrelMetadata.angleVariance, TmpVector3[0]);
+        const barrelForward = TmpVector3[0];
+        applyAngleVariance(barrelNode.forward, barrelMetadata.angleVariance, barrelForward);
         const barrelLength = barrelMetadata.length * barrelNode.absoluteScaling.z;
-        barrelForward.scaleToRef(barrelLength + this.size * 0.5, this._node.position).addInPlace(barrelNode.absolutePosition);
+        barrelForward.scaleToRef(barrelLength + this.size * 0.5, this._node.position);
+        this._node.position.addInPlace(barrelNode.absolutePosition);
         this._node.setDirection(barrelForward);
         this._node.computeWorldMatrix();
 

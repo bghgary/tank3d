@@ -18,20 +18,19 @@ export function decayScalar(from: number, to: number, deltaTime: number, factor:
     return to - (to - from) * decayFactor;
 }
 
-export function decayVector3ToRef(from: DeepImmutable<Vector3>, to: DeepImmutable<Vector3>, deltaTime: number, factor: number, result: Vector3): Vector3 {
+export function decayVector3ToRef(from: DeepImmutable<Vector3>, to: DeepImmutable<Vector3>, deltaTime: number, factor: number, result: Vector3): void {
     const decayFactor = Math.exp(-deltaTime * factor);
     result.x = to.x - (to.x - from.x) * decayFactor;
     result.z = to.z - (to.z - from.z) * decayFactor;
-    return result;
 }
 
-export function decayQuaternionToRef(from: DeepImmutable<Quaternion>, to: DeepImmutable<Quaternion>, deltaTime: number, factor: number, result: Quaternion): Quaternion {
+export function decayQuaternionToRef(from: DeepImmutable<Quaternion>, to: DeepImmutable<Quaternion>, deltaTime: number, factor: number, result: Quaternion): void {
     const decayFactor = Math.exp(-deltaTime * factor);
     result.x = to.x - (to.x - from.x) * decayFactor;
     result.y = to.y - (to.y - from.y) * decayFactor;
     result.z = to.z - (to.z - from.z) * decayFactor;
     result.w = to.w - (to.w - from.w) * decayFactor;
-    return result;
+    result.normalize();
 }
 
 export function max<T>(array: Iterable<T>, callback: (value: T) => number): number {

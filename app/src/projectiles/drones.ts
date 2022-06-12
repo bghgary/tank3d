@@ -89,13 +89,15 @@ export abstract class Drone extends Projectile {
         const direction = TmpVector3[0];
         target.position.subtractToRef(this._node.position, direction);
         const distance = direction.length();
-        direction.scaleInPlace(1 / Math.max(distance, 0.01));
+        direction.normalizeFromLength(Math.max(distance, 0.01));
 
         if (target.radius > 0) {
             const position = TmpVector3[1];
-            direction.scaleToRef(-target.radius, position).addInPlace(target.position);
+            direction.scaleToRef(-target.radius, position);
+            position.addInPlace(target.position);
             position.addInPlaceFromFloats(-direction.z, direction.y, direction.x);
-            position.subtractToRef(this._node.position, direction).normalize();
+            position.subtractToRef(this._node.position, direction);
+            direction.normalize();
         }
 
         const forward = this._node.forward;

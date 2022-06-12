@@ -8,7 +8,8 @@ export class SearcherTank extends SniperTank {
     public override secondary(active: boolean): void {
         if (active) {
             if (!this._secondaryActive) {
-                this._world.pointerPosition.subtractToRef(this._node.position, this.cameraTargetOffset).normalize().scaleInPlace(7);
+                this._world.pointerPosition.subtractToRef(this._node.position, this.cameraTargetOffset);
+                this.cameraTargetOffset.normalize().scaleInPlace(7);
                 this._secondaryActive = true;
             }
         } else {
