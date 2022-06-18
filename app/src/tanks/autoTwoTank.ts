@@ -1,11 +1,10 @@
-import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { Nullable } from "@babylonjs/core/types";
 import { TargetCollider } from "../collisions";
 import { findNode } from "../common";
 import { Entity, EntityType, IsWeapon } from "../entity";
-import { decayQuaternionToRef, decayVector3ToRef, TmpMatrix, TmpVector3 } from "../math";
+import { angleBetween, decayScalar, TmpVector3 } from "../math";
 import { PlayerTankMetadata } from "../metadata";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
@@ -13,7 +12,7 @@ import { BulletTank } from "./bulletTank";
 import { PlayerTank } from "./playerTank";
 
 const TARGET_RADIUS = 10;
-const TARGET_MAX_ANGLE = 0.5 * Math.PI;
+const TARGET_MAX_ANGLE = 0.6 * Math.PI;
 
 export class AutoTwoTank extends BulletTank {
     private readonly _tanks: Array<AutoTargetTank>;
@@ -76,15 +75,15 @@ export class AutoTwoTank extends BulletTank {
 
 class AutoTargetTank {
     private readonly _node: TransformNode;
-    private readonly _restRotation: Quaternion;
+    private readonly _restAngle: number;
     private _targetDistance = Number.MAX_VALUE;
-    private _targetDirection = new Vector3();
+    private _targetAngle = 0;
     private _targetRadius = 0;
     private _targetAcquired = false;
 
     public constructor(node: TransformNode) {
         this._node = node;
-        this._restRotation = this._node.rotationQuaternion!.clone();
+        this._restAngle = this._node.rotation.y;
     }
 
     public get targetAcquired(): boolean {
@@ -95,22 +94,13 @@ class AutoTargetTank {
         this._targetAcquired = false;
 
         if (this._targetDistance === Number.MAX_VALUE) {
-            const rotation = this._node.rotationQuaternion!;
-            decayQuaternionToRef(rotation, this._restRotation, deltaTime, 2, rotation);
+            this._node.rotation.y = decayScalar(this._node.rotation.y, this._restAngle, deltaTime, 2);
         } else {
-            const forward = this._node.forward;
-            const direction = TmpVector3[0];
-            decayVector3ToRef(forward, this._targetDirection, deltaTime, 20, direction);
+            const angle = decayScalar(this._node.rotation.y, this._targetAngle, deltaTime, 20);
+            this._node.rotation.y = angle;
 
-            const parent = this._node.parent as TransformNode;
-            const invWorldMatrix = TmpMatrix[0];
-            parent.getWorldMatrix().invertToRef(invWorldMatrix);
-            Vector3.TransformNormalToRef(direction, invWorldMatrix, direction);
-            this._node.setDirection(direction.normalize());
-
-            const angle = Math.acos(Vector3.Dot(this._targetDirection, this._node.forward));
             const maxAngle = Math.atan(this._targetRadius / this._targetDistance);
-            if (angle < maxAngle) {
+            if (Math.abs(angle - this._targetAngle) < maxAngle) {
                 this._targetAcquired = true;
             }
 
@@ -119,20 +109,15 @@ class AutoTargetTank {
     }
 
     public onCollide(target: Entity): void {
-        const position = this._node.absolutePosition;
-        const parent = this._node.parent as TransformNode;
-        const targetDirection = TmpVector3[0];
-        target.position.subtractToRef(position, targetDirection);
-        targetDirection.normalize();
-        const angle = Math.acos(Vector3.Dot(parent.forward, targetDirection));
-        if (angle < TARGET_MAX_ANGLE) {
-            const distance =
-                (target.type === EntityType.Shape ? TARGET_RADIUS : 0) +
-                Vector3.Distance(position, target.position);
-
+        const deltaPosition = TmpVector3[0].copyFrom(target.position).subtractInPlace(this._node.absolutePosition);
+        const targetDistance = deltaPosition.length();
+        const targetDirection = TmpVector3[1].copyFrom(deltaPosition).normalizeFromLength(targetDistance);
+        const targetAngle = angleBetween(targetDirection, (this._node.parent as TransformNode).forward);
+        if (Math.abs(targetAngle) < TARGET_MAX_ANGLE) {
+            const distance = (target.type === EntityType.Shape ? TARGET_RADIUS : 0) + targetDistance;
             if (distance < this._targetDistance) {
                 this._targetDistance = distance;
-                this._targetDirection.copyFrom(targetDirection);
+                this._targetAngle = targetAngle;
                 this._targetRadius = target.size * 0.5;
             }
         }

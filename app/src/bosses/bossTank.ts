@@ -1,16 +1,15 @@
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { findNode } from "../common";
 import { Barrel } from "../components/barrel";
 import { Entity } from "../entity";
-import { decayQuaternionToRef, decayVector3ToRef, QuaternionIdentity, TmpMatrix, TmpVector3 } from "../math";
+import { angleBetween, decayScalar, TmpVector3 } from "../math";
 import { BossTankMetadata } from "../metadata";
 import { Player } from "../player";
 import { Bullet } from "../projectiles/bullets";
 import { World } from "../worlds/world";
 
 const MAX_TANK_ANGLE = 0.5 * Math.PI;
-const SHOOT_ANGLE = 0.02 * Math.PI;
+const TARGET_RADIUS = 0.5;
 
 export class BossTank {
     private readonly _world: World;
@@ -37,37 +36,31 @@ export class BossTank {
         this._reloadTime = Math.max(this._reloadTime - deltaTime, 0);
 
         if (!active || !this._shoot(deltaTime, player)) {
-            const rotation = this._node.rotationQuaternion!;
-            decayQuaternionToRef(rotation, QuaternionIdentity, deltaTime, 2, rotation);
+            this._node.rotation.y = decayScalar(this._node.rotation.y, 0, deltaTime, 2);
         }
     }
 
     private _shoot(deltaTime: number, player: Player): boolean {
-        const playerDirection = TmpVector3[0];
-        player.position.subtractToRef(this._node.absolutePosition, playerDirection);
-        playerDirection.normalize();
-
-        const parent = this._node.parent! as TransformNode;
-        const tankAngle = Math.acos(Vector3.Dot(parent.forward, playerDirection));
-        if (tankAngle >= MAX_TANK_ANGLE) {
+        const deltaPosition = TmpVector3[0].copyFrom(player.position).subtractInPlace(this._node.absolutePosition);
+        const targetDistance = deltaPosition.length();
+        const targetDirection = TmpVector3[1].copyFrom(deltaPosition).normalizeFromLength(targetDistance);
+        const targetAngle = angleBetween(targetDirection, (this._node.parent as TransformNode).forward);
+        if (Math.abs(targetAngle) >= MAX_TANK_ANGLE) {
             return false;
         }
 
-        const forward = this._node.forward;
-        const direction = TmpVector3[1].setAll(0);
-        decayVector3ToRef(forward, playerDirection, deltaTime, 20, direction);
-        const invWorldMatrix = TmpMatrix[0];
-        parent.getWorldMatrix().invertToRef(invWorldMatrix);
-        Vector3.TransformNormalToRef(direction, invWorldMatrix, direction);
-        this._node.setDirection(direction.normalize());
+        const angle = decayScalar(this._node.rotation.y, targetAngle, deltaTime, 20);
+        this._node.rotation.y = angle;
 
-        const angle = Math.acos(Vector3.Dot(playerDirection, this._node.forward));
-        if (this._reloadTime === 0 && angle < SHOOT_ANGLE) {
-            for (const barrel of this._barrels) {
-                barrel.shootBullet(Bullet, this._owner, this._world.sources.bullet.boss, this._metadata.bullet, 3);
+        if (this._reloadTime === 0) {
+            const maxAngle = Math.atan(TARGET_RADIUS / targetDistance);
+            if (Math.abs(angle - targetAngle) < maxAngle) {
+                for (const barrel of this._barrels) {
+                    barrel.shootBullet(Bullet, this._owner, this._world.sources.bullet.boss, this._metadata.bullet, 3);
+                }
+
+                this._reloadTime = this._metadata.reload;
             }
-
-            this._reloadTime = this._metadata.reload;
         }
 
         return true;
