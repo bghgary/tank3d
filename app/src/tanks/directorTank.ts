@@ -6,7 +6,7 @@ import { TargetCollider } from "../collisions";
 import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties } from "../components/weapon";
-import { Entity, EntityType, IsWeapon } from "../entity";
+import { Entity, GetDangerValue } from "../entity";
 import { DroneConstructor, SingleTargetDrone, SingleTargetDrones } from "../projectiles/drones";
 import { Sources } from "../sources";
 import { getUpgradeNames } from "../ui/upgrades";
@@ -26,7 +26,7 @@ export class DirectorTank extends BarrelTank {
     private readonly _circleRadius: number;
     private _barrelIndex = 0;
     private _targetCollisionToken: Nullable<IDisposable> = null;
-    private _targetDistanceSquared = Number.MAX_VALUE;
+    private _targetValue = Number.MAX_VALUE;
     private _defendTime = 0;
 
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
@@ -110,21 +110,18 @@ export class DirectorTank extends BarrelTank {
                 this._droneProperties.speed = this._properties.weaponSpeed * 0.5;
             }
 
-            this._targetDistanceSquared = Number.MAX_VALUE;
+            this._targetValue = Number.MAX_VALUE;
 
             if (!this._targetCollisionToken) {
                 this._targetCollisionToken = this._world.collisions.register([
                     new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
-                        if (this.inBounds && !IsWeapon(other.type) && other !== this && other.owner !== this) {
-                            const distanceSquared =
-                                (other.type === EntityType.Shape ? TARGET_RADIUS * TARGET_RADIUS : 0) +
-                                Vector3.DistanceSquared(this.position, other.position);
-
-                            if (distanceSquared < this._targetDistanceSquared) {
+                        if (this.inBounds && other !== this && other.owner !== this) {
+                            const value = 100 * GetDangerValue(other.type) + Vector3.Distance(this.position, other.position);
+                            if (value < this._targetValue) {
                                 target.radius = 0;
                                 target.position.copyFrom(other.position);
                                 this._droneProperties.speed = this._properties.weaponSpeed;
-                                this._targetDistanceSquared = distanceSquared;
+                                this._targetValue = value;
                                 this._defendTime = 1;
                             }
                         }

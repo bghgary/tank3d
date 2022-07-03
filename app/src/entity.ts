@@ -8,7 +8,6 @@ export const enum EntityType {
     Crasher,
     Drone,
     Lance,
-    Missile,
     Shape,
     Shield,
     Tank,
@@ -28,14 +27,22 @@ export interface Entity {
     readonly owner?: Entity;
 }
 
-export function IsWeapon(type: EntityType): boolean {
+export function GetDangerValue(type: EntityType): number {
     switch (type) {
+        case EntityType.Tank:
+            return 0;
+        case EntityType.Crasher:
+            return 1;
+        case EntityType.Boss:
+            return 2;
+        case EntityType.Drone:
+        case EntityType.Trap:
         case EntityType.Bullet:
+            return 3;
+        case EntityType.Shape:
+            return 4;
         case EntityType.Lance:
-        case EntityType.Shield: {
-            return true;
-        }
+        case EntityType.Shield:
+            return 5;
     }
-
-    return false;
 }

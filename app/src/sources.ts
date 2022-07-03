@@ -249,6 +249,9 @@ export class Sources {
         readonly barrel: {
             readonly simple: Mesh;
         };
+        readonly path: {
+            readonly circle: Mesh;
+        }
         readonly box: Mesh;
         readonly dodecahedron: Mesh;
         readonly goldberg11: Mesh;
@@ -345,6 +348,7 @@ export class Sources {
         readonly doubleTwin: TransformNode;
         readonly autoTwo: TransformNode;
         readonly quad: TransformNode;
+        readonly revolutionist: TransformNode;
     };
 
     public constructor(world: World) {
@@ -374,6 +378,9 @@ export class Sources {
         this._component = {
             barrel: {
                 simple: this._createSimpleBarrelComponent(components),
+            },
+            path: {
+                circle: this._createCirclePathComponent(components),
             },
             box: this._createBoxComponent(components),
             dodecahedron: this._createDodecahedronComponent(components),
@@ -485,6 +492,7 @@ export class Sources {
             doubleTwin: this._createDoubleTwinTankSource(tanks),
             autoTwo: this._createAutoTwoTankSource(tanks),
             quad: this._createQuadTankSource(tanks),
+            revolutionist: this._createRevolutionistTankSource(tanks),
         };
     }
 
@@ -514,7 +522,17 @@ export class Sources {
     }
 
     private _createSimpleBarrelComponent(parent: TransformNode): Mesh {
-        return this._createBarrel(parent, "simpleBarrel", { segments: [{ diameter: 1, length: 1 }] });
+        return this._createBarrel(parent, "barrel.simple", { segments: [{ diameter: 1, length: 1 }] });
+    }
+
+    private _createCirclePathComponent(parent: TransformNode): Mesh {
+        const mesh = MeshBuilder.CreateTorus("path.circle", {
+            thickness: 0.05,
+            tessellation: 48
+        }, this._scene);
+        mesh.material = this._material.gray;
+        mesh.parent = parent;
+        return mesh;
     }
 
     private _createHealthComponent(parent: TransformNode): Mesh {
@@ -525,7 +543,7 @@ export class Sources {
     }
 
     private _createCircleMarkerComponent(parent: TransformNode): Mesh {
-        const mesh = MeshBuilder.CreateDisc("circle", { tessellation: 16 }, this._scene);
+        const mesh = MeshBuilder.CreateDisc("marker.circle", { tessellation: 16 }, this._scene);
         mesh.rotation.x = Math.PI / 2;
         mesh.scaling.scaleInPlace(MARKER_SCALE);
         mesh.bakeCurrentTransformIntoVertices();
@@ -536,7 +554,7 @@ export class Sources {
     }
 
     private _createSquareMarkerComponent(parent: TransformNode): Mesh {
-        const mesh = MeshBuilder.CreateDisc("square", { tessellation: 4 }, this._scene);
+        const mesh = MeshBuilder.CreateDisc("marker.square", { tessellation: 4 }, this._scene);
         mesh.rotation.x = Math.PI / 2;
         mesh.rotation.z = Math.PI / 4;
         mesh.scaling.scaleInPlace(MARKER_SCALE);
@@ -1941,7 +1959,7 @@ export class Sources {
     }
 
     private _createAutoTwoTankSource(parent: TransformNode): TransformNode {
-        const autoTankSize = 0.5;
+        const tankSize = 0.5;
         const barrelDiameter = 0.45;
         const barrelLength = 0.75;
 
@@ -1959,7 +1977,7 @@ export class Sources {
         offsetL.position.x = -0.55;
         offsetL.rotation.y = -Math.PI / 2;
         offsetL.parent = source;
-        const tankL = this._createTankBody(offsetL, "tankL", { size: autoTankSize });
+        const tankL = this._createTankBody(offsetL, "tankL", { size: tankSize });
         tankL.rotation.y = Math.PI / 2;
         this._createSimpleBarrel(tankL, "barrelL", barrelDiameter, barrelLength);
 
@@ -1967,7 +1985,7 @@ export class Sources {
         offsetR.position.x = 0.55;
         offsetR.rotation.y = Math.PI / 2;
         offsetR.parent = source;
-        const tankR = this._createTankBody(offsetR, "tankR", { size: autoTankSize });
+        const tankR = this._createTankBody(offsetR, "tankR", { size: tankSize });
         tankR.rotation.y = -Math.PI / 2;
         this._createSimpleBarrel(tankR, "barrelR", barrelDiameter, barrelLength);
 
@@ -1998,6 +2016,38 @@ export class Sources {
 
         const barrelR = this._createSimpleBarrel(source, "barrelR", barrelDiameter, barrelLength);
         barrelR.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI * 1.5, 0);
+
+        return source;
+    }
+
+    private _createRevolutionistTankSource(parent: TransformNode): TransformNode {
+        const tankSize = 0.3;
+        const barrelDiameter = 0.45;
+        const barrelLength = 0.75;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Revolutionist",
+            size: 1,
+            barrels: ["barrel", "tankBarrel"],
+            tanks: ["tank"],
+            multiplier: {},
+        };
+
+        const source = this._createTankBody(parent, "revolutionist", metadata);
+
+        this._createSimpleBarrel(source, "barrel", barrelDiameter, barrelLength);
+
+        const path = createInstance(this._component.path.circle, "path", source);
+        path.scaling.setAll(1 + tankSize);
+
+        const center = new TransformNode("center", this._scene);
+        center.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI / 2, 0);
+        center.parent = source;
+        const offset = new TransformNode("offset", this._scene);
+        offset.position.z = path.scaling.z * 0.5;
+        offset.parent = center;
+        const tank = this._createTankBody(offset, "tank", { size: tankSize });
+        this._createSimpleBarrel(tank, "tankBarrel", barrelDiameter, barrelLength);
 
         return source;
     }
