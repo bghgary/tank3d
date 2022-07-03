@@ -344,6 +344,7 @@ export class Sources {
         readonly propeller: TransformNode;
         readonly doubleTwin: TransformNode;
         readonly autoTwo: TransformNode;
+        readonly quad: TransformNode;
     };
 
     public constructor(world: World) {
@@ -483,6 +484,7 @@ export class Sources {
             propeller: this._createPropellerTankSource(tanks),
             doubleTwin: this._createDoubleTwinTankSource(tanks),
             autoTwo: this._createAutoTwoTankSource(tanks),
+            quad: this._createQuadTankSource(tanks),
         };
     }
 
@@ -1968,6 +1970,34 @@ export class Sources {
         const tankR = this._createTankBody(offsetR, "tankR", { size: autoTankSize });
         tankR.rotation.y = -Math.PI / 2;
         this._createSimpleBarrel(tankR, "barrelR", barrelDiameter, barrelLength);
+
+        return source;
+    }
+
+    private _createQuadTankSource(parent: TransformNode): TransformNode {
+        const barrelDiameter = 0.45;
+        const barrelLength = 0.75;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Quad",
+            size: 1,
+            barrels: ["barrelF", "barrelB", "barrelL", "barrelR"],
+            multiplier: {},
+        };
+
+        const source = this._createTankBody(parent, "quad", metadata);
+
+        const barrelF = this._createSimpleBarrel(source, "barrelF", barrelDiameter, barrelLength);
+        barrelF.rotationQuaternion = Quaternion.Identity();
+
+        const barrelB = this._createSimpleBarrel(source, "barrelB", barrelDiameter, barrelLength);
+        barrelB.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI, 0);
+
+        const barrelL = this._createSimpleBarrel(source, "barrelL", barrelDiameter, barrelLength);
+        barrelL.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI * 0.5, 0);
+
+        const barrelR = this._createSimpleBarrel(source, "barrelR", barrelDiameter, barrelLength);
+        barrelR.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI * 1.5, 0);
 
         return source;
     }
