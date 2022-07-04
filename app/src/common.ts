@@ -118,5 +118,5 @@ const EntityThreatRank = new Map([
 ]);
 
 export function getThreatValue(other: Entity, distance: number): number {
-    return (EntityThreatRank.get(other.type) || 0) * 100 + distance;
+    return (EntityThreatRank.get(other.type) || 0) * 100 + Math.max(100 - distance, 0);
 }

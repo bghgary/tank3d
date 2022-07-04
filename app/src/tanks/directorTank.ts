@@ -26,7 +26,7 @@ export class DirectorTank extends BarrelTank {
     private readonly _circleRadius: number;
     private _barrelIndex = 0;
     private _targetCollisionToken: Nullable<IDisposable> = null;
-    private _targetValue = Number.MAX_VALUE;
+    private _targetThreatValue = Number.MAX_VALUE;
     private _defendTime = 0;
 
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
@@ -112,19 +112,19 @@ export class DirectorTank extends BarrelTank {
                 this._droneProperties.speed = this._properties.weaponSpeed * 0.5;
             }
 
-            this._targetValue = Number.MAX_VALUE;
+            this._targetThreatValue = 0;
 
             if (!this._targetCollisionToken) {
                 this._targetCollisionToken = this._world.collisions.register([
                     new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
                         if (this.inBounds && isTarget(other, this)) {
-                            const value = getThreatValue(other, Vector3.Distance(this.position, other.position));
-                            if (value < this._targetValue) {
+                            const threatValue = getThreatValue(other, Vector3.Distance(this.position, other.position));
+                            if (threatValue > this._targetThreatValue) {
+                                this._targetThreatValue = threatValue;
                                 target.radius = 0;
                                 target.position.copyFrom(other.position);
                                 target.size = other.size;
                                 this._droneProperties.speed = this._properties.weaponSpeed;
-                                this._targetValue = value;
                                 this._defendTime = 1;
                             }
                         }

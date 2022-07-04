@@ -150,7 +150,7 @@ export class SingleTargetDrone extends Drone {
 export class AutoTargetDrone extends Drone {
     private readonly _targetVelocity: DeepImmutable<Vector3> = new Vector3();
     private readonly _target: DroneTarget = { radius: 0, position: new Vector3(), size: 1 };
-    private _targetValue = Number.MAX_VALUE;
+    private _targetThreatValue = 0;
 
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, owner, node, barrelNode, properties, duration);
@@ -158,11 +158,11 @@ export class AutoTargetDrone extends Drone {
         this.targetCollider = new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
             if (isTarget(other, this)) {
                 const distance = Vector3.Distance(this._node.position, other.position);
-                const value = getThreatValue(other, distance);
-                if (value < this._targetValue) {
+                const threatValue = getThreatValue(other, distance);
+                if (threatValue > this._targetThreatValue) {
+                    this._targetThreatValue = threatValue;
                     this._target.position.copyFrom(other.position);
                     this._target.size = other.size;
-                    this._targetValue = value;
                 }
             }
         });
@@ -178,13 +178,13 @@ export class AutoTargetDrone extends Drone {
     public override update(deltaTime: number, onDestroy: () => void): void {
         applyMovement(deltaTime, this._node.position, this.velocity);
 
-        if (this._targetValue === Number.MAX_VALUE) {
+        if (this._targetThreatValue === 0) {
             decayVector3ToRef(this.velocity, this._targetVelocity, deltaTime, 2, this.velocity);
         } else {
             this._chase(deltaTime, this._target);
         }
 
-        this._targetValue = Number.MAX_VALUE;
+        this._targetThreatValue = 0;
 
         super.update(deltaTime, onDestroy);
     }

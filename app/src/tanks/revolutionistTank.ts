@@ -50,7 +50,8 @@ export class RevolutionistTank extends BulletTank {
 
     public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
         this._tankRotation += ROTATION_SPEED * deltaTime;
-        this._center.rotationQuaternion!.copyFrom(this._node.rotationQuaternion!).invertInPlace();
+        this._node.computeWorldMatrix(true); // REVIEW: why is this necessary?
+        this._center.rotationQuaternion!.copyFrom(this._node.absoluteRotationQuaternion).invertInPlace();
         this._center.addRotation(0, this._tankRotation, 0);
 
         this._tank.update(deltaTime);
