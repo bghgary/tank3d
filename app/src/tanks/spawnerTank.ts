@@ -5,7 +5,6 @@ import { applyRecoil, findNode } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties } from "../components/weapon";
 import { Entity } from "../entity";
-import { TmpVector3 } from "../math";
 import { BarrelProjectileMetadata } from "../metadata";
 import { Bullet } from "../projectiles/bullets";
 import { SingleTargetDrone } from "../projectiles/drones";
@@ -13,8 +12,6 @@ import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { DirectorTank } from "./directorTank";
 import { TankProperties } from "./playerTank";
-
-const SHOOT_ANGLE = 0.02 * Math.PI;
 
 export class SpawnerTank extends DirectorTank {
     protected override readonly _maxDroneCount: number = 3;
@@ -50,10 +47,9 @@ class SpawnerDrone extends SingleTargetDrone {
     public override update(deltaTime: number, onDestroy: () => void): void {
         if (this.target) {
             if (this._reloadTime === 0 && this.target.radius === 0) {
-                const direction = TmpVector3[0];
-                this.target.position.subtractToRef(this._node.position, direction);
-                const angle = Math.acos(Vector3.Dot(this._node.forward, direction.normalize()));
-                if (angle < SHOOT_ANGLE) {
+                const angle = Math.acos(Vector3.Dot(this._node.forward, this._targetDirection));
+                const maxAngle = Math.atan(this.target.size / this._targetDistance);
+                if (angle < maxAngle) {
                     for (const barrel of this._barrels) {
                         const bullet = barrel.shootBullet(Bullet, this.owner, this._bulletSource, this._properties, 3);
                         applyRecoil(this._recoil, bullet);

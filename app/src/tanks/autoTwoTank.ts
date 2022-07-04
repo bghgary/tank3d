@@ -2,7 +2,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { Nullable } from "@babylonjs/core/types";
 import { TargetCollider } from "../collisions";
-import { findNode } from "../common";
+import { findNode, isTarget } from "../common";
 import { AutoTarget } from "../components/autoTarget";
 import { Entity } from "../entity";
 import { PlayerTankMetadata } from "../metadata";
@@ -54,7 +54,7 @@ export class AutoTwoTank extends BulletTank {
         if (!this._targetCollisionToken) {
             this._targetCollisionToken = this._world.collisions.register([
                 new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
-                    if (this.inBounds && other !== this && other.owner !== this) {
+                    if (this.inBounds && isTarget(other, this)) {
                         for (const tank of this._tanks) {
                             tank.onCollide(other);
                         }

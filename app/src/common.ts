@@ -94,3 +94,29 @@ export function applyRecoil(recoil: Vector3, entity: Entity): void {
 export function findNode(node: TransformNode, name: string): TransformNode {
     return node.getChildren((node) => node.name === name, false)[0] as TransformNode;
 }
+
+export function isTarget(other: Entity, owner: Entity): boolean {
+    if (!other.active || other === owner || other.owner === owner) {
+        return false;
+    }
+
+    switch (other.type) {
+        case EntityType.Lance:
+        case EntityType.Shield:
+        case EntityType.Bullet: {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+const EntityThreatRank = new Map([
+    [EntityType.Tank, 3],
+    [EntityType.Crasher, 2],
+    [EntityType.Boss, 1],
+]);
+
+export function getThreatValue(other: Entity, distance: number): number {
+    return (EntityThreatRank.get(other.type) || 0) * 100 + distance;
+}

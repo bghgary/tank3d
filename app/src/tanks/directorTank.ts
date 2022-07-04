@@ -3,10 +3,10 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
 import { TargetCollider } from "../collisions";
-import { applyRecoil } from "../common";
+import { applyRecoil, getThreatValue, isTarget } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties } from "../components/weapon";
-import { Entity, GetDangerValue } from "../entity";
+import { Entity } from "../entity";
 import { DroneConstructor, SingleTargetDrone, SingleTargetDrones } from "../projectiles/drones";
 import { Sources } from "../sources";
 import { getUpgradeNames } from "../ui/upgrades";
@@ -100,6 +100,7 @@ export class DirectorTank extends BarrelTank {
             } else {
                 target.position.copyFrom(this._node.forward).scaleInPlace(this._circleRadius).addInPlace(this._node.position);
             }
+            target.size = 1;
 
             this._droneProperties.speed = this._properties.weaponSpeed;
         } else {
@@ -107,6 +108,7 @@ export class DirectorTank extends BarrelTank {
             if (this._defendTime === 0) {
                 target.radius = this._circleRadius;
                 target.position.copyFrom(this._node.position);
+                target.size = 1;
                 this._droneProperties.speed = this._properties.weaponSpeed * 0.5;
             }
 
@@ -115,11 +117,12 @@ export class DirectorTank extends BarrelTank {
             if (!this._targetCollisionToken) {
                 this._targetCollisionToken = this._world.collisions.register([
                     new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
-                        if (this.inBounds && other !== this && other.owner !== this) {
-                            const value = 100 * GetDangerValue(other.type) + Vector3.Distance(this.position, other.position);
+                        if (this.inBounds && isTarget(other, this)) {
+                            const value = getThreatValue(other, Vector3.Distance(this.position, other.position));
                             if (value < this._targetValue) {
                                 target.radius = 0;
                                 target.position.copyFrom(other.position);
+                                target.size = other.size;
                                 this._droneProperties.speed = this._properties.weaponSpeed;
                                 this._targetValue = value;
                                 this._defendTime = 1;

@@ -4,7 +4,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
 import { Collider, TargetCollider } from "../collisions";
-import { applyCollisionForce, applyMovement } from "../common";
+import { applyCollisionForce, applyMovement, getThreatValue, isTarget } from "../common";
 import { FlashState } from "../components/flash";
 import { BarHealth, Health } from "../components/health";
 import { WeaponProperties } from "../components/weapon";
@@ -32,8 +32,9 @@ export abstract class Drones<T extends Drone> extends Projectiles<T> {
 }
 
 export interface DroneTarget {
-    position: Vector3;
     radius: number;
+    position: Vector3;
+    size: number;
 }
 
 export class SingleTargetDrones extends Drones<SingleTargetDrone> {
@@ -41,7 +42,7 @@ export class SingleTargetDrones extends Drones<SingleTargetDrone> {
         super(world, parent, properties);
     }
 
-    public readonly target: DroneTarget = { position: new Vector3(), radius: 0 };
+    public readonly target: DroneTarget = { radius: 0, position: new Vector3(), size: 1 };
 
     public override add(constructor: DroneConstructor<SingleTargetDrone>, owner: Entity, source: Mesh, barrelNode: TransformNode, duration: number): SingleTargetDrone {
         const drone = super.add(constructor, owner, source, barrelNode, duration);
@@ -76,6 +77,9 @@ export class AutoTargetDrones extends Drones<AutoTargetDrone> {
 export abstract class Drone extends Projectile {
     protected readonly _health: Health;
 
+    protected readonly _targetDirection = new Vector3();
+    protected _targetDistance = 0;
+
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, owner, node, barrelNode, properties, duration);
         this._health = this.size > 0.5
@@ -86,10 +90,10 @@ export abstract class Drone extends Projectile {
     public type = EntityType.Drone;
 
     protected _chase(deltaTime: number, target: DeepImmutable<DroneTarget>): void {
-        const direction = TmpVector3[0];
+        const direction = this._targetDirection;
         target.position.subtractToRef(this._node.position, direction);
-        const distance = direction.length();
-        direction.normalizeFromLength(Math.max(distance, 0.01));
+        this._targetDistance = this._targetDirection.length();
+        direction.normalizeFromLength(Math.max(this._targetDistance, 0.01));
 
         if (target.radius > 0) {
             const position = TmpVector3[1];
@@ -104,7 +108,7 @@ export abstract class Drone extends Projectile {
         decayVector3ToRef(forward, direction, deltaTime, 10, direction);
         this._node.setDirection(direction.normalize());
 
-        const speed = this._properties.speed * Math.min(distance, 1);
+        const speed = this._properties.speed * Math.min(this._targetDistance, 1);
         const targetVelocity = TmpVector3[2].copyFrom(forward).scaleInPlace(speed);
         decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
     }
@@ -145,18 +149,20 @@ export class SingleTargetDrone extends Drone {
 
 export class AutoTargetDrone extends Drone {
     private readonly _targetVelocity: DeepImmutable<Vector3> = new Vector3();
-    private readonly _target: DroneTarget = { position: new Vector3(), radius: 0 };
-    private _targetDistanceSquared = Number.MAX_VALUE;
+    private readonly _target: DroneTarget = { radius: 0, position: new Vector3(), size: 1 };
+    private _targetValue = Number.MAX_VALUE;
 
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, owner, node, barrelNode, properties, duration);
 
         this.targetCollider = new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
-            if (other.type !== EntityType.Bullet && other !== this.owner && other.owner !== this.owner) {
-                const distanceSquared = Vector3.DistanceSquared(this._node.position, other.position);
-                if (distanceSquared < this._targetDistanceSquared) {
+            if (isTarget(other, this)) {
+                const distance = Vector3.Distance(this._node.position, other.position);
+                const value = getThreatValue(other, distance);
+                if (value < this._targetValue) {
                     this._target.position.copyFrom(other.position);
-                    this._targetDistanceSquared = distanceSquared;
+                    this._target.size = other.size;
+                    this._targetValue = value;
                 }
             }
         });
@@ -172,13 +178,13 @@ export class AutoTargetDrone extends Drone {
     public override update(deltaTime: number, onDestroy: () => void): void {
         applyMovement(deltaTime, this._node.position, this.velocity);
 
-        if (this._targetDistanceSquared === Number.MAX_VALUE) {
+        if (this._targetValue === Number.MAX_VALUE) {
             decayVector3ToRef(this.velocity, this._targetVelocity, deltaTime, 2, this.velocity);
         } else {
             this._chase(deltaTime, this._target);
         }
 
-        this._targetDistanceSquared = Number.MAX_VALUE;
+        this._targetValue = Number.MAX_VALUE;
 
         super.update(deltaTime, onDestroy);
     }

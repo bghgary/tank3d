@@ -26,23 +26,3 @@ export interface Entity {
     readonly velocity: Vector3;
     readonly owner?: Entity;
 }
-
-export function GetDangerValue(type: EntityType): number {
-    switch (type) {
-        case EntityType.Tank:
-            return 0;
-        case EntityType.Crasher:
-            return 1;
-        case EntityType.Boss:
-            return 2;
-        case EntityType.Drone:
-        case EntityType.Trap:
-        case EntityType.Bullet:
-            return 3;
-        case EntityType.Shape:
-            return 4;
-        case EntityType.Lance:
-        case EntityType.Shield:
-            return 5;
-    }
-}

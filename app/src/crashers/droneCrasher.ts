@@ -31,11 +31,11 @@ export class DroneCrasher extends BarrelCrasher {
 
         const target = this._drones.target;
         if (player.active && chasing) {
-            target.position.copyFrom(player.position);
             target.radius = 0;
+            target.position.copyFrom(player.position);
         } else {
-            target.position.copyFrom(this._node.position);
             target.radius = this._metadata.size;
+            target.position.copyFrom(this._node.position);
         }
         this._drones.update(deltaTime);
 

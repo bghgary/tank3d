@@ -1,5 +1,6 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Entity, GetDangerValue } from "../entity";
+import { getThreatValue } from "../common";
+import { Entity } from "../entity";
 import { angleBetween, decayScalar, TmpVector3 } from "../math";
 
 const TARGET_MAX_ANGLE = 0.6 * Math.PI;
@@ -46,7 +47,7 @@ export class AutoTarget {
         const targetDirection = TmpVector3[1].copyFrom(deltaPosition).normalizeFromLength(targetDistance);
         const targetAngle = angleBetween(targetDirection, (this._node.parent as TransformNode).forward);
         if (Math.abs(targetAngle) < TARGET_MAX_ANGLE) {
-            const value = 100 * GetDangerValue(target.type) + targetDistance;
+            const value = getThreatValue(target, targetDistance);
             if (value < this._targetValue) {
                 this._targetValue = value;
                 this._targetAngle = targetAngle;

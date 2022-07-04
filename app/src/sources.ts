@@ -2021,7 +2021,7 @@ export class Sources {
     }
 
     private _createRevolutionistTankSource(parent: TransformNode): TransformNode {
-        const tankSize = 0.3;
+        const tankSize = 0.4;
         const barrelDiameter = 0.45;
         const barrelLength = 0.75;
 
