@@ -1,5 +1,5 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
-import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import { IDisposable } from "@babylonjs/core/scene";
@@ -15,8 +15,9 @@ import { BarrelMetadata } from "../metadata";
 import { World } from "../worlds/world";
 
 function applyAngleVariance(forward: DeepImmutable<Vector3>, variance = Tools.ToRadians(2), result: Vector3): void {
-    const angle = Scalar.RandomRange(-variance, variance);
-    forward.rotateByQuaternionToRef(Quaternion.FromEulerAngles(0, angle, 0), result);
+    const angle = Math.atan2(forward.z, forward.x) + Scalar.RandomRange(-variance, variance);
+    result.z = Math.sin(angle);
+    result.x = Math.cos(angle);
 }
 
 function applySpeedVariance(speed: number, variance = 0): number {
@@ -88,7 +89,7 @@ export abstract class Projectile implements Entity, Collider {
         this._time = duration;
     }
 
-    public shoot(barrelNode: TransformNode): void {
+    public shoot(barrelNode: TransformNode, callback?: (barrelForward: Vector3, speed: number) => void): void {
         const barrelMetadata = barrelNode.metadata as BarrelMetadata;
 
         const barrelForward = TmpVector3[0];
@@ -102,6 +103,10 @@ export abstract class Projectile implements Entity, Collider {
         const speed = applySpeedVariance(this._properties.speed, barrelMetadata.speedVariance);
         const initialSpeed = Math.max(Vector3.Dot(this.owner.velocity, barrelForward) + speed, 0.1);
         this.velocity.copyFrom(barrelForward).scaleInPlace(initialSpeed);
+
+        if (callback) {
+            callback(barrelForward, speed);
+        }
     }
 
     public update(deltaTime: number, onDestroy: () => void): void {

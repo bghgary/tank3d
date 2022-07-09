@@ -1,6 +1,5 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { applyRecoil } from "../common";
 import { WeaponProperties } from "../components/weapon";
 import { Entity } from "../entity";
 import { AutoTargetDrone, AutoTargetDrones, SingleTargetDrone, SingleTargetDrones } from "../projectiles/drones";
@@ -47,10 +46,11 @@ export class SwarmerTank extends BarrelTank {
             for (const barrel of this._barrels) {
                 const source = this._world.sources.drone.tank;
                 const duration = 5;
-                const drone = this._toggle
-                    ? barrel.shootDrone(this._autoTargetDrones, AutoTargetDrone, this, source, duration)
-                    : barrel.shootDrone(this._singleTargetDrones, SingleTargetDrone, this, source, duration);
-                applyRecoil(this._recoil, drone);
+                if (this._toggle) {
+                    barrel.shootDrone(this._autoTargetDrones, AutoTargetDrone, this, source, duration, this._recoil);
+                } else {
+                    barrel.shootDrone(this._singleTargetDrones, SingleTargetDrone, this, source, duration, this._recoil);
+                }
             }
 
             this._reloadTime = this._properties.reloadTime;

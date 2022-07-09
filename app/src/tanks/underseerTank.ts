@@ -58,7 +58,7 @@ export class UnderseerTank extends DirectorTank {
 
     protected _addDrone(position: DeepImmutable<Vector3>, rotation: DeepImmutable<Quaternion>): void {
         if (this._drones.count < this._maxCloneCount) {
-            const drone = this._barrels[0]!.addDrone(this._drones, this._droneConstructor, this, this._droneSource);
+            const drone = this._barrels[0]!.addDrone(this._drones, this._droneConstructor, this, this._droneSource, Number.POSITIVE_INFINITY);
             drone.position.copyFrom(position);
             drone.rotation.copyFrom(rotation);
             drone.velocity.setAll(0);

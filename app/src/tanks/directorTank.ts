@@ -3,7 +3,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
 import { TargetCollider } from "../collisions";
-import { applyRecoil, getThreatValue, isTarget } from "../common";
+import { getThreatValue, isTarget } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties } from "../components/weapon";
 import { Entity } from "../entity";
@@ -143,8 +143,7 @@ export class DirectorTank extends BarrelTank {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const drone = barrel.shootDrone(this._drones, this._droneConstructor, this, this._droneSource);
-        applyRecoil(this._recoil, drone);
+        barrel.shootDrone(this._drones, this._droneConstructor, this, this._droneSource, Number.POSITIVE_INFINITY, this._recoil);
     }
 
     protected _updateDroneProperties(): void {

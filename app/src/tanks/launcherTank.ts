@@ -1,7 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { applyRecoil, findNode } from "../common";
+import { findNode } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties } from "../components/weapon";
 import { Entity } from "../entity";
@@ -45,8 +45,7 @@ class Missile extends Bullet {
     public override update(deltaTime: number, onDestroy: () => void): void {
         if (this._reloadTime === 0) {
             for (const barrel of this._barrels) {
-                const bullet = barrel.shootBullet(Bullet, this.owner, this._bulletSource, this._properties, 2);
-                applyRecoil(this._recoil, bullet);
+                barrel.shootBullet(Bullet, this.owner, this._bulletSource, this._properties, 2, this._recoil);
             }
 
             this._reloadTime = this._getReloadTime();

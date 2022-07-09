@@ -1,6 +1,5 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { applyRecoil } from "../common";
 import { WeaponProperties } from "../components/weapon";
 import { Entity } from "../entity";
 import { AutoTargetDrone, AutoTargetDrones } from "../projectiles/drones";
@@ -40,8 +39,7 @@ export class DetectorTank extends BarrelTank {
     public override shoot(): void {
         if (this._reloadTime === 0) {
             for (const barrel of this._barrels) {
-                const drone = barrel.shootDrone(this._drones, AutoTargetDrone, this, this._world.sources.drone.tank, 5);
-                applyRecoil(this._recoil, drone);
+                barrel.shootDrone(this._drones, AutoTargetDrone, this, this._world.sources.drone.tank, 5, this._recoil);
             }
 
             this._reloadTime = this._properties.reloadTime;

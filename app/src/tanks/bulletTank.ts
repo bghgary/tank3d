@@ -1,6 +1,5 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { applyRecoil } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties } from "../components/weapon";
 import { Bullet, BulletConstructor } from "../projectiles/bullets";
@@ -47,8 +46,7 @@ export abstract class BulletTank extends BarrelTank {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        const bullet = barrel.shootBullet(this._bulletConstructor, this, this._bulletSource, this._bulletProperties, 3);
-        applyRecoil(this._recoil, bullet);
+        barrel.shootBullet(this._bulletConstructor, this, this._bulletSource, this._bulletProperties, 3, this._recoil);
     }
 
     protected _updateBulletProperties(): void {

@@ -1,7 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { applyRecoil, findNode } from "../common";
+import { findNode } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties } from "../components/weapon";
 import { Entity } from "../entity";
@@ -51,8 +51,7 @@ class SpawnerDrone extends SingleTargetDrone {
                 const maxAngle = Math.atan(this.target.size / this._targetDistance);
                 if (angle < maxAngle) {
                     for (const barrel of this._barrels) {
-                        const bullet = barrel.shootBullet(Bullet, this.owner, this._bulletSource, this._properties, 3);
-                        applyRecoil(this._recoil, bullet);
+                        barrel.shootBullet(Bullet, this.owner, this._bulletSource, this._properties, 3, this._recoil);
                     }
 
                     this._reloadTime = this._getReloadTime();

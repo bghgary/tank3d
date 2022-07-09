@@ -168,9 +168,14 @@ export class AutoTargetDrone extends Drone {
         });
     }
 
-    public override shoot(barrelNode: TransformNode): void {
-        super.shoot(barrelNode);
-        this._targetVelocity.copyFrom(this._node.forward).scaleInPlace(this._properties.speed);
+    public override shoot(barrelNode: TransformNode, callback?: (barrelForward: Vector3, speed: number) => void): void {
+        super.shoot(barrelNode, (barrelForward, speed) => {
+            this._targetVelocity.copyFrom(barrelForward).scaleInPlace(speed);
+
+            if (callback) {
+                callback(barrelForward, speed);
+            }
+        });
     }
 
     public readonly targetCollider: TargetCollider;

@@ -86,11 +86,6 @@ export function applyWallClamp(position: Vector3, size: number, wallLimit: numbe
     }
 }
 
-export function applyRecoil(recoil: Vector3, entity: Entity): void {
-    recoil.x += entity.velocity.x * entity.mass;
-    recoil.z += entity.velocity.z * entity.mass;
-}
-
 export function findNode(node: TransformNode, name: string): TransformNode {
     return node.getChildren((node) => node.name === name, false)[0] as TransformNode;
 }

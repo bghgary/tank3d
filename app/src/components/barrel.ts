@@ -1,3 +1,4 @@
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { Entity } from "../entity";
@@ -33,29 +34,38 @@ export class Barrel {
         return this._world.traps.add(Trap, owner, source, properties, this._node, duration);
     }
 
-    public addDrone<T extends Drone>(drones: Drones<T>, constructor: DroneConstructor<T>, owner: Entity, source: TransformNode, duration = Number.POSITIVE_INFINITY): Drone {
+    public addDrone<T extends Drone>(drones: Drones<T>, constructor: DroneConstructor<T>, owner: Entity, source: TransformNode, duration: number): Drone {
         return drones.add(constructor, owner, source, this._node, duration);
     }
 
-    public shootBullet(constructor: BulletConstructor, owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): Bullet {
-        return this._shoot(this.addBullet(constructor, owner, source, properties, duration));
+    public shootBullet(constructor: BulletConstructor, owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number, recoil?: Vector3): Bullet {
+        return this._shoot(this.addBullet(constructor, owner, source, properties, duration), recoil);
     }
 
-    public shootTrap(owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): Trap {
-        return this._shoot(this.addTrap(owner, source, properties, duration));
+    public shootTrap(owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number, recoil?: Vector3): Trap {
+        return this._shoot(this.addTrap(owner, source, properties, duration), recoil);
     }
 
-    public shootDrone<T extends Drone>(drones: Drones<T>, constructor: DroneConstructor<T>, owner: Entity, source: TransformNode, duration = Number.POSITIVE_INFINITY): Drone {
-        return this._shoot(this.addDrone(drones, constructor, owner, source, duration));
+    public shootDrone<T extends Drone>(drones: Drones<T>, constructor: DroneConstructor<T>, owner: Entity, source: TransformNode, duration: number, recoil?: Vector3): Drone {
+        return this._shoot(this.addDrone(drones, constructor, owner, source, duration), recoil);
     }
 
     public update(deltaTime: number) {
         this._node.scaling.z = decayScalar(this._node.scaling.z, this._originalScale, deltaTime, 4);
     }
 
-    private _shoot<T extends Projectile>(projectile: T): T {
+    private _shoot<T extends Projectile>(projectile: T, recoil?: Vector3): T {
         this._node.scaling.z = this._shootScale;
-        projectile.shoot(this._node);
+
+        if (recoil) {
+            projectile.shoot(this._node, (barrelForward, speed) => {
+                recoil.x += barrelForward.x * speed * projectile.mass;
+                recoil.z += barrelForward.z * speed * projectile.mass;
+            });
+        } else {
+            projectile.shoot(this._node);
+        }
+
         return projectile;
     }
 }
