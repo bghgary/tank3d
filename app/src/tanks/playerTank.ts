@@ -132,9 +132,9 @@ export abstract class PlayerTank implements Entity, Collider {
     // Entity
     public get displayName() { return this._metadata.displayName; }
     public readonly type = EntityType.Tank;
-    public get active() { return !this._idle && this.inBounds && this._node.isEnabled(); }
+    public get active() { return this._node.isEnabled(); }
     public get size() { return this._metadata.size; }
-    public readonly mass = 2;
+    public get mass() { return 2 * this.size * this.size; }
     public get damage() { return this._idle ? DamageZero : this._damage; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
@@ -154,6 +154,10 @@ export abstract class PlayerTank implements Entity, Collider {
         const limit = (this._world.size + this._metadata.size) * 0.5;
         const position = this._node.position;
         return -limit <= position.x && position.x <= limit && -limit <= position.z && position.z < limit;
+    }
+
+    public get idle(): boolean {
+        return this._idle;
     }
 
     public toggleAutoShoot(): void {

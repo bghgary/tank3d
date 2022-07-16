@@ -76,7 +76,7 @@ export class DirectorTank extends BarrelTank {
     }
 
     public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
-        if (this.active && this._reloadTime === 0) {
+        if (this.inBounds && !this.idle && this._reloadTime === 0) {
             for (let i = 0; i < this._barrels.length; ++i) {
                 if (this._drones.count < this._maxDroneCount) {
                     this._shootFrom(this._barrels[this._barrelIndex]!);

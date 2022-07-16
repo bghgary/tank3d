@@ -8,6 +8,7 @@ export const enum EntityType {
     Crasher,
     Drone,
     Lance,
+    Sentry,
     Shape,
     Shield,
     Tank,

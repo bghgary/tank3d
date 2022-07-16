@@ -2,12 +2,14 @@ import { Engine } from "@babylonjs/core/Engines/engine";
 import { Nullable } from "@babylonjs/core/types";
 import { Boss, Bosses } from "../bosses";
 import { Crashers } from "../crashers";
+import { Sentries } from "../sentries";
 import { Shapes } from "../shapes";
 import { World } from "./world";
 
 export class BoxWorld extends World {
     private readonly _shapes: Shapes;
     private readonly _crashers: Crashers;
+    private readonly _sentries: Sentries;
     private readonly _bosses: Bosses;
 
     private _keeperBoss?: Nullable<Boss>;
@@ -17,6 +19,7 @@ export class BoxWorld extends World {
 
         this._shapes = new Shapes(this, 200);
         this._crashers = new Crashers(this, 100);
+        this._sentries = new Sentries(this, 20);
         this._bosses = new Bosses(this);
 
         this.onEnemyDestroyedObservable.add(([_, target]) => {
@@ -27,13 +30,15 @@ export class BoxWorld extends World {
 
         this._player.onLevelChangedObservable.add((level) => {
             if (level < 20) {
-                // do nothing
+                this._sentries.enabled = false;
             } else if (level < 40) {
+                this._sentries.enabled = true;
+
                 if (this._keeperBoss === undefined) {
                     this._keeperBoss = this._bosses.addKeeper();
                 }
             } else if (level < 60) {
-                // TODO
+                this._sentries.enabled = true;
             }
         });
 
@@ -48,6 +53,7 @@ export class BoxWorld extends World {
         this._shapes.update(deltaTime);
         this._player.update(deltaTime);
         this._crashers.update(deltaTime, this._player);
+        this._sentries.update(deltaTime, this._player);
         this._bosses.update(deltaTime, this._player);
     }
 }

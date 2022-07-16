@@ -56,7 +56,7 @@ export class RevolutionistTank extends BulletTank {
 
         this._tank.update(deltaTime);
         this._tankReloadTime = Math.max(this._tankReloadTime - deltaTime, 0);
-        if (this.active && this._tankReloadTime === 0 && this._tank.targetAcquired) {
+        if (this.inBounds && !this.idle && this._tankReloadTime === 0 && this._tank.targetAcquired) {
             this._shootFrom(this._barrels[1]!);
             this._tankReloadTime = this._properties.reloadTime;
         }

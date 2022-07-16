@@ -5,7 +5,6 @@ import { applyCollisionForce, applyGravity, applyMovement, applyWallClamp } from
 import { Flash, FlashState } from "../components/flash";
 import { BarHealth } from "../components/health";
 import { Shadow } from "../components/shadow";
-import { Crasher } from "../crashers";
 import { Entity, EntityType } from "../entity";
 import { decayVector3ToRef, TmpVector3 } from "../math";
 import { CrasherMetadata } from "../metadata";
@@ -16,7 +15,7 @@ const IDLE_MOVEMENT_SPEED = 1;
 const IDLE_ROTATION_SPEED = 1;
 const CHASE_DISTANCE = 15;
 
-export class BaseCrasher implements Crasher, Collider {
+export class BaseCrasher implements Collider {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
     protected readonly _metadata: CrasherMetadata;

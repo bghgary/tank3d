@@ -5,15 +5,10 @@ import { BaseCrasher } from "./crashers/baseCrasher";
 import { BulletCrasher } from "./crashers/bulletCrasher";
 import { DroneCrasher } from "./crashers/droneCrasher";
 import { TwinCrasher } from "./crashers/twinCrasher";
-import { Entity } from "./entity";
 import { Player } from "./player";
 import { World } from "./worlds/world";
 
 const DROP_HEIGHT = 5;
-
-export interface Crasher extends Entity {
-    readonly points: number;
-}
 
 export class Crashers {
     private readonly _world: World;
@@ -48,7 +43,7 @@ export class Crashers {
 
     private _addCrasher(crasher: BaseCrasher, x: number, z: number, rotation: number): void {
         crasher.position.set(x, DROP_HEIGHT, z);
-        Quaternion.RotationYawPitchRollToRef(rotation, 0, 0, crasher.rotation);
+        Quaternion.FromEulerAnglesToRef(0, rotation, 0, crasher.rotation);
         this._crashers.add(crasher);
     }
 

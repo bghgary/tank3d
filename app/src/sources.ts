@@ -11,7 +11,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { WeaponProperties } from "./components/weapon";
 import { createShadowMaterial } from "./materials/shadowMaterial";
-import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LanceMetadata, PlayerTankMetadata, ShapeMetadata, ShieldMetadata, SizeMetadata } from "./metadata";
+import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LanceMetadata, PlayerTankMetadata, SentryMetadata, ShapeMetadata, ShieldMetadata, SizeMetadata } from "./metadata";
 import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
@@ -259,6 +259,7 @@ export class Sources {
         readonly marker: {
             readonly circle: Mesh;
             readonly square: Mesh;
+            readonly triangle: Mesh;
         };
         readonly shadow: Mesh;
         readonly sphere: Mesh;
@@ -272,6 +273,7 @@ export class Sources {
     public readonly bullet: {
         readonly tank: TransformNode;
         readonly crasher: TransformNode;
+        readonly sentry: TransformNode;
         readonly boss: TransformNode;
         readonly tankLauncher: TransformNode;
         readonly tankBomber: TransformNode;
@@ -304,6 +306,10 @@ export class Sources {
         readonly destroyer: TransformNode;
         readonly twin: TransformNode;
         readonly drone: TransformNode;
+    };
+
+    public readonly sentries: {
+        readonly base: TransformNode;
     };
 
     public readonly boss: {
@@ -389,6 +395,7 @@ export class Sources {
             marker: {
                 circle: this._createCircleMarkerComponent(components),
                 square: this._createSquareMarkerComponent(components),
+                triangle: this._createTriangleMarkerComponent(components),
             },
             shadow: this._createShadowComponent(components),
             sphere: this._createSphereComponent(components),
@@ -404,6 +411,7 @@ export class Sources {
         this.bullet = {
             tank: this._createBulletSource(bullets, "tank", this._color.blue),
             crasher: this._createBulletSource(bullets, "crasher", this._color.pink),
+            sentry: this._createBulletSource(bullets, "sentry", this._color.purple),
             boss: this._createBulletSource(bullets, "boss", this._color.orange),
             tankLauncher: this._createLauncherTankMissileSource(bullets),
             tankBomber: this._createBomberTankBombSource(bullets),
@@ -444,6 +452,12 @@ export class Sources {
             destroyer: this._createDestroyerCrasherSource(crashers),
             twin: this._createTwinCrasherSource(crashers),
             drone: this._createDroneCrasherSource(crashers),
+        }
+
+        const sentries = new TransformNode("sentries", this._scene);
+        sentries.parent = sources;
+        this.sentries = {
+            base: this._createBaseSentrySource(sentries),
         }
 
         const bosses = new TransformNode("bosses", this._scene);
@@ -543,9 +557,8 @@ export class Sources {
     }
 
     private _createCircleMarkerComponent(parent: TransformNode): Mesh {
-        const mesh = MeshBuilder.CreateDisc("marker.circle", { tessellation: 16 }, this._scene);
+        const mesh = MeshBuilder.CreateDisc("marker.circle", { radius: 0.5 * MARKER_SCALE, tessellation: 16 }, this._scene);
         mesh.rotation.x = Math.PI / 2;
-        mesh.scaling.scaleInPlace(MARKER_SCALE);
         mesh.bakeCurrentTransformIntoVertices();
         mesh.registerInstancedBuffer("color", 3);
         mesh.layerMask = Minimap.LayerMask;
@@ -554,10 +567,20 @@ export class Sources {
     }
 
     private _createSquareMarkerComponent(parent: TransformNode): Mesh {
-        const mesh = MeshBuilder.CreateDisc("marker.square", { tessellation: 4 }, this._scene);
+        const mesh = MeshBuilder.CreateDisc("marker.square", { radius: 0.707 * MARKER_SCALE, tessellation: 4 }, this._scene);
         mesh.rotation.x = Math.PI / 2;
         mesh.rotation.z = Math.PI / 4;
-        mesh.scaling.scaleInPlace(MARKER_SCALE);
+        mesh.bakeCurrentTransformIntoVertices();
+        mesh.registerInstancedBuffer("color", 3);
+        mesh.layerMask = Minimap.LayerMask;
+        mesh.parent = parent;
+        return mesh;
+    }
+
+    private _createTriangleMarkerComponent(parent: TransformNode): Mesh {
+        const mesh = MeshBuilder.CreateDisc("marker.triangle", { radius: 0.8 * MARKER_SCALE, tessellation: 3 }, this._scene);
+        mesh.rotation.x = Math.PI / 2;
+        mesh.rotation.z = Math.PI / 2;
         mesh.bakeCurrentTransformIntoVertices();
         mesh.registerInstancedBuffer("color", 3);
         mesh.layerMask = Minimap.LayerMask;
@@ -945,6 +968,8 @@ export class Sources {
 
         this._createSimpleBarrel(source, "barrel", 0.4, 1.1);
 
+        createInstance(this._component.marker.triangle, "marker", source, this._color.pink);
+
         return source;
     }
 
@@ -980,6 +1005,8 @@ export class Sources {
         const barrelR = this._createSimpleBarrel(source, "barrelR", barrelDiameter, barrelLength);
         barrelR.position.x = +barrelOffset;
 
+        createInstance(this._component.marker.triangle, "marker", source, this._color.pink);
+
         return source;
     }
 
@@ -1012,6 +1039,49 @@ export class Sources {
 
         const barrel = this._createBarrel(source, "barrel", barrelParameters);
         barrel.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI, 0);
+
+        createInstance(this._component.marker.triangle, "marker", source, this._color.pink);
+
+        return source;
+    }
+
+    private _createBaseSentrySource(parent: TransformNode): TransformNode {
+        const barrelDiameter = 0.6;
+        const barrelLength = 0.75;
+
+        const metadata: SentryMetadata = {
+            displayName: "Base Sentry",
+            size: 1.2,
+            health: 1000,
+            damage: { value: 50, time: 1 },
+            points: 200,
+            reload: 1,
+            barrels: ["barrel"],
+            bullet: {
+                speed: 5,
+                damage: {
+                    value: 50,
+                    time: 0.2,
+                },
+                health: 50,
+            },
+        };
+
+        const source = this._createSource(parent, "base", metadata);
+
+        const top = createInstance(this._component.box, "top", source, this._color.purple);
+        top.position.y = 0.3;
+        top.scaling.set(1, 0.4, 1);
+
+        const bottom = createInstance(this._component.box, "bottom", source, this._color.purple);
+        bottom.position.y = -0.3;
+        bottom.scaling.set(1, 0.4, 1);
+
+        const tank = createInstance(this._component.sphere, "tank", source, this._color.purple);
+        tank.scaling.setAll(0.6);
+        this._createSimpleBarrel(tank, "barrel", barrelDiameter, barrelLength);
+
+        createInstance(this._component.marker.square, "marker", source, this._color.purple);
 
         return source;
     }

@@ -189,7 +189,7 @@ export class Player {
     }
 
     public get active(): boolean {
-        return this._tank.active;
+        return this._tank.active && this._tank.inBounds && !this._tank.idle;
     }
 
     public get level(): number {
