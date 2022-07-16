@@ -110,6 +110,7 @@ const EntityThreatRank = new Map([
     [EntityType.Tank, 3],
     [EntityType.Crasher, 2],
     [EntityType.Boss, 1],
+    [EntityType.Sentry, 1],
 ]);
 
 export function getThreatValue(other: Entity, distance: number): number {
