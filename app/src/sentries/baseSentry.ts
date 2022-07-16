@@ -13,6 +13,7 @@ import { Player } from "../player";
 import { Bullet } from "../projectiles/bullets";
 import { World } from "../worlds/world";
 
+const BULLET_DURATION = 4;
 const CHASE_DISTANCE = 20;
 const CHASE_ANGLE = 0.02 * Math.PI;
 
@@ -128,7 +129,7 @@ export class BaseSentry implements Collider {
     protected _shootFrom(barrel: Barrel): void {
         const source = this._world.sources.bullet.sentry;
         const properties = this._metadata.bullet;
-        barrel.shootBullet(Bullet, this, source, properties, 3);
+        barrel.shootBullet(Bullet, this, source, properties, BULLET_DURATION);
     }
 
     public onCollide(other: Entity): number {

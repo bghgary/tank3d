@@ -13,14 +13,14 @@ import { PlayerTank, TankProperties } from "./playerTank";
 
 const BASE_MAX_CLONE_COUNT = 10;
 
-interface UnderseerTankInternal extends Entity {
+interface InfectorTankInternal extends Entity {
     _addDrone(position: DeepImmutable<Vector3>, rotation: DeepImmutable<Quaternion>): void;
 }
 
-export class UnderseerTank extends DirectorTank {
+export class InfectorTank extends DirectorTank {
     protected override readonly _maxDroneCount: number = 1;
-    protected override readonly _droneConstructor: DroneConstructor<SingleTargetDrone> = UnderseerDrone;
-    protected override readonly _droneSource = this._world.sources.drone.tankUnderseer;
+    protected override readonly _droneConstructor: DroneConstructor<SingleTargetDrone> = infectorDrone;
+    protected override readonly _droneSource = this._world.sources.drone.tankInfector;
 
     private readonly _removeEmptyDestroyedObserver: () => void;
     private _maxCloneCount = BASE_MAX_CLONE_COUNT;
@@ -47,7 +47,7 @@ export class UnderseerTank extends DirectorTank {
     public override readonly upgradeNames = getUpgradeNames("Drone", undefined, "Max Drone Count");
 
     public static override Create(sources: Sources, parent?: TransformNode): TransformNode {
-        return sources.create(sources.tank.underseer, parent);
+        return sources.create(sources.tank.infector, parent);
     }
 
     public override setUpgrades(upgrades: DeepImmutableObject<TankProperties>): void {
@@ -66,7 +66,7 @@ export class UnderseerTank extends DirectorTank {
     }
 }
 
-class UnderseerDrone extends SingleTargetDrone {
+class infectorDrone extends SingleTargetDrone {
     private readonly _removeEntityDestroyedObserver: () => void;
 
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
@@ -74,8 +74,8 @@ class UnderseerDrone extends SingleTargetDrone {
 
         const observer = world.onEnemyDestroyedObservable.add(([source, target]) => {
             if (source === this && target.type === EntityType.Shape && target.points === 10) {
-                const underseerTank = (owner as UnderseerTankInternal);
-                underseerTank._addDrone(target.position, target.rotation);
+                const infectorTank = (owner as InfectorTankInternal);
+                infectorTank._addDrone(target.position, target.rotation);
             }
         });
 

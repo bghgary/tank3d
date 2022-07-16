@@ -9,7 +9,7 @@ import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
 
-export class CruiserTank extends BarrelTank {
+export class WarshipTank extends BarrelTank {
     private readonly _drones: SingleTargetDrones;
     private readonly _droneProperties: WeaponProperties;
 
@@ -63,6 +63,6 @@ export class CruiserTank extends BarrelTank {
     }
 
     public static Create(sources: Sources, parent?: TransformNode): TransformNode {
-        return sources.create(sources.tank.cruiser, parent);
+        return sources.create(sources.tank.warship, parent);
     }
 }

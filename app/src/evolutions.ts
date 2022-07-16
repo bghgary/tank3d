@@ -7,7 +7,6 @@ import { BaseTank } from "./tanks/baseTank";
 import { BlasterTank } from "./tanks/blasterTank";
 import { BomberTank } from "./tanks/bomberTank";
 import { BuilderTank } from "./tanks/builderTank";
-import { CruiserTank } from "./tanks/cruiserTank";
 import { DestroyerTank } from "./tanks/destroyerTank";
 import { DetectorTank } from "./tanks/detectorTank";
 import { DirectorTank } from "./tanks/directorTank";
@@ -15,6 +14,7 @@ import { DoubleTwinTank } from "./tanks/doubleTwinTank";
 import { FlankGuardTank } from "./tanks/flankGuardTank";
 import { GatlingGunTank } from "./tanks/gatlingGunTank";
 import { HunterTank } from "./tanks/hunterTank";
+import { InfectorTank } from "./tanks/infectorTank";
 import { LancerTank } from "./tanks/lancerTank";
 import { LauncherTank } from "./tanks/launcherTank";
 import { MachineGunTank } from "./tanks/machineGunTank";
@@ -34,7 +34,7 @@ import { SwarmerTank } from "./tanks/swarmerTank";
 import { TrapperTank } from "./tanks/trapperTank";
 import { TwinSniperTank } from "./tanks/twinSniperTank";
 import { TwinTank } from "./tanks/twinTank";
-import { UnderseerTank } from "./tanks/underseerTank";
+import { WarshipTank } from "./tanks/warshipTank";
 import { World } from "./worlds/world";
 
 interface TankConstructor {
@@ -104,7 +104,7 @@ export const EvolutionRootNode: EvolutionNode = {
                     Tank: AutoTwoTank,
                 },
                 {
-                    Tank: CruiserTank,
+                    Tank: WarshipTank,
                 },
                 {
                     Tank: QuadTank,
@@ -153,10 +153,10 @@ export const EvolutionRootNode: EvolutionNode = {
                     Tank: DetectorTank,
                 },
                 {
-                    Tank: CruiserTank,
+                    Tank: WarshipTank,
                 },
                 {
-                    Tank: UnderseerTank,
+                    Tank: InfectorTank,
                 },
             ],
         },

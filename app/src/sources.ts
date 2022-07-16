@@ -284,7 +284,7 @@ export class Sources {
         readonly tank: TransformNode;
         readonly crasher: TransformNode;
         readonly tankSpawner: TransformNode;
-        readonly tankUnderseer: TransformNode;
+        readonly tankInfector: TransformNode;
     };
 
     public readonly trap: {
@@ -346,8 +346,8 @@ export class Sources {
         readonly overseer: TransformNode;
         readonly spawner: TransformNode;
         readonly detector: TransformNode;
-        readonly cruiser: TransformNode;
-        readonly underseer: TransformNode;
+        readonly warship: TransformNode;
+        readonly infector: TransformNode;
         readonly shield: TransformNode;
         readonly spinner: TransformNode;
         readonly propeller: TransformNode;
@@ -424,7 +424,7 @@ export class Sources {
             tank: this._createDroneSource(drones, "tank", this._color.blue),
             crasher: this._createDroneSource(drones, "crasher", this._color.pink),
             tankSpawner: this._createSpawnerTankDroneSource(drones),
-            tankUnderseer: this._createUnderseerTankDroneSource(drones),
+            tankInfector: this._createInfectorTankDroneSource(drones),
         };
 
         const traps = new TransformNode("traps", this._scene);
@@ -498,8 +498,8 @@ export class Sources {
             overseer: this._createOverseerTankSource(tanks),
             spawner: this._createSpawnerTankSource(tanks),
             detector: this._createDetectorTankSource(tanks),
-            cruiser: this._createCruiserTankSource(tanks),
-            underseer: this._createUnderseerTankSource(tanks),
+            warship: this._createWarshipTankSource(tanks),
+            infector: this._createInfectorTankSource(tanks),
             shield: this._createShieldTankSource(tanks),
             spinner: this._createSpinnerTankSource(tanks),
             propeller: this._createPropellerTankSource(tanks),
@@ -725,12 +725,12 @@ export class Sources {
         return source;
     }
 
-    private _createUnderseerTankDroneSource(parent: TransformNode): TransformNode {
+    private _createInfectorTankDroneSource(parent: TransformNode): TransformNode {
         const metadata: SizeMetadata = {
             size: 0.9,
         };
 
-        const source = this._createSource(parent, "tankUnderseer", metadata);
+        const source = this._createSource(parent, "tankInfector", metadata);
 
         const body = createInstance(this._component.box, "body", source, this._color.blue);
         body.scaling.setAll(0.7);
@@ -1839,7 +1839,7 @@ export class Sources {
         return source;
     }
 
-    private _createCruiserTankSource(parent: TransformNode): TransformNode {
+    private _createWarshipTankSource(parent: TransformNode): TransformNode {
         const barrelParameters: BarrelParameters = {
             segments: [
                 { diameter: 0.3, length: 0.65 },
@@ -1848,7 +1848,7 @@ export class Sources {
         };
 
         const metadata: PlayerTankMetadata = {
-            displayName: "Cruiser",
+            displayName: "Warship",
             size: 1,
             barrels: ["barrelL", "barrelR"],
             multiplier: {
@@ -1859,7 +1859,7 @@ export class Sources {
             },
         };
 
-        const source = this._createTankBody(parent, "cruiser", metadata);
+        const source = this._createTankBody(parent, "warship", metadata);
 
         const barrelL = this._createBarrel(source, "barrelL", barrelParameters);
         barrelL.rotationQuaternion = Quaternion.FromEulerAngles(0, -Math.PI / 2, 0);
@@ -1870,7 +1870,7 @@ export class Sources {
         return source;
     }
 
-    private _createUnderseerTankSource(parent: TransformNode): TransformNode {
+    private _createInfectorTankSource(parent: TransformNode): TransformNode {
         const barrelParameters: BarrelParameters = {
             segments: [
                 { diameter: 0.4, length: 0.15 },
@@ -1881,7 +1881,7 @@ export class Sources {
         };
 
         const metadata: PlayerTankMetadata = {
-            displayName: "Underseer",
+            displayName: "Infector",
             size: 1,
             barrels: ["barrel"],
             multiplier: {
@@ -1890,7 +1890,7 @@ export class Sources {
             },
         };
 
-        const source = this._createTankBody(parent, "underseer", metadata);
+        const source = this._createTankBody(parent, "infector", metadata);
 
         const barrel = this._createBarrel(source, "barrel", barrelParameters);
         barrel.position.z = 0.35;
