@@ -24,6 +24,8 @@ export class Crashers {
         this._world.collisions.register(this._crashers);
     }
 
+    public speedCrashersEnabled = false;
+
     public update(deltaTime: number, player: Player): void {
         for (const crasher of this._crashers) {
             crasher.update(deltaTime, player, (source) => {
@@ -66,14 +68,8 @@ export class Crashers {
     private _spawnCrashers(): void {
         const sources = this._world.sources;
 
-        if (Math.random() < 0.95) {
-            const create = [
-                () => this._createCrasher(sources.crasher.small),
-                () => this._createCrasher(sources.crasher.big),
-                () => this._createBulletCrasher(sources.crasher.shooter),
-            ];
-
-            const clumpSize = Math.round(Scalar.RandomRange(4, 7));
+        const createClump = (min: number, max: number, callback: (x: number, z: number, rotation: number) => void) => {
+            const clumpSize = Math.round(Scalar.RandomRange(min, max));
             const limit = (this._world.size - clumpSize) * 0.5;
             const x = Scalar.RandomRange(-limit, limit);
             const z = Scalar.RandomRange(-limit, limit);
@@ -82,10 +78,28 @@ export class Crashers {
                 const x1 = Math.random() * clumpSize;
                 const z1 = Math.random() * clumpSize;
                 const rotation1 = Math.random() * Math.PI * 0.5;
-                const n = Math.random();
-                const crasher = create[n < 0.6 ? 0 : n < 0.9 ? 1 : 2]!();
-                this._addCrasher(crasher, x + x1, z + z1, rotation + rotation1);
+                callback(x + x1, z + z1, rotation + rotation1);
             }
+        };
+
+        const n = Math.random();
+        if (this.speedCrashersEnabled && n < 0.05) {
+            createClump(1, 3, (x, z, rotation) => {
+                const crasher = this._createBulletCrasher(sources.crasher.speed);
+                this._addCrasher(crasher, x, z, rotation);
+            });
+        } else if (n < 0.95) {
+            const create = [
+                () => this._createCrasher(sources.crasher.small),
+                () => this._createCrasher(sources.crasher.big),
+                () => this._createBulletCrasher(sources.crasher.shooter),
+            ];
+
+            createClump(4, 7, (x, z, rotation) => {
+                const n1 = Math.random();
+                const crasher = create[n1 < 0.6 ? 0 : n1 < 0.9 ? 1 : 2]!();
+                this._addCrasher(crasher, x, z, rotation);
+            });
         } else {
             const create = [
                 () => this._createBulletCrasher(sources.crasher.destroyer),
@@ -93,8 +107,8 @@ export class Crashers {
                 () => this._createDroneCrasher(sources.crasher.drone),
             ];
 
-            const n = Math.random();
-            const crasher = create[n < 0.333 ? 0 : n < 0.666 ? 1 : 2]!();
+            const n1 = Math.random();
+            const crasher = create[n1 < 0.333 ? 0 : n1 < 0.666 ? 1 : 2]!();
             const limit = (this._world.size - crasher.size) * 0.5;
             const x = Scalar.RandomRange(-limit, limit);
             const z = Scalar.RandomRange(-limit, limit);

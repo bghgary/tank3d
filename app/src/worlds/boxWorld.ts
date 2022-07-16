@@ -29,20 +29,20 @@ export class BoxWorld extends World {
         });
 
         this._player.onLevelChangedObservable.add((level) => {
-            if (level < 20) {
-                this._sentries.enabled = false;
-            } else if (level < 40) {
+            if (level >= 20) {
                 this._sentries.enabled = true;
+                this._crashers.speedCrashersEnabled = true;
 
                 if (this._keeperBoss === undefined) {
                     this._keeperBoss = this._bosses.addKeeper();
                 }
-            } else if (level < 60) {
-                this._sentries.enabled = true;
             }
         });
 
         this._player.onDestroyedObservable.add(() => {
+            this._sentries.enabled = false;
+            this._crashers.speedCrashersEnabled = false;
+
             if (this._keeperBoss === null) {
                 delete this._keeperBoss;
             }

@@ -306,6 +306,7 @@ export class Sources {
         readonly destroyer: TransformNode;
         readonly twin: TransformNode;
         readonly drone: TransformNode;
+        readonly speed: TransformNode;
     };
 
     public readonly sentries: {
@@ -452,6 +453,7 @@ export class Sources {
             destroyer: this._createDestroyerCrasherSource(crashers),
             twin: this._createTwinCrasherSource(crashers),
             drone: this._createDroneCrasherSource(crashers),
+            speed: this._createSpeedCrasherSource(crashers),
         }
 
         const sentries = new TransformNode("sentries", this._scene);
@@ -940,6 +942,40 @@ export class Sources {
         const source = this._createCrasherSource(parent, "shooter", metadata);
 
         this._createSimpleBarrel(source, "barrel", 0.2, 0.55);
+
+        return source;
+    }
+
+    private _createSpeedCrasherSource(parent: TransformNode): TransformNode {
+        const barrelParameters: BarrelParameters = {
+            segments: [{ diameter: 0.4, length: 0.5 }],
+            baseDiameter: 0.2,
+            angleVariance: Tools.ToRadians(10),
+        };
+
+        const metadata: BulletCrasherMetadata = {
+            displayName: "Speed Crasher",
+            size: 0.8,
+            speed: CRASHER_SPEED * 1.5,
+            health: 150,
+            damage: { value: 25, time: 1 },
+            points: 75,
+            reload: CRASHER_PROJECTILE_RELOAD * 0.5,
+            barrels: ["barrel"],
+            bullet: {
+                speed: CRASHER_PROJECTILE_SPEED * 0.5,
+                damage: {
+                    value: CRASHER_PROJECTILE_DAMAGE_VALUE,
+                    time: CRASHER_PROJECTILE_DAMAGE_TIME,
+                },
+                health: CRASHER_PROJECTILE_HEALTH,
+            },
+        };
+
+        const source = this._createCrasherSource(parent, "speed", metadata);
+
+        const barrel = this._createBarrel(source, "barrel", barrelParameters);
+        barrel.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI, 0);
 
         return source;
     }

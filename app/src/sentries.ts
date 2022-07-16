@@ -11,7 +11,6 @@ export class Sentries {
     private readonly _maxCount: number;
     private readonly _root: TransformNode;
     private readonly _sentries = new Set<BaseSentry>();
-    private _enabled = false;
     private _spawnTime = 0;
 
     public constructor(world: World, maxCount: number) {
@@ -21,21 +20,7 @@ export class Sentries {
         this._world.collisions.register(this._sentries);
     }
 
-    public get enabled(): boolean {
-        return this._enabled;
-    }
-
-    public set enabled(value: boolean) {
-        this._enabled = value;
-
-        if (!this._enabled) {
-            for (const child of this._root.getChildren()) {
-                child.dispose();
-            }
-
-            this._sentries.clear();
-        }
-    }
+    public enabled = false;
 
     public update(deltaTime: number, player: Player) {
         for (const sentry of this._sentries) {
@@ -45,7 +30,7 @@ export class Sentries {
             });
         }
 
-        if (this._enabled && this._sentries.size < this._maxCount) {
+        if (this.enabled && this._sentries.size < this._maxCount) {
             this._spawnTime = Math.max(this._spawnTime - deltaTime, 0);
             if (this._spawnTime === 0) {
                 this._spawn();
