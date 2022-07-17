@@ -12,7 +12,7 @@ import { Container } from "@babylonjs/gui/2D/controls/container";
 import { Control } from "@babylonjs/gui/2D/controls/control";
 import { TextBlock } from "@babylonjs/gui/2D/controls/textBlock";
 import { Collisions } from "../collisions";
-import { Entity } from "../entity";
+import { Enemy, Entity } from "../entity";
 import { createGridMaterial } from "../materials/gridMaterial";
 import { Minimap } from "../minimap";
 import { Player } from "../player";
@@ -162,7 +162,7 @@ export abstract class World {
 
     public readonly onPausedStateChangedObservable = new Observable<boolean>();
 
-    public readonly onEnemyDestroyedObservable = new Observable<[Entity, Entity & { points: number }]>();
+    public readonly onEnemyDestroyedObservable = new Observable<[Entity, Enemy]>();
 
     protected abstract _update(deltaTime: number): void;
 
@@ -182,7 +182,7 @@ export abstract class World {
         minimap.doNotSyncBoundingInfo = true;
         minimap.alwaysSelectAsActiveMesh = true;
         minimap.material = this._createMinimapMaterial();
-        minimap.visibility = 0.5;
+        minimap.visibility = 0.7;
         minimap.layerMask = Minimap.LayerMask;
         minimap.parent = ground;
 

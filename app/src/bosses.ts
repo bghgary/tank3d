@@ -3,15 +3,11 @@ import { Quaternion } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { BaseBoss } from "./bosses/baseBoss";
 import { KeeperBoss } from "./bosses/keeperBoss";
-import { Entity } from "./entity";
+import { Enemy } from "./entity";
 import { Player } from "./player";
 import { World } from "./worlds/world";
 
 const DROP_HEIGHT = 20;
-
-export interface Boss extends Entity {
-    readonly points: number;
-}
 
 export class Bosses {
     private readonly _world: World;
@@ -24,7 +20,7 @@ export class Bosses {
         this._world.collisions.register(this._bosses);
     }
 
-    public addKeeper(): Boss {
+    public addKeeper(): Enemy {
         const node = this._world.sources.create(this._world.sources.boss.keeper, this._root);
         const boss = new KeeperBoss(this._world, node);
         const limit = (this._world.size - boss.size) * 0.5;

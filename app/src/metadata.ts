@@ -60,6 +60,14 @@ export interface SentryMetadata extends DisplayNameMetadata, SizeMetadata {
     readonly bullet: DeepImmutable<WeaponProperties>;
 }
 
+export interface LandmineMetadata extends DisplayNameMetadata, SizeMetadata {
+    readonly health: number;
+    readonly damage: Damage;
+    readonly points: number;
+    readonly barrels: Array<string>;
+    readonly bullet: DeepImmutable<WeaponProperties>;
+}
+
 export interface BarrelCrasherMetadata extends CrasherMetadata {
     readonly reload: number;
     readonly barrels: Array<string>;

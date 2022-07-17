@@ -1,17 +1,16 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Boss } from "../bosses";
 import { Collider } from "../collisions";
 import { applyCollisionForce, applyGravity, applyMovement, applyWallClamp } from "../common";
 import { Flash, FlashState } from "../components/flash";
 import { BarHealth } from "../components/health";
 import { Shadow } from "../components/shadow";
-import { Entity, EntityType } from "../entity";
+import { Enemy, Entity, EntityType } from "../entity";
 import { BossMetadata } from "../metadata";
 import { Player } from "../player";
 import { World } from "../worlds/world";
 
-export abstract class BaseBoss implements Boss, Collider {
+export abstract class BaseBoss implements Enemy, Collider {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
     protected readonly _metadata: BossMetadata;
@@ -35,10 +34,12 @@ export abstract class BaseBoss implements Boss, Collider {
     public get size() { return this._metadata.size; }
     public get mass() { return this.size * this.size; }
     public get damage() { return this._metadata.damage; }
-    public get points() { return this._metadata.points; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
+
+    // Enemy
+    public get points() { return this._metadata.points; }
 
     // Quadtree.Rect
     public get x() { return this._node.position.x - this.size * 0.5; }

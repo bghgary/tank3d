@@ -11,7 +11,7 @@ import { Scene } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { WeaponProperties } from "./components/weapon";
 import { createShadowMaterial } from "./materials/shadowMaterial";
-import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LanceMetadata, PlayerTankMetadata, SentryMetadata, ShapeMetadata, ShieldMetadata, SizeMetadata } from "./metadata";
+import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LanceMetadata, LandmineMetadata, PlayerTankMetadata, SentryMetadata, ShapeMetadata, ShieldMetadata, SizeMetadata } from "./metadata";
 import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
@@ -253,6 +253,7 @@ export class Sources {
             readonly circle: Mesh;
         }
         readonly box: Mesh;
+        readonly cylinder: Mesh;
         readonly dodecahedron: Mesh;
         readonly goldberg11: Mesh;
         readonly health: Mesh;
@@ -274,6 +275,7 @@ export class Sources {
         readonly tank: TransformNode;
         readonly crasher: TransformNode;
         readonly sentry: TransformNode;
+        readonly landmine: TransformNode;
         readonly boss: TransformNode;
         readonly tankLauncher: TransformNode;
         readonly tankBomber: TransformNode;
@@ -309,9 +311,8 @@ export class Sources {
         readonly speed: TransformNode;
     };
 
-    public readonly sentries: {
-        readonly base: TransformNode;
-    };
+    public readonly sentry: TransformNode;
+    public readonly landmine: TransformNode;
 
     public readonly boss: {
         readonly keeper: TransformNode;
@@ -391,6 +392,7 @@ export class Sources {
                 circle: this._createCirclePathComponent(components),
             },
             box: this._createBoxComponent(components),
+            cylinder: this._createCylinderComponent(components),
             dodecahedron: this._createDodecahedronComponent(components),
             goldberg11: this._createGoldberg11Component(components),
             health: this._createHealthComponent(components),
@@ -414,6 +416,7 @@ export class Sources {
             tank: this._createBulletSource(bullets, "tank", this._color.blue),
             crasher: this._createBulletSource(bullets, "crasher", this._color.pink),
             sentry: this._createBulletSource(bullets, "sentry", this._color.purple),
+            landmine: this._createBulletSource(bullets, "landmine", this._color.purple),
             boss: this._createBulletSource(bullets, "boss", this._color.orange),
             tankLauncher: this._createLauncherTankMissileSource(bullets),
             tankBomber: this._createBomberTankBombSource(bullets),
@@ -457,11 +460,8 @@ export class Sources {
             speed: this._createSpeedCrasherSource(crashers),
         }
 
-        const sentries = new TransformNode("sentries", this._scene);
-        sentries.parent = sources;
-        this.sentries = {
-            base: this._createBaseSentrySource(sentries),
-        }
+        this.sentry = this._createSentrySource(sources);
+        this.landmine = this._createLandmineSource(sources);
 
         const bosses = new TransformNode("bosses", this._scene);
         bosses.parent = sources;
@@ -603,6 +603,13 @@ export class Sources {
 
     private _createBoxComponent(parent: TransformNode): Mesh {
         const mesh = MeshBuilder.CreateBox("box", {}, this._scene);
+        mesh.registerInstancedBuffer("color", 3);
+        mesh.parent = parent;
+        return mesh;
+    }
+
+    private _createCylinderComponent(parent: TransformNode): Mesh {
+        const mesh = MeshBuilder.CreateCylinder("cylinder", {}, this._scene);
         mesh.registerInstancedBuffer("color", 3);
         mesh.parent = parent;
         return mesh;
@@ -791,7 +798,7 @@ export class Sources {
 
         const length = metadata.barrels.length;
         for (let index = 0; index < length; ++index) {
-            const barrel = createFakeBarrel(`barrel${index}`, barrelMetadata, this._scene);
+            const barrel = createFakeBarrel(metadata.barrels[index]!, barrelMetadata, this._scene);
             barrel.rotationQuaternion = Quaternion.FromEulerAngles(0, 2 * Math.PI * (index / length), 0);
             barrel.parent = source;
         }
@@ -1083,12 +1090,12 @@ export class Sources {
         return source;
     }
 
-    private _createBaseSentrySource(parent: TransformNode): TransformNode {
+    private _createSentrySource(parent: TransformNode): TransformNode {
         const barrelDiameter = 0.6;
         const barrelLength = 0.75;
 
         const metadata: SentryMetadata = {
-            displayName: "Base Sentry",
+            displayName: "Sentry",
             size: 1.2,
             health: 1000,
             damage: { value: 50, time: 1 },
@@ -1105,7 +1112,7 @@ export class Sources {
             },
         };
 
-        const source = this._createSource(parent, "base", metadata);
+        const source = this._createSource(parent, "sentry", metadata);
 
         const top = createInstance(this._component.box, "top", source, this._color.purple);
         top.position.y = 0.3;
@@ -1120,6 +1127,49 @@ export class Sources {
         this._createSimpleBarrel(tank, "barrel", barrelDiameter, barrelLength);
 
         createInstance(this._component.marker.square, "marker", source, this._color.purple);
+
+        return source;
+    }
+
+    private _createLandmineSource(parent: TransformNode): TransformNode {
+        const metadata: LandmineMetadata = {
+            displayName: "Landmine",
+            size: 1,
+            height: 0.6,
+            health: 300,
+            damage: { value: 25, time: 1 },
+            points: 100,
+            barrels: ["barrel0", "barrel1", "barrel2", "barrel3", "barrel4", "barrel5"],
+            bullet: {
+                speed: 5,
+                damage: {
+                    value: 20,
+                    time: 0.2,
+                },
+                health: 50,
+            },
+        };
+
+        const source = this._createSource(parent, "landmine", metadata);
+
+        const body = createInstance(this._component.cylinder, "body", source, this._color.purple);
+        body.scaling.set(1, 0.2, 1);
+
+        const barrelMetadata: BarrelMetadata = {
+            diameter: 0.3,
+            length: 0.2,
+            angleVariance: Tools.ToRadians(60),
+            speedVariance: 0.7,
+        };
+
+        const length = metadata.barrels.length;
+        for (let index = 0; index < length; ++index) {
+            const barrel = createFakeBarrel(metadata.barrels[index]!, barrelMetadata, this._scene);
+            barrel.rotationQuaternion = Quaternion.FromEulerAngles(0, 2 * Math.PI * (index / length), 0);
+            barrel.parent = body;
+        }
+
+        createInstance(this._component.marker.circle, "marker", source, this._color.purple);
 
         return source;
     }
@@ -2178,6 +2228,7 @@ export class Sources {
             multiplier: {
                 weaponSpeed: 2,
                 reloadTime: 3,
+                weaponHealth: 2,
             },
         };
 

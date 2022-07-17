@@ -108,6 +108,8 @@ class ShapeImpl implements Shape, Collider {
         this._node.dispose();
     }
 
+    public get points() { return this._metadata.points; }
+
     // Entity
     public get displayName() { return this._metadata.displayName; }
     public readonly type = EntityType.Shape;
@@ -115,7 +117,6 @@ class ShapeImpl implements Shape, Collider {
     public get size() { return this._metadata.size; }
     public get mass() { return this.size * this.size; }
     public get damage() { return this._metadata.damage; }
-    public get points() { return this._metadata.points; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();

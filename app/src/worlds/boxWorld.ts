@@ -1,7 +1,9 @@
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Nullable } from "@babylonjs/core/types";
-import { Boss, Bosses } from "../bosses";
+import { Bosses } from "../bosses";
 import { Crashers } from "../crashers";
+import { Enemy } from "../entity";
+import { Landmines } from "../landmines";
 import { Sentries } from "../sentries";
 import { Shapes } from "../shapes";
 import { World } from "./world";
@@ -10,9 +12,10 @@ export class BoxWorld extends World {
     private readonly _shapes: Shapes;
     private readonly _crashers: Crashers;
     private readonly _sentries: Sentries;
+    private readonly _landmines: Landmines;
     private readonly _bosses: Bosses;
 
-    private _keeperBoss?: Nullable<Boss>;
+    private _keeperBoss?: Nullable<Enemy>;
 
     public constructor(engine: Engine) {
         super(engine, 100);
@@ -20,6 +23,7 @@ export class BoxWorld extends World {
         this._shapes = new Shapes(this, 200);
         this._crashers = new Crashers(this, 100);
         this._sentries = new Sentries(this, 20);
+        this._landmines = new Landmines(this, 20);
         this._bosses = new Bosses(this);
 
         this.onEnemyDestroyedObservable.add(([_, target]) => {
@@ -31,6 +35,7 @@ export class BoxWorld extends World {
         this._player.onLevelChangedObservable.add((level) => {
             if (level >= 20) {
                 this._sentries.enabled = true;
+                this._landmines.enabled = true;
                 this._crashers.speedCrashersEnabled = true;
 
                 if (this._keeperBoss === undefined) {
@@ -41,6 +46,7 @@ export class BoxWorld extends World {
 
         this._player.onDestroyedObservable.add(() => {
             this._sentries.enabled = false;
+            this._landmines.enabled = false;
             this._crashers.speedCrashersEnabled = false;
 
             if (this._keeperBoss === null) {
@@ -54,6 +60,7 @@ export class BoxWorld extends World {
         this._player.update(deltaTime);
         this._crashers.update(deltaTime, this._player);
         this._sentries.update(deltaTime, this._player);
+        this._landmines.update(deltaTime);
         this._bosses.update(deltaTime, this._player);
     }
 }
