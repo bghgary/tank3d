@@ -121,7 +121,7 @@ export abstract class Projectile implements Entity, Collider {
     // Entity
     public get displayName() { return this.owner.displayName; }
     public abstract readonly type: EntityType;
-    public get active() { return this._node.isEnabled(); }
+    public get active() { return this._health.active; }
     public get size() { return this._node.scaling.x; }
     public get mass() { return this.size * this.size; }
     public get damage() { return this._properties.damage; }

@@ -5,7 +5,7 @@ document.body.style.width = "100%";
 document.body.style.height = "100%";
 document.body.style.margin = "0";
 document.body.style.padding = "0";
-
+document.body.style.overflow = "hidden";
 const canvas = document.createElement("canvas");
 canvas.id = "renderCanvas";
 canvas.style.border = "0";

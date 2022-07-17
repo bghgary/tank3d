@@ -44,7 +44,7 @@ export class WeaponCollider implements Entity, Collider {
     // Entity
     public get displayName() { return this.owner.displayName; }
     public readonly type: EntityType;
-    public get active() { return this._node.isEnabled(); }
+    public get active() { return this.owner.active; }
     public get size() { return (this._node.metadata as SizeMetadata).size; }
     public get mass() { return this.owner.mass; }
     public get damage() { return this._damage; }

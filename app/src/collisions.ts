@@ -24,10 +24,11 @@ function intersects(a: Collider, b: Collider): boolean {
 
 export class TargetCollider implements Collider {
     private readonly _position: Vector3;
+    private readonly _radius: number;
 
-    constructor(position: Vector3, size: number, onCollide: (other: Entity) => void) {
+    constructor(position: Vector3, radius: number, onCollide: (other: Entity) => void) {
         this._position = position;
-        this.size = size;
+        this._radius = radius;
 
         this.onCollide = (other) => {
             onCollide(other);
@@ -38,9 +39,9 @@ export class TargetCollider implements Collider {
     // Collider
     public readonly active = true;
     public get position() { return this._position; }
-    public readonly size: number;
-    public get x() { return this._position.x - this.size * 0.5; }
-    public get y() { return this._position.z - this.size * 0.5; }
+    public get size() { return this._radius * 2; }
+    public get x() { return this._position.x - this._radius; }
+    public get y() { return this._position.z - this._radius; }
     public get width() { return this.size; }
     public get height() { return this.size; }
 

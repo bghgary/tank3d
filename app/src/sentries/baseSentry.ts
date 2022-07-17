@@ -49,7 +49,7 @@ export class BaseSentry implements Collider {
     // Entity
     public get displayName() { return this._metadata.displayName; }
     public readonly type = EntityType.Sentry;
-    public get active() { return this._node.position.y === 0 && this._node.isEnabled(); }
+    public get active() { return this._health.active && this._node.position.y === 0; }
     public get size() { return this._metadata.size; }
     public get mass() { return this.size * this.size; }
     public get damage() { return this._metadata.damage; }

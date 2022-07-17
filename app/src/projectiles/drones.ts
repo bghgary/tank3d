@@ -155,7 +155,7 @@ export class AutoTargetDrone extends Drone {
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, owner, node, barrelNode, properties, duration);
 
-        this.targetCollider = new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
+        this.targetCollider = new TargetCollider(this._node.position, TARGET_RADIUS, (other) => {
             if (isTarget(other, this.owner)) {
                 const distance = Vector3.Distance(this._node.position, other.position);
                 const threatValue = getThreatValue(other, distance);

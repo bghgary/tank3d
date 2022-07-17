@@ -356,6 +356,7 @@ export class Sources {
         readonly autoTwo: TransformNode;
         readonly quad: TransformNode;
         readonly revolutionist: TransformNode;
+        readonly reflector: TransformNode;
     };
 
     public constructor(world: World) {
@@ -509,6 +510,7 @@ export class Sources {
             autoTwo: this._createAutoTwoTankSource(tanks),
             quad: this._createQuadTankSource(tanks),
             revolutionist: this._createRevolutionistTankSource(tanks),
+            reflector: this._createReflectorTankSource(tanks),
         };
     }
 
@@ -2154,6 +2156,35 @@ export class Sources {
         offset.parent = center;
         const tank = this._createTankBody(offset, "tank", { size: tankSize });
         this._createSimpleBarrel(tank, "tankBarrel", barrelDiameter, barrelLength);
+
+        return source;
+    }
+
+    private _createReflectorTankSource(parent: TransformNode): TransformNode {
+        const barrelParameters: BarrelParameters = {
+            segments: [
+                { diameter: 0.6, length: 0.20 },
+                { diameter: 0.3, length: 0.01 },
+                { diameter: 0.3, length: 0.35 },
+            ],
+            baseCap: true,
+            baseDiameter: 0.75,
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Reflector",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponSpeed: 2,
+                reloadTime: 3,
+            },
+        };
+
+        const source = this._createTankBody(parent, "reflector", metadata);
+
+        const barrel = this._createBarrel(source, "barrel", barrelParameters);
+        barrel.position.z = 0.35;
 
         return source;
     }

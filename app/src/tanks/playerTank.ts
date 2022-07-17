@@ -132,7 +132,7 @@ export abstract class PlayerTank implements Entity, Collider {
     // Entity
     public get displayName() { return this._metadata.displayName; }
     public readonly type = EntityType.Tank;
-    public get active() { return this._node.isEnabled(); }
+    public get active() { return this._health.active; }
     public get size() { return this._metadata.size; }
     public get mass() { return 2 * this.size * this.size; }
     public get damage() { return this._idle ? DamageZero : this._damage; }

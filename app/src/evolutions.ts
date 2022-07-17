@@ -24,6 +24,7 @@ import { PoisonTank } from "./tanks/poisonTank";
 import { PounderTank } from "./tanks/pounderTank";
 import { PropellerTank } from "./tanks/propellerTank";
 import { QuadTank } from "./tanks/quadTank";
+import { ReflectorTank } from "./tanks/reflectorTank";
 import { RevolutionistTank } from "./tanks/revolutionistTank";
 import { SearcherTank } from "./tanks/searcherTank";
 import { ShieldTank } from "./tanks/shieldTank";
@@ -71,6 +72,9 @@ export const EvolutionRootNode: EvolutionNode = {
                 },
                 {
                     Tank: SearcherTank,
+                },
+                {
+                    Tank: ReflectorTank,
                 },
             ],
         },

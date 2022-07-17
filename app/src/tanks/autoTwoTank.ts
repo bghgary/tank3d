@@ -53,7 +53,7 @@ export class AutoTwoTank extends BulletTank {
 
         if (!this._targetCollisionToken) {
             this._targetCollisionToken = this._world.collisions.register([
-                new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
+                new TargetCollider(this._node.position, TARGET_RADIUS, (other) => {
                     if (this.inBounds && isTarget(other, this)) {
                         for (const tank of this._tanks) {
                             tank.onCollide(other);

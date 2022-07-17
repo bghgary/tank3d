@@ -22,6 +22,10 @@ export class Health {
         this._max = this._current = this._target = max;
     }
 
+    public get active(): boolean {
+        return this._target > 0;
+    }
+
     public update(deltaTime: number): boolean {
         this._applyPoisons(deltaTime);
         this._current = this._target;

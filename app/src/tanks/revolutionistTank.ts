@@ -63,7 +63,7 @@ export class RevolutionistTank extends BulletTank {
 
         if (!this._targetCollisionToken) {
             this._targetCollisionToken = this._world.collisions.register([
-                new TargetCollider(this._node.position, TARGET_RADIUS * 2, (other) => {
+                new TargetCollider(this._node.position, TARGET_RADIUS, (other) => {
                     if (this.inBounds && other !== this && other.owner !== this) {
                         this._tank.onCollide(other);
                     }
