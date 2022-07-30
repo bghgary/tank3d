@@ -37,24 +37,18 @@ class ReflectorBullet extends Bullet {
 
     public override update(deltaTime: number, onDestroy: () => void): void {
         if (this._targetCollisionToken) {
-            // console.log(`update has target collision token`);
             if (this._targetThreatValue > 0) {
-                // console.log(`target: ${this._target?.displayName} ${this._target!.position} ${this._target!.active}`);
                 this.velocity.copyFrom(this._targetDirection).scaleInPlace(this._targetVelocity.length());
                 this._targetVelocity.copyFrom(this.velocity);
 
                 this._targetThreatValue = 0;
-
-                // this._time = 3;
             }
 
-            // console.log(`dispose target collision token`);
             this._targetCollisionToken.dispose();
             this._targetCollisionToken = null;
         }
 
         super.update(deltaTime, () => {
-            // console.log(`destroyed`);
             if (this._targetCollisionToken) {
                 this._targetCollisionToken.dispose();
                 this._targetCollisionToken = null;
@@ -69,10 +63,7 @@ class ReflectorBullet extends Bullet {
             return 1;
         }
 
-        // console.log(`collide: ${other.displayName} ${other.position}`);
-
         if (!this._targetCollisionToken) {
-            // console.log(`register collision`);
             this._targetCollisionToken = this._collisions.register([
                 new TargetCollider(this._node.position, TARGET_RADIUS, (target) => {
                     if (target !== other && target !== this.owner && target.owner !== this.owner) {
@@ -80,9 +71,7 @@ class ReflectorBullet extends Bullet {
                         const targetDistance = deltaPosition.length();
                         const threatValue = getThreatValue(target, targetDistance);
                         if (threatValue > this._targetThreatValue) {
-                            //console.log(`target: ${target.displayName} ${target.position}`);
                             this._targetThreatValue = threatValue;
-                            // this._target = target;
                             this._targetDirection.copyFrom(deltaPosition).normalizeFromLength(targetDistance);
                         }
                     }

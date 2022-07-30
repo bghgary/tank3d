@@ -100,13 +100,6 @@ export class Collisions {
                         if (intersects(target, other)) {
                             const otherMap = targetMap.get(target) || new Map<Collider, { time: number }>();
                             if (!otherMap.has(other)) {
-                                const targetEntity = (target as unknown as Entity);
-                                if (targetEntity.type === other.type ||
-                                    other.owner === targetEntity ||
-                                    targetEntity.owner === other) {
-                                } else {
-                                    console.log("onCollide", target, other);
-                                }
                                 otherMap.set(other, { time: target.onCollide(other) });
                                 targetMap.set(target, otherMap);
                             }
