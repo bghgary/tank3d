@@ -2,7 +2,7 @@ import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Collider } from "./collisions";
-import { applyCollisionForce, applyGravity, applyMovement, applyWallBounce } from "./common";
+import { applyCollisionForce, applyGravity, applyMovement, applyWallBounce, computeMass } from "./common";
 import { Flash, FlashState } from "./components/flash";
 import { BarHealth } from "./components/health";
 import { Shadow } from "./components/shadow";
@@ -115,7 +115,7 @@ class ShapeImpl implements Shape, Collider {
     public readonly type = EntityType.Shape;
     public get active() { return this._health.active && this._node.position.y === 0; }
     public get size() { return this._metadata.size; }
-    public get mass() { return this.size * this.size; }
+    public get mass() { return computeMass(1, this._metadata.size, this._metadata.height); }
     public get damage() { return this._metadata.damage; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }

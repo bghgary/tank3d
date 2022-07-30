@@ -267,6 +267,7 @@ export class Sources {
         readonly star: {
             tri: Mesh;
             quad: Mesh;
+            dodeca: Mesh;
         };
         readonly tetrahedron: Mesh;
     };
@@ -292,6 +293,7 @@ export class Sources {
     public readonly trap: {
         readonly tankTri: TransformNode;
         readonly tankQuad: TransformNode;
+        readonly tankDodeca: TransformNode;
     }
 
     public readonly shape: {
@@ -358,6 +360,7 @@ export class Sources {
         readonly quad: TransformNode;
         readonly revolutionist: TransformNode;
         readonly reflector: TransformNode;
+        readonly grower: TransformNode;
     };
 
     public constructor(world: World) {
@@ -406,6 +409,7 @@ export class Sources {
             star: {
                 tri: this._createTriStarComponent(components),
                 quad: this._createQuadStarComponent(components),
+                dodeca: this._createDodecaStarComponent(components),
             },
             tetrahedron: this._createTetrahedronComponent(components),
         };
@@ -416,7 +420,7 @@ export class Sources {
             tank: this._createBulletSource(bullets, "tank", this._color.blue),
             crasher: this._createBulletSource(bullets, "crasher", this._color.pink),
             sentry: this._createBulletSource(bullets, "sentry", this._color.purple),
-            landmine: this._createBulletSource(bullets, "landmine", this._color.purple),
+            landmine: this._createBulletSource(bullets, "landmine", this._color.gray),
             boss: this._createBulletSource(bullets, "boss", this._color.orange),
             tankLauncher: this._createLauncherTankMissileSource(bullets),
             tankBomber: this._createBomberTankBombSource(bullets),
@@ -437,7 +441,8 @@ export class Sources {
         this.trap = {
             tankTri: this._createTrapSource(traps, "tankTri", this._color.blue, this._component.star.tri),
             tankQuad: this._createTrapSource(traps, "tankQuad", this._color.blue, this._component.star.quad),
-        }
+            tankDodeca: this._createTrapSource(traps, "tankDodeca", this._color.blue, this._component.star.dodeca),
+        };
 
         const shapes = new TransformNode("shapes", this._scene);
         shapes.parent = sources;
@@ -511,6 +516,7 @@ export class Sources {
             quad: this._createQuadTankSource(tanks),
             revolutionist: this._createRevolutionistTankSource(tanks),
             reflector: this._createReflectorTankSource(tanks),
+            grower: this._createGrowerTankSource(tanks),
         };
     }
 
@@ -682,6 +688,10 @@ export class Sources {
         return this._createStarComponent("quadstar", 4, parent);
     }
 
+    private _createDodecaStarComponent(parent: TransformNode): Mesh {
+        return this._createStarComponent("dodecastar", 12, parent);
+    }
+
     private _createSimpleBarrel(parent: TransformNode, name: string, diameter: number, length: number, multiplier?: Partial<DeepImmutable<WeaponProperties>>): TransformNode {
         const source = createInstance(this._component.barrel.simple, name, parent);
         source.scaling.set(diameter, diameter, length);
@@ -750,9 +760,9 @@ export class Sources {
     }
 
     private _createTrapSource(parent: TransformNode, name: string, color: Color3, component: Mesh): TransformNode {
-        const source = this._createSource(parent, "name");
+        const source = this._createSource(parent, name);
 
-        const body = createInstance(component, name, source, color);
+        const body = createInstance(component, "body", source, color);
         body.scaling.setAll(1.2);
 
         return source;
@@ -1152,7 +1162,7 @@ export class Sources {
 
         const source = this._createSource(parent, "landmine", metadata);
 
-        const body = createInstance(this._component.cylinder, "body", source, this._color.purple);
+        const body = createInstance(this._component.cylinder, "body", source, this._color.gray);
         body.scaling.set(1, 0.2, 1);
 
         const barrelMetadata: BarrelMetadata = {
@@ -1169,7 +1179,7 @@ export class Sources {
             barrel.parent = body;
         }
 
-        createInstance(this._component.marker.circle, "marker", source, this._color.purple);
+        createInstance(this._component.marker.circle, "marker", source, this._color.gray);
 
         return source;
     }
@@ -2236,6 +2246,34 @@ export class Sources {
 
         const barrel = this._createBarrel(source, "barrel", barrelParameters);
         barrel.position.z = 0.35;
+
+        return source;
+    }
+
+    private _createGrowerTankSource(parent: TransformNode): TransformNode {
+        const barrelParameters: BarrelParameters = {
+            segments: [
+                { diameter: 0.40, length: 0.54 },
+                { diameter: 0.52, length: 0.18 },
+                { diameter: 0.80, length: 0.15 },
+            ],
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Grower",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                reloadTime: 4,
+                weaponSpeed: 0.8,
+                weaponDamage: 2.5,
+                weaponHealth: 2.5,
+            },
+        };
+
+        const source = this._createTankBody(parent, "grower", metadata);
+
+        this._createBarrel(source, "barrel", barrelParameters);
 
         return source;
     }

@@ -88,7 +88,7 @@ export class DirectorTank extends BarrelTank {
         }
 
         const target = this._drones.target;
-        if ((this.inBounds && this._autoShoot) || this._autoRotate) {
+        if ((this._autoShoot && this.inBounds) || this._autoRotate) {
             if (this._targetCollisionToken) {
                 this._targetCollisionToken.dispose();
                 this._targetCollisionToken = null;

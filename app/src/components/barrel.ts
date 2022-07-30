@@ -7,7 +7,7 @@ import { BarrelMetadata } from "../metadata";
 import { Bullet, BulletConstructor } from "../projectiles/bullets";
 import { Drone, DroneConstructor, Drones } from "../projectiles/drones";
 import { Projectile } from "../projectiles/projectiles";
-import { Trap } from "../projectiles/traps";
+import { Trap, TrapConstructor } from "../projectiles/traps";
 import { World } from "../worlds/world";
 import { WeaponProperties } from "./weapon";
 
@@ -30,8 +30,8 @@ export class Barrel {
         return this._world.bullets.add(constructor, owner, source, properties, this._node, duration);
     }
 
-    public addTrap(owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): Trap {
-        return this._world.traps.add(Trap, owner, source, properties, this._node, duration);
+    public addTrap(constructor: TrapConstructor, owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number): Trap {
+        return this._world.traps.add(constructor, owner, source, properties, this._node, duration);
     }
 
     public addDrone<T extends Drone>(drones: Drones<T>, constructor: DroneConstructor<T>, owner: Entity, source: TransformNode, duration: number): Drone {
@@ -42,8 +42,8 @@ export class Barrel {
         return this._shoot(this.addBullet(constructor, owner, source, properties, duration), recoil);
     }
 
-    public shootTrap(owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number, recoil?: Vector3): Trap {
-        return this._shoot(this.addTrap(owner, source, properties, duration), recoil);
+    public shootTrap(constructor: TrapConstructor, owner: Entity, source: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number, recoil?: Vector3): Trap {
+        return this._shoot(this.addTrap(constructor, owner, source, properties, duration), recoil);
     }
 
     public shootDrone<T extends Drone>(drones: Drones<T>, constructor: DroneConstructor<T>, owner: Entity, source: TransformNode, duration: number, recoil?: Vector3): Drone {

@@ -5,6 +5,7 @@ import { Tools } from "@babylonjs/core/Misc/tools";
 import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { Collider } from "../collisions";
+import { computeMass } from "../common";
 import { Flash } from "../components/flash";
 import { Health } from "../components/health";
 import { Shadow } from "../components/shadow";
@@ -123,7 +124,7 @@ export abstract class Projectile implements Entity, Collider {
     public abstract readonly type: EntityType;
     public get active() { return this._health.active; }
     public get size() { return this._node.scaling.x; }
-    public get mass() { return this.size * this.size; }
+    public get mass() { return computeMass(1, this.size); }
     public get damage() { return this._properties.damage; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }

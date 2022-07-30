@@ -3,7 +3,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { Collider } from "../collisions";
-import { applyCollisionForce, applyMovement, applyWallClamp } from "../common";
+import { applyCollisionForce, applyMovement, applyWallClamp, computeMass } from "../common";
 import { Damage, DamageZero } from "../components/damage";
 import { Flash, FlashState } from "../components/flash";
 import { BarHealth } from "../components/health";
@@ -134,7 +134,7 @@ export abstract class PlayerTank implements Entity, Collider {
     public readonly type = EntityType.Tank;
     public get active() { return this._health.active; }
     public get size() { return this._metadata.size; }
-    public get mass() { return 2 * this.size * this.size; }
+    public get mass() { return computeMass(2, this._metadata.size, this._metadata.height); }
     public get damage() { return this._idle ? DamageZero : this._damage; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
@@ -201,7 +201,7 @@ export abstract class PlayerTank implements Entity, Collider {
     }
 
     public update(deltaTime: number, onDestroy: (source: Entity) => void): void {
-        if (this._autoShoot && this.active) {
+        if (this._autoShoot && this.inBounds) {
             this.shoot();
         }
 

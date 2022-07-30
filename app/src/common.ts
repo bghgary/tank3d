@@ -116,3 +116,8 @@ const EntityThreatRank = new Map([
 export function getThreatValue(other: Entity, distance: number): number {
     return (EntityThreatRank.get(other.type) || 0) * 100 + Math.max(100 - distance, 0);
 }
+
+export function computeMass(density: number, size: number, height = size): number {
+    const volume = height * size * size;
+    return density * volume;
+}

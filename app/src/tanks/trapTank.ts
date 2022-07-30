@@ -2,13 +2,15 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties } from "../components/weapon";
+import { Trap, TrapConstructor } from "../projectiles/traps";
 import { getUpgradeNames } from "../ui/upgrades";
 import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
 
 export abstract class TrapTank extends BarrelTank {
-    protected abstract readonly _trapSource: TransformNode;
+    protected readonly _trapConstructor: TrapConstructor = Trap;
+    protected readonly _trapSource = this._world.sources.trap.tankTri;
     protected readonly _trapProperties: WeaponProperties;
 
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
@@ -44,7 +46,7 @@ export abstract class TrapTank extends BarrelTank {
     }
 
     protected _shootFrom(barrel: Barrel): void {
-        barrel.shootTrap(this, this._trapSource, this._trapProperties, 24, this._recoil);
+        barrel.shootTrap(this._trapConstructor, this, this._trapSource, this._trapProperties, 24, this._recoil);
     }
 
     protected _updateTrapProperties(): void {
