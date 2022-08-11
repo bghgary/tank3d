@@ -27,6 +27,10 @@ export abstract class BaseBoss implements Enemy, Collider {
         this._health = new BarHealth(this._world.sources, node, this._metadata.health);
     }
 
+    public dispose() {
+        // do nothing
+    }
+
     // Entity
     public get displayName() { return this._metadata.displayName; }
     public readonly type = EntityType.Boss;

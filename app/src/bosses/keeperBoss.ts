@@ -10,11 +10,11 @@ const IDLE_ROTATION_SPEED = 0.4;
 const CHASE_DISTANCE = 20;
 
 export class KeeperBoss extends BaseBoss {
-    protected readonly _tanks: Array<BossTank>;
+    private readonly _tanks: Array<BossTank>;
 
     public constructor(world: World, node: TransformNode) {
         super(world, node);
-        this._tanks = this._metadata.tanks.map((name) => new BossTank(this._world, this, findNode(this._node, name)));
+        this._tanks = this._metadata.tanks!.map((name) => new BossTank(this._world, this, findNode(this._node, name)));
     }
 
     protected _update(deltaTime: number, player: Player): void {

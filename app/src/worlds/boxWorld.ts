@@ -16,6 +16,7 @@ export class BoxWorld extends World {
     private readonly _bosses: Bosses;
 
     private _keeperBoss?: Nullable<Enemy>;
+    private _fortressBoss?: Nullable<Enemy>;
 
     public constructor(engine: Engine) {
         super(engine, 100);
@@ -42,6 +43,12 @@ export class BoxWorld extends World {
                     this._keeperBoss = this._bosses.addKeeper();
                 }
             }
+
+            if (level >= 40) {
+                if (this._fortressBoss === undefined) {
+                    this._fortressBoss = this._bosses.addFortress();
+                }
+            }
         });
 
         this._player.onDestroyedObservable.add(() => {
@@ -51,6 +58,10 @@ export class BoxWorld extends World {
 
             if (this._keeperBoss === null) {
                 delete this._keeperBoss;
+            }
+
+            if (this._fortressBoss === null) {
+                delete this._fortressBoss;
             }
         });
     }

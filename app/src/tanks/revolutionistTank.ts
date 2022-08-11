@@ -5,7 +5,6 @@ import { TargetCollider } from "../collisions";
 import { findNode } from "../common";
 import { AutoTarget } from "../components/autoTarget";
 import { Entity } from "../entity";
-import { PlayerTankMetadata } from "../metadata";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { BulletTank } from "./bulletTank";
@@ -24,10 +23,8 @@ export class RevolutionistTank extends BulletTank {
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
+        this._tank = new AutoTarget(findNode(this._node, this._metadata.tanks![0]!));
         this._center = findNode(this._node, "center");
-
-        const metadata = this._node.metadata as PlayerTankMetadata;
-        this._tank = new AutoTarget(findNode(this._node, metadata.tanks![0]!));
     }
 
     public override dispose(): void {

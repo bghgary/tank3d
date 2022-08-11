@@ -92,7 +92,10 @@ export interface BossMetadata extends DisplayNameMetadata, SizeMetadata {
     readonly health: number;
     readonly damage: Damage;
     readonly points: number;
-    readonly tanks: Array<string>;
+    readonly tanks?: Array<string>;
+    readonly barrels?: Array<string>;
+    readonly trap?: DeepImmutable<WeaponProperties>;
+    readonly drone?: DeepImmutable<WeaponProperties>;
 }
 
 export interface PlayerTankMetadata extends DisplayNameMetadata, SizeMetadata {
