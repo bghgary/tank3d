@@ -2,9 +2,8 @@ import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
-import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { Collider } from "../collisions";
+import { Collider } from "../colliders/collider";
 import { computeMass } from "../common";
 import { Flash } from "../components/flash";
 import { Health } from "../components/health";
@@ -32,18 +31,15 @@ export interface ProjectileConstructor<T extends Projectile> {
 export class Projectiles<T extends Projectile> {
     protected readonly _world: World;
     protected readonly _root: TransformNode;
-    protected readonly _collisionToken: IDisposable;
     protected readonly _projectiles = new Set<T>();
 
     public constructor(world: World, rootName: string) {
         this._world = world;
         this._root = new TransformNode(rootName, this._world.scene);
-        this._collisionToken = this._world.collisions.register(this._projectiles);
     }
 
     public dispose(): void {
         this._root.dispose();
-        this._collisionToken.dispose();
     }
 
     public get count(): number {
@@ -66,7 +62,7 @@ export class Projectiles<T extends Projectile> {
     }
 }
 
-export abstract class Projectile implements Entity, Collider {
+export abstract class Projectile implements Entity {
     protected readonly _node: TransformNode;
     protected readonly _properties: WeaponPropertiesWithMultiplier;
     protected readonly _shadow: Shadow;
@@ -86,6 +82,9 @@ export abstract class Projectile implements Entity, Collider {
 
         this._shadow = new Shadow(world.sources, this._node);
         this._flash = new Flash(this._node);
+
+        const collider = new Collider(this._node, 0.5, this, this._onCollide.bind(this));
+        world.collisions.register(collider);
 
         this._time = duration;
     }
@@ -131,12 +130,6 @@ export abstract class Projectile implements Entity, Collider {
     public readonly velocity = new Vector3();
     public readonly owner: Entity;
 
-    // Quadtree.Rect
-    public get x() { return this._node.position.x - this.size * 0.5; }
-    public get y() { return this._node.position.z - this.size * 0.5; }
-    public get width() { return this.size; }
-    public get height() { return this.size; }
-
     // Collider
-    public abstract onCollide(other: Entity): number;
+    protected abstract _onCollide(other: Entity): number;
 }

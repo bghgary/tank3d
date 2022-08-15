@@ -1,33 +1,17 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { IDisposable } from "@babylonjs/core/scene";
-import { findNode } from "../common";
 import { Entity, EntityType } from "../entity";
 import { decayScalar } from "../math";
-import { LanceMetadata } from "../metadata";
 import { World } from "../worlds/world";
 import { Health } from "./health";
-import { WeaponCollider, WeaponProperties } from "./weapon";
+import { Weapon, WeaponProperties } from "./weapon";
 
-export class Lance {
-    private readonly _node: TransformNode;
-    private readonly _colliders: Array<WeaponCollider>;
-    private readonly _collisionToken: IDisposable;
-
+export class Lance extends Weapon {
     private _health: Health;
     private _targetScale = 1;
 
     public constructor(world: World, owner: Entity, node: TransformNode, properties: WeaponProperties) {
-        this._node = node;
+        super(world, EntityType.Lance, owner, node, properties.damage)
         this._health = new Health(properties.health);
-
-        const metadata = this._node.metadata as LanceMetadata;
-        this._colliders = metadata.colliders.map((name) => new WeaponCollider(
-            EntityType.Lance, owner, findNode(node, name), properties.damage, this._takeDamage.bind(this)));
-        this._collisionToken = world.collisions.register(this._colliders);
-    }
-
-    public dispose(): void {
-        this._collisionToken.dispose();
     }
 
     public setScale(value: number): void {
@@ -43,7 +27,7 @@ export class Lance {
         }
     }
 
-    private _takeDamage(other: Entity): void {
+    protected override _takeDamage(other: Entity): void {
         this._health.takeDamage(other);
         this._node.scaling.z = Math.max(this._node.scaling.z * 0.95, 0.5);
     }

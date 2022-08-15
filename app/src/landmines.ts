@@ -1,7 +1,7 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Collider } from "./collisions";
+import { Collider } from "./colliders/collider";
 import { applyGravity, computeMass, findNode } from "./common";
 import { Flash, FlashState } from "./components/flash";
 import { BarHealth } from "./components/health";
@@ -24,7 +24,6 @@ export class Landmines {
         this._world = world;
         this._maxCount = maxCount;
         this._root = new TransformNode("landmines", this._world.scene);
-        this._world.collisions.register(this._landmines);
     }
 
     public enabled = false;
@@ -59,13 +58,14 @@ export class Landmines {
     }
 }
 
-class Landmine implements Enemy, Collider {
+class Landmine implements Enemy {
     private readonly _world: World;
     private readonly _node: TransformNode;
     private readonly _metadata: LandmineMetadata;
     private readonly _shadow: Shadow;
     private readonly _flash: Flash;
     private readonly _health: BarHealth;
+
     private readonly _barrelNodes: Array<TransformNode>;
 
     public constructor(world: World, node: TransformNode) {
@@ -75,6 +75,9 @@ class Landmine implements Enemy, Collider {
         this._shadow = new Shadow(this._world.sources, this._node);
         this._flash = new Flash(this._node);
         this._health = new BarHealth(this._world.sources, this._node, this._metadata.health);
+
+        const collider = Collider.FromMetadata(this._node, this._metadata, this, this._onCollide.bind(this));
+        this._world.collisions.register(collider);
 
         this._barrelNodes = this._metadata.barrels.map((barrel) => findNode(this._node, barrel));
     }
@@ -93,12 +96,6 @@ class Landmine implements Enemy, Collider {
     // Enemy
     public get points() { return this._metadata.points; }
 
-    // Quadtree.Rect
-    public get x() { return this._node.position.x - this.size * 0.5; }
-    public get y() { return this._node.position.z - this.size * 0.5; }
-    public get width() { return this.size; }
-    public get height() { return this.size; }
-
     public update(deltaTime: number, onDestroy: (source: Entity) => void): void {
         if (applyGravity(deltaTime, this._node.position, this.velocity)) {
             this._shadow.update();
@@ -112,7 +109,7 @@ class Landmine implements Enemy, Collider {
         }
     }
 
-    public onCollide(other: Entity): number {
+    private _onCollide(other: Entity): number {
         if (other.type === EntityType.Landmine || (other.owner && other.owner.type === EntityType.Landmine)) {
             if (other.type !== EntityType.Bullet) {
                 return 0;

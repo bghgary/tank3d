@@ -91,11 +91,11 @@ class infectorDrone extends SingleTargetDrone {
         });
     }
 
-    public override onCollide(other: Entity): number {
+    protected override _onCollide(other: Entity): number {
         if (other.type === EntityType.Shape && (other as Shape).points === 10) {
             return 1;
         }
 
-        return super.onCollide(other);
+        return super._onCollide(other);
     }
 }

@@ -1,8 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { Collider } from "../collisions";
+import { Collider } from "../colliders/collider";
 import { applyCollisionForce, applyMovement, applyWallClamp, computeMass } from "../common";
 import { Damage, DamageZero } from "../components/damage";
 import { Flash, FlashState } from "../components/flash";
@@ -73,7 +72,7 @@ function multiply(properties: DeepImmutable<TankProperties>, value: Partial<Deep
     };
 }
 
-export abstract class PlayerTank implements Entity, Collider {
+export abstract class PlayerTank implements Entity {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
     protected readonly _metadata: PlayerTankMetadata;
@@ -88,7 +87,7 @@ export abstract class PlayerTank implements Entity, Collider {
     protected _properties: TankProperties;
     protected _damage: Damage = { value: 0, time: 1 };
 
-    private readonly _collisionToken: IDisposable;
+    private readonly _collider: Collider;
 
     protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         this._world = world;
@@ -103,6 +102,7 @@ export abstract class PlayerTank implements Entity, Collider {
         if (previousTank) {
             this._node.position.copyFrom(previousTank._node.position);
             this._node.rotationQuaternion!.copyFrom(previousTank._node.rotationQuaternion!);
+            this._node.computeWorldMatrix();
 
             this._shadow = previousTank._shadow;
             this._shadow.setParent(this._node);
@@ -121,12 +121,12 @@ export abstract class PlayerTank implements Entity, Collider {
             this._idle = true;
         }
 
-        this._collisionToken = this._world.collisions.register([this]);
+        this._collider = Collider.FromMetadata(this._node, this._metadata, this, this._onCollide.bind(this));
+        this._world.collisions.register(this._collider);
     }
 
     public dispose(): void {
         this._node.dispose();
-        this._collisionToken.dispose();
     }
 
     // Entity
@@ -139,12 +139,6 @@ export abstract class PlayerTank implements Entity, Collider {
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
-
-    // Quadtree.Rect
-    public get x() { return this._node.position.x - this.size * 0.5; }
-    public get y() { return this._node.position.z - this.size * 0.5; }
-    public get width() { return this.size; }
-    public get height() { return this.size; }
 
     public abstract readonly upgradeNames: Map<UpgradeType, string>;
     public readonly cameraRadiusMultiplier: number = 1;
@@ -230,7 +224,7 @@ export abstract class PlayerTank implements Entity, Collider {
         this._autoShoot = false;
     }
 
-    public onCollide(other: Entity): number {
+    private _onCollide(other: Entity): number {
         if (other.owner === this && (other.type === EntityType.Bullet || other.type === EntityType.Lance || other.type === EntityType.Shield)) {
             return 0;
         }

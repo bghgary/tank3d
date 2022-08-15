@@ -1,9 +1,10 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { Collider } from "../collisions";
+import { Collider } from "../colliders/collider";
 import { applyCollisionForce } from "../common";
 import { Entity, EntityType } from "../entity";
 import { SizeMetadata } from "../metadata";
+import { World } from "../worlds/world";
 import { Damage, DamageWithMultiplier, DamageZero } from "./damage";
 
 export interface WeaponProperties {
@@ -28,17 +29,20 @@ export class WeaponPropertiesWithMultiplier implements DeepImmutable<WeaponPrope
     public get health() { return this._base.health * (this._multiplier.health || 1); }
 }
 
-export class WeaponCollider implements Entity, Collider {
-    private readonly _node: TransformNode;
-    private readonly _damage: DeepImmutable<Damage>;
-    private readonly _takeDamage: (other: Entity) => void;
+export abstract class Weapon implements Entity {
+    protected readonly _node: TransformNode;
+    protected readonly _metadata: SizeMetadata;
+    protected readonly _damage: DeepImmutable<Damage>;
 
-    public constructor(type: EntityType, owner: Entity, node: TransformNode, damage: DeepImmutable<Damage> = DamageZero, takeDamage: (other: Entity) => void = () => {}) {
+    public constructor(world: World, type: EntityType, owner: Entity, node: TransformNode, damage: DeepImmutable<Damage> = DamageZero) {
         this.type = type;
         this.owner = owner;
         this._node = node;
+        this._metadata = this._node.metadata as SizeMetadata;
         this._damage = damage;
-        this._takeDamage = takeDamage;
+
+        const collider = Collider.FromMetadata(this._node, this._metadata, this, this._onCollide.bind(this));
+        world.collisions.register(collider);
     }
 
     // Entity
@@ -53,13 +57,7 @@ export class WeaponCollider implements Entity, Collider {
     public get velocity() { return this.owner.velocity; }
     public readonly owner: Entity;
 
-    // Quadtree.Rect
-    public get x() { return this._node.absolutePosition.x - this.size * 0.5; }
-    public get y() { return this._node.absolutePosition.z - this.size * 0.5; }
-    public get width() { return this.size; }
-    public get height() { return this.size; }
-
-    public onCollide(other: Entity): number {
+    private _onCollide(other: Entity): number {
         if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
             return 1;
         }
@@ -67,5 +65,9 @@ export class WeaponCollider implements Entity, Collider {
         applyCollisionForce(this.owner, other);
         this._takeDamage(other);
         return other.damage.time;
+    }
+
+    protected _takeDamage(_: Entity): void {
+        // do nothing by default
     }
 }

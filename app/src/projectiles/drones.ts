@@ -1,9 +1,8 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
-import { Collider, TargetCollider } from "../collisions";
+import { TargetCollider } from "../colliders/targetCollider";
 import { applyCollisionForce, applyMovement, getThreatValue, isTarget } from "../common";
 import { FlashState } from "../components/flash";
 import { BarHealth, Health } from "../components/health";
@@ -38,10 +37,6 @@ export interface DroneTarget {
 }
 
 export class SingleTargetDrones extends Drones<SingleTargetDrone> {
-    public constructor(world: World, parent: TransformNode, properties: DeepImmutable<WeaponProperties>) {
-        super(world, parent, properties);
-    }
-
     public readonly target: DroneTarget = { radius: 0, position: new Vector3(), size: 1 };
 
     public override add(constructor: DroneConstructor<SingleTargetDrone>, owner: Entity, source: Mesh, barrelNode: TransformNode, duration: number): SingleTargetDrone {
@@ -51,28 +46,7 @@ export class SingleTargetDrones extends Drones<SingleTargetDrone> {
     }
 }
 
-export class AutoTargetDrones extends Drones<AutoTargetDrone> {
-    private readonly _targetCollisionToken: IDisposable;
-
-    public constructor(world: World, parent: TransformNode, properties: DeepImmutable<WeaponProperties>) {
-        super(world, parent, properties);
-
-        this._targetCollisionToken = this._world.collisions.register({
-            [Symbol.iterator]: this._getTargetColliders.bind(this)
-        });
-    }
-
-    public override dispose(): void {
-        this._targetCollisionToken.dispose();
-        super.dispose();
-    }
-
-    private *_getTargetColliders(): Iterator<Collider> {
-        for (const projectile of this._projectiles) {
-            yield projectile.targetCollider;
-        }
-    }
-}
+export class AutoTargetDrones extends Drones<AutoTargetDrone> {}
 
 export abstract class Drone extends Projectile {
     protected readonly _health: Health;
@@ -113,7 +87,7 @@ export abstract class Drone extends Projectile {
         decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
     }
 
-    public onCollide(other: Entity): number {
+    protected _onCollide(other: Entity): number {
         if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
             if (other.type == EntityType.Bullet) {
                 return 1;
@@ -155,7 +129,7 @@ export class AutoTargetDrone extends Drone {
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, owner, node, barrelNode, properties, duration);
 
-        this.targetCollider = new TargetCollider(this._node.position, TARGET_RADIUS, (other) => {
+        const targetCollider = new TargetCollider(this._node, TARGET_RADIUS, (other) => {
             if (isTarget(other, this.owner)) {
                 const distance = Vector3.Distance(this._node.position, other.position);
                 const threatValue = getThreatValue(other, distance);
@@ -166,6 +140,8 @@ export class AutoTargetDrone extends Drone {
                 }
             }
         });
+
+        world.collisions.register(targetCollider);
     }
 
     public override shoot(barrelNode: TransformNode, callback?: (barrelForward: Vector3, speed: number) => void): void {
@@ -177,8 +153,6 @@ export class AutoTargetDrone extends Drone {
             }
         });
     }
-
-    public readonly targetCollider: TargetCollider;
 
     public override update(deltaTime: number, onDestroy: () => void): void {
         applyMovement(deltaTime, this._node.position, this.velocity);

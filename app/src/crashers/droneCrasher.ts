@@ -1,6 +1,5 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Entity } from "../entity";
 import { BarrelCrasherMetadata, DroneCrasherMetadata } from "../metadata";
 import { Player } from "../player";
 import { SingleTargetDrone, SingleTargetDrones } from "../projectiles/drones";
@@ -16,12 +15,8 @@ export class DroneCrasher extends BarrelCrasher {
         super(world, node);
 
         this._drones = new SingleTargetDrones(world, node.parent as TransformNode, (node.metadata as DroneCrasherMetadata).drone);
-    }
-
-    public override update(deltaTime: number, player: Player, onDestroy: (entity: Entity) => void): void {
-        super.update(deltaTime, player, (entity) => {
+        this._node.onDisposeObservable.add(() => {
             this._drones.dispose();
-            onDestroy(entity);
         });
     }
 

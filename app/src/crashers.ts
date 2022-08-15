@@ -21,7 +21,6 @@ export class Crashers {
         this._world = world;
         this._maxCount = maxCount;
         this._root = new TransformNode("crashers", this._world.scene);
-        this._world.collisions.register(this._crashers);
     }
 
     public speedCrashersEnabled = false;

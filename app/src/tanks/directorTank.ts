@@ -1,8 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
-import { TargetCollider } from "../collisions";
+import { TargetCollider } from "../colliders/targetCollider";
 import { getThreatValue, isTarget } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties } from "../components/weapon";
@@ -25,7 +24,7 @@ export class DirectorTank extends BarrelTank {
 
     private readonly _circleRadius: number;
     private _barrelIndex = 0;
-    private _targetCollisionToken: Nullable<IDisposable> = null;
+    private _targetCollider: Nullable<TargetCollider> = null;
     private _targetThreatValue = Number.MAX_VALUE;
     private _defendTime = 0;
 
@@ -45,17 +44,9 @@ export class DirectorTank extends BarrelTank {
 
         const parent = node.parent as TransformNode;
         this._drones = new SingleTargetDrones(world, parent, this._droneProperties);
-    }
-
-    public override dispose(): void {
-        if (this._targetCollisionToken) {
-            this._targetCollisionToken.dispose();
-            this._targetCollisionToken = null;
-        }
-
-        this._drones.dispose();
-
-        super.dispose();
+        this._node.onDisposeObservable.add(() => {
+            this._drones.dispose();
+        });
     }
 
     public override readonly upgradeNames = getUpgradeNames("Drone");
@@ -89,9 +80,9 @@ export class DirectorTank extends BarrelTank {
 
         const target = this._drones.target;
         if ((this._autoShoot && this.inBounds) || this._autoRotate) {
-            if (this._targetCollisionToken) {
-                this._targetCollisionToken.dispose();
-                this._targetCollisionToken = null;
+            if (this._targetCollider) {
+                this._world.collisions.unregister(this._targetCollider);
+                this._targetCollider = null;
             }
 
             target.radius = 0;
@@ -114,22 +105,22 @@ export class DirectorTank extends BarrelTank {
 
             this._targetThreatValue = 0;
 
-            if (!this._targetCollisionToken) {
-                this._targetCollisionToken = this._world.collisions.register([
-                    new TargetCollider(this._node.position, TARGET_RADIUS, (other) => {
-                        if (this.inBounds && isTarget(other, this)) {
-                            const threatValue = getThreatValue(other, Vector3.Distance(this.position, other.position));
-                            if (threatValue > this._targetThreatValue) {
-                                this._targetThreatValue = threatValue;
-                                target.radius = 0;
-                                target.position.copyFrom(other.position);
-                                target.size = other.size;
-                                this._droneProperties.speed = this._properties.weaponSpeed;
-                                this._defendTime = 1;
-                            }
+            if (!this._targetCollider) {
+                this._targetCollider = new TargetCollider(this._node, TARGET_RADIUS, (other) => {
+                    if (this.inBounds && isTarget(other, this)) {
+                        const threatValue = getThreatValue(other, Vector3.Distance(this.position, other.position));
+                        if (threatValue > this._targetThreatValue) {
+                            this._targetThreatValue = threatValue;
+                            target.radius = 0;
+                            target.position.copyFrom(other.position);
+                            target.size = other.size;
+                            this._droneProperties.speed = this._properties.weaponSpeed;
+                            this._defendTime = 1;
                         }
-                    })
-                ]);
+                    }
+                });
+
+                this._world.collisions.register(this._targetCollider);
             }
         }
 

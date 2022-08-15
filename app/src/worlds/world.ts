@@ -110,7 +110,7 @@ export abstract class World {
 
         const renderLoop = () => {
             const currentTime = now();
-            const deltaTime = Math.min(currentTime - this._previousTime);
+            const deltaTime = Math.min(currentTime - this._previousTime, 0.1);
             this._previousTime = currentTime;
 
             if (!this._suspended && !this._paused) {

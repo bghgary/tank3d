@@ -43,12 +43,12 @@ export class FortressBoss extends BaseBoss {
             .map((name) => new Barrel(this._world, findNode(this._node, name)));
 
         this._trapProperties = this._metadata.trap as DeepImmutable<WeaponProperties>;
+
         const droneProperties = this._metadata.drone as DeepImmutable<WeaponProperties>;
         this._drones = new SingleTargetDrones(world, node.parent as TransformNode, droneProperties);
-    }
-
-    public override dispose() {
-        this._drones.dispose();
+        this._node.onDisposeObservable.add(() => {
+            this._drones.dispose();
+        });
     }
 
     protected _update(deltaTime: number, player: Player): void {
@@ -86,9 +86,9 @@ export class FortressBoss extends BaseBoss {
         }
 
         this._droneReloadTime = Math.max(this._droneReloadTime - deltaTime, 0);
-        if (trackingPlayer && this._droneReloadTime === 0 && this._drones.count < MAX_DRONE_COUNT) {
+        if (this._droneReloadTime === 0 && this._drones.count < MAX_DRONE_COUNT) {
             this._shootDrones(this._droneBarrel ? this._leftDroneBarrels : this._rightDroneBarrels);
-            this._droneReloadTime = DRONE_RELOAD_TIME;
+            this._droneReloadTime = (trackingPlayer ? 1 : 2) * DRONE_RELOAD_TIME;
             this._droneBarrel = !this._droneBarrel;
         }
     }
@@ -97,7 +97,6 @@ export class FortressBoss extends BaseBoss {
         for (const barrel of this._trapBarrels) {
             const source = this._world.sources.trap.bossFortress;
             barrel.shootTrap(Trap, this, source, this._trapProperties, 24);
-            break;
         }
     }
 

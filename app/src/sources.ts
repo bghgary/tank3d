@@ -12,7 +12,8 @@ import { Scene } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { WeaponProperties } from "./components/weapon";
 import { createShadowMaterial } from "./materials/shadowMaterial";
-import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LanceMetadata, LandmineMetadata, PlayerTankMetadata, SentryMetadata, ShapeMetadata, ShieldMetadata, SizeMetadata } from "./metadata";
+import { TmpVector3 } from "./math";
+import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LandmineMetadata, PlayerTankMetadata, SentryMetadata, ShapeMetadata, SizeMetadata } from "./metadata";
 import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
@@ -162,24 +163,14 @@ function createCone(name: string, diameter: number, length: number, scene: Scene
 
 function createLance(name: string, diameter: number, length: number, scene: Scene): Mesh {
     const mesh = createCone(name, diameter, length, scene);
-    mesh.position.z = 0.4;
-    (mesh.metadata as LanceMetadata) = {
-        colliders: ["collider0", "collider1", "collider2"],
+    const numVertices = mesh.getTotalVertices();
+    const metadata: SizeMetadata = {
+        size: length / 2,
+        meshCollider: {
+            indices: [0, ((numVertices / 2) - 1) / 2, numVertices - 1],
+        },
     };
-
-    const createCollider = (name: string, z: number): void => {
-        const node = new TransformNode(name, scene);
-        node.position.z = z;
-        (node.metadata as SizeMetadata) = {
-            size: diameter * (1 - z / length),
-        };
-        node.parent = mesh;
-    };
-
-    createCollider("collider0", 0);
-    createCollider("collider1", length * 0.5);
-    createCollider("collider2", length);
-
+    mesh.metadata = metadata;
     return mesh;
 }
 
@@ -205,24 +196,49 @@ function createShield(name: string, diameter: number, slice: number, scene: Scen
 
     const mesh = Mesh.MergeMeshes([sphere, disc])!;
     mesh.name = name;
-    (mesh.metadata as ShieldMetadata) = {
-        colliders: ["collider0", "collider1", "collider2", "collider3", "collider4"],
+
+    const getColliderIndices = () => {
+        const positions = mesh.getVerticesData(VertexBuffer.PositionKind)!;
+        const numVertices = mesh.getTotalVertices();
+
+        const candidateIndices = new Array<number>();
+        const point = TmpVector3[0];
+        for (let index = 0; index < numVertices; ++index) {
+            Vector3.FromArray(positions, index * 3);
+            if (Math.abs(point.y) < 0.001) {
+                if (Math.abs(point.x) + Math.abs(point.z) < 0.001) {
+                    candidateIndices.push(index);
+                }
+            }
+        }
+
+        candidateIndices.sort((a, b) => {
+            return positions[a * 3]! - positions[b * 3]!;
+        });
+
+        const indices = new Array<number>();
+        let count = 0;
+        let lastX = Number.MAX_VALUE;
+        for (const index of candidateIndices) {
+            const x = positions[index * 3]!;
+            if (Math.abs(lastX - x) > 0.001) {
+                if (++count % 4 === 0) {
+                    indices.push(index);
+                }
+                lastX = x;
+            }
+        }
+
+        return indices;
     };
 
-    const createCollider = (name: string, x: number): void => {
-        const node = new TransformNode(name, scene);
-        node.position.x = x;
-        (node.metadata as SizeMetadata) = {
-            size: (sphereRadius - Math.sqrt(x * x + offset * offset)) * 2
-        };
-        node.parent = mesh;
+    const metadata: SizeMetadata = {
+        size: length / 2,
+        meshCollider: {
+            indices: getColliderIndices(),
+        },
     };
-
-    createCollider("collider0", discRadius * -1.0);
-    createCollider("collider1", discRadius * -0.6);
-    createCollider("collider2", discRadius * 0.0);
-    createCollider("collider3", discRadius * 0.6);
-    createCollider("collider4", discRadius * 1.0);
+    mesh.metadata = metadata;
 
     return mesh;
 }
@@ -1169,6 +1185,10 @@ export class Sources {
         const metadata: SentryMetadata = {
             displayName: "Sentry",
             size: 1.2,
+            meshCollider: {
+                name: "top",
+                indices: [2, 3, 4, 5],
+            },
             health: 1000,
             damage: { value: 50, time: 1 },
             points: 200,
@@ -1256,6 +1276,10 @@ export class Sources {
         const metadata: BossMetadata = {
             displayName: "Keeper",
             size: 4,
+            meshCollider: {
+                name: "body",
+                indices: [2, 3, 4, 5],
+            },
             height: 2,
             speed: 1,
             health: 2000,
@@ -1348,7 +1372,11 @@ export class Sources {
 
         const metadata: BossMetadata = {
             displayName: "Fortress",
-            size: 5,
+            size: 4,
+            meshCollider: {
+                name: "body",
+                indices: [0, 1, 2],
+            },
             height: 2,
             speed: 1,
             health: 4000,
@@ -1371,7 +1399,7 @@ export class Sources {
         body.scaling.set(bodyWidth, bodyHeight, bodyWidth);
 
         const droneOffset = 0.2;
-        const positions = body.getPositionData()!;
+        const positions = body.getVerticesData(VertexBuffer.PositionKind)!;
         const points = [
             new Vector3(positions[0], 0, positions[2]),
             new Vector3(positions[3], 0, positions[5]),
@@ -1379,7 +1407,8 @@ export class Sources {
         ];
 
         for (let i = 0; i < 3; ++i) {
-            const a = points[i]!, b = points[(i + 1) % 3]!;
+            const a = points[i]!;
+            const b = points[(i + 1) % 3]!;
             const trap = a.add(b).scaleInPlace(0.5);
             const vector = b.subtract(a);
             const droneL = trap.add(vector.scale(-droneOffset));

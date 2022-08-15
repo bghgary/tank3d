@@ -18,7 +18,6 @@ export class Bosses {
     public constructor(world: World) {
         this._world = world;
         this._root = new TransformNode("bosses", this._world.scene);
-        this._world.collisions.register(this._bosses);
     }
 
     public addKeeper(): Enemy {
@@ -48,7 +47,6 @@ export class Bosses {
     public update(deltaTime: number, player: Player): void {
         for (const boss of this._bosses) {
             boss.update(deltaTime, player, (source) => {
-                boss.dispose();
                 this._bosses.delete(boss);
                 this._world.onEnemyDestroyedObservable.notifyObservers([source, boss]);
             });

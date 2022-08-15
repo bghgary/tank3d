@@ -48,7 +48,7 @@ export class Bullet extends Projectile {
         super.update(deltaTime, onDestroy);
     }
 
-    public onCollide(other: Entity): number {
+    protected _onCollide(other: Entity): number {
         if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
             return 1;
         }

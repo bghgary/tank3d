@@ -10,6 +10,10 @@ export interface DisplayNameMetadata {
 export interface SizeMetadata {
     readonly size: number;
     readonly height?: number;
+    readonly meshCollider?: {
+        name?: string;
+        indices: DeepImmutable<Array<number>>;
+    };
 }
 
 export interface BarrelMetadata {
@@ -18,14 +22,6 @@ export interface BarrelMetadata {
     readonly angleVariance?: number;
     readonly speedVariance?: number;
     readonly multiplier?: Partial<DeepImmutable<WeaponProperties>>;
-}
-
-export interface LanceMetadata {
-    readonly colliders: Array<string>;
-}
-
-export interface ShieldMetadata {
-    readonly colliders: Array<string>;
 }
 
 export interface BombMetadata {

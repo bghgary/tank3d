@@ -18,16 +18,16 @@ export function applyCollisionForce(target: Entity, other: DeepImmutable<Entity>
         velocity.z += dz * factor;
     }, 0);
 
-    // Certain objects are impenetrable.
-    if (other.type === EntityType.Lance || other.type === EntityType.Shield) {
-        if (distance < contactDistance) {
-            const factor = (contactDistance - distance) / distance;
-            setTimeout(() => {
-                position.x += dx * factor;
-                position.z += dz * factor;
-            }, 0);
-        }
-    }
+    // // Certain objects are impenetrable.
+    // if (other.type === EntityType.Lance || other.type === EntityType.Shield) {
+    //     if (distance < contactDistance) {
+    //         const factor = (contactDistance - distance) / distance;
+    //         setTimeout(() => {
+    //             position.x += dx * factor;
+    //             position.z += dz * factor;
+    //         }, 0);
+    //     }
+    // }
 }
 
 export function applyMovement(deltaTime: number, position: Vector3, velocity: DeepImmutable<Vector3>): void {
@@ -86,7 +86,11 @@ export function applyWallClamp(position: Vector3, size: number, wallLimit: numbe
     }
 }
 
-export function findNode(node: TransformNode, name: string): TransformNode {
+export function findNode(node: TransformNode, name?: string): TransformNode {
+    if (!name) {
+        return node;
+    }
+
     return node.getChildren((node) => node.name === name, false)[0] as TransformNode;
 }
 

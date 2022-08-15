@@ -1,8 +1,8 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
-import { Collisions, TargetCollider } from "../collisions";
+import { TargetCollider } from "../colliders/targetCollider";
+import { Collisions } from "../collisions";
 import { applyCollisionForce, getThreatValue } from "../common";
 import { WeaponProperties } from "../components/weapon";
 import { Entity } from "../entity";
@@ -25,7 +25,7 @@ export class ReflectorTank extends SniperTank {
 
 class ReflectorBullet extends Bullet {
     private readonly _collisions: Collisions;
-    private _targetCollisionToken: Nullable<IDisposable> = null;
+    private _targetCollider: Nullable<TargetCollider> = null;
     private _targetThreatValue = 0;
     private readonly _targetDirection = new Vector3();
 
@@ -36,7 +36,7 @@ class ReflectorBullet extends Bullet {
     }
 
     public override update(deltaTime: number, onDestroy: () => void): void {
-        if (this._targetCollisionToken) {
+        if (this._targetCollider) {
             if (this._targetThreatValue > 0) {
                 this.velocity.copyFrom(this._targetDirection).scaleInPlace(this._targetVelocity.length());
                 this._targetVelocity.copyFrom(this.velocity);
@@ -44,39 +44,39 @@ class ReflectorBullet extends Bullet {
                 this._targetThreatValue = 0;
             }
 
-            this._targetCollisionToken.dispose();
-            this._targetCollisionToken = null;
+            this._collisions.unregister(this._targetCollider);
+            this._targetCollider = null;
         }
 
         super.update(deltaTime, () => {
-            if (this._targetCollisionToken) {
-                this._targetCollisionToken.dispose();
-                this._targetCollisionToken = null;
+            if (this._targetCollider) {
+                this._collisions.unregister(this._targetCollider);
+                this._targetCollider = null;
             }
 
             onDestroy();
         });
     }
 
-    public override onCollide(other: Entity): number {
+    protected override _onCollide(other: Entity): number {
         if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
             return 1;
         }
 
-        if (!this._targetCollisionToken) {
-            this._targetCollisionToken = this._collisions.register([
-                new TargetCollider(this._node.position, TARGET_RADIUS, (target) => {
-                    if (target !== other && target !== this.owner && target.owner !== this.owner) {
-                        const deltaPosition = TmpVector3[0].copyFrom(target.position).subtractInPlace(this._node.position);
-                        const targetDistance = deltaPosition.length();
-                        const threatValue = getThreatValue(target, targetDistance);
-                        if (threatValue > this._targetThreatValue) {
-                            this._targetThreatValue = threatValue;
-                            this._targetDirection.copyFrom(deltaPosition).normalizeFromLength(targetDistance);
-                        }
+        if (!this._targetCollider) {
+            this._targetCollider = new TargetCollider(this._node, TARGET_RADIUS, (target) => {
+                if (target !== other && target !== this.owner && target.owner !== this.owner) {
+                    const deltaPosition = TmpVector3[0].copyFrom(target.position).subtractInPlace(this._node.position);
+                    const targetDistance = deltaPosition.length();
+                    const threatValue = getThreatValue(target, targetDistance);
+                    if (threatValue > this._targetThreatValue) {
+                        this._targetThreatValue = threatValue;
+                        this._targetDirection.copyFrom(deltaPosition).normalizeFromLength(targetDistance);
                     }
-                })
-            ]);
+                }
+            });
+
+            this._collisions.register(this._targetCollider);
         }
 
         if (other.damage.value > 0) {

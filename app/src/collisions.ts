@@ -1,57 +1,10 @@
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { IDisposable } from "@babylonjs/core/scene";
-import { DeepImmutable } from "@babylonjs/core/types";
 import Quadtree from "@timohausmann/quadtree-js";
-import { Entity } from "./entity";
+import { Collider } from "./colliders/collider";
 import { World } from "./worlds/world";
-
-export interface Collider extends Quadtree.Rect {
-    readonly active: boolean;
-    readonly position: DeepImmutable<Vector3>;
-    readonly size: number;
-    onCollide(other: Entity): number;
-}
-
-function isEntity(collider: Collider | Entity): collider is Entity {
-    return (collider as Entity).type !== undefined;
-}
-
-function intersects(a: Collider, b: Collider): boolean {
-    const collisionDistance = (a.size + b.size) * 0.5;
-    const distanceSquared = Vector3.DistanceSquared(a.position, b.position);
-    return (distanceSquared < collisionDistance * collisionDistance);
-}
-
-export class TargetCollider implements Collider {
-    private readonly _position: Vector3;
-    private readonly _radius: number;
-
-    constructor(position: Vector3, radius: number, onCollide: (other: Entity) => void) {
-        this._position = position;
-        this._radius = radius;
-
-        this.onCollide = (other) => {
-            onCollide(other);
-            return 0;
-        };
-    }
-
-    // Collider
-    public readonly active = true;
-    public get position() { return this._position; }
-    public get size() { return this._radius * 2; }
-    public get x() { return this._position.x - this._radius; }
-    public get y() { return this._position.z - this._radius; }
-    public get width() { return this.size; }
-    public get height() { return this.size; }
-
-    public readonly onCollide: (other: Entity) => number;
-}
 
 export class Collisions {
     private readonly _quadtree: Quadtree;
-    private readonly _entries = new Map<number, { colliders: Iterable<Collider> }>();
-    private _registerToken: number = 0;
+    private readonly _colliders = new Set<Collider>();
     private readonly _collidedMap = new Map<Collider, Map<Collider, { time: number }>>();
 
     public constructor(world: World) {
@@ -60,12 +13,15 @@ export class Collisions {
         this._quadtree = new Quadtree({ x: -halfSize, y: -halfSize, width: size, height: size });
     }
 
-    public register(colliders: Iterable<Collider>): IDisposable {
-        const registerToken = this._registerToken++;
-        this._entries.set(registerToken, { colliders: colliders });
-        return {
-            dispose: () => this._entries.delete(registerToken)
-        };
+    public register(collider: Collider): void {
+        this._colliders.add(collider);
+        collider.node.onDisposeObservable.add(() => {
+            this.unregister(collider);
+        });
+    }
+
+    public unregister(collider: Collider): void {
+        this._colliders.delete(collider);
     }
 
     public update(deltaTime: number): void {
@@ -84,25 +40,21 @@ export class Collisions {
 
         this._quadtree.clear();
 
-        for (const entry of this._entries.values()) {
-            for (const collider of entry.colliders) {
-                if (collider.active) {
-                    this._quadtree.insert(collider);
-                }
+        for (const collider of this._colliders) {
+            if (collider.active) {
+                this._quadtree.insert(collider);
             }
         }
 
-        for (const entry of this._entries.values()) {
-            for (const target of entry.colliders) {
-                const others = this._quadtree.retrieve<Collider>(target);
-                for (const other of others) {
-                    if (other !== target && isEntity(other)) {
-                        if (intersects(target, other)) {
-                            const otherMap = targetMap.get(target) || new Map<Collider, { time: number }>();
-                            if (!otherMap.has(other)) {
-                                otherMap.set(other, { time: target.onCollide(other) });
-                                targetMap.set(target, otherMap);
-                            }
+        for (const target of this._colliders) {
+            for (const other of this._quadtree.retrieve<Collider>(target)) {
+                // TODO: add callback to avoid certain collisions (e.g., lance/lancerTank, shield/shieldTank)
+                if (other !== target && other.entity) {
+                    if (Collider.Collide(target, other)) {
+                        const otherMap = targetMap.get(target) || new Map<Collider, { time: number }>();
+                        if (!otherMap.has(other)) {
+                            otherMap.set(other, { time: target.onCollide(other.entity) });
+                            targetMap.set(target, otherMap);
                         }
                     }
                 }

@@ -1,7 +1,7 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Collider } from "./collisions";
+import { Collider } from "./colliders/collider";
 import { applyCollisionForce, applyGravity, applyMovement, applyWallBounce, computeMass } from "./common";
 import { Flash, FlashState } from "./components/flash";
 import { BarHealth } from "./components/health";
@@ -33,8 +33,6 @@ export class Shapes {
         for (let index = 0; index < maxCount; ++index) {
             this._shapes.add(this._createShape(0));
         }
-
-        this._world.collisions.register(this._shapes);
     }
 
     public update(deltaTime: number): void {
@@ -87,7 +85,7 @@ export class Shapes {
     }
 }
 
-class ShapeImpl implements Shape, Collider {
+class ShapeImpl implements Shape {
     private readonly _world: World;
     private readonly _node: TransformNode;
     private readonly _metadata: ShapeMetadata;
@@ -102,10 +100,9 @@ class ShapeImpl implements Shape, Collider {
         this._flash = new Flash(this._node);
         this._health = new BarHealth(this._world.sources, this._node, this._metadata.health);
         this._shadow = new Shadow(this._world.sources, this._node);
-    }
 
-    public dispose(): void {
-        this._node.dispose();
+        const collider = Collider.FromMetadata(this._node, this._metadata, this, this._onCollide.bind(this));
+        this._world.collisions.register(collider);
     }
 
     public get points() { return this._metadata.points; }
@@ -120,12 +117,6 @@ class ShapeImpl implements Shape, Collider {
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
-
-    // Quadtree.Rect
-    public get x() { return this._node.position.x - this.size * 0.5; }
-    public get y() { return this._node.position.z - this.size * 0.5; }
-    public get width() { return this.size; }
-    public get height() { return this.size; }
 
     public rotationVelocity = 0;
 
@@ -151,7 +142,7 @@ class ShapeImpl implements Shape, Collider {
         }
     }
 
-    public onCollide(other: Entity): number {
+    private _onCollide(other: Entity): number {
         if (other.type === EntityType.Shape) {
             applyCollisionForce(this, other);
             this.rotationVelocity = -this.rotationVelocity;

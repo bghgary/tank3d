@@ -1,7 +1,7 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Collider } from "./collisions";
+import { Collider } from "./colliders/collider";
 import { applyGravity, computeMass, findNode } from "./common";
 import { Barrel } from "./components/barrel";
 import { Flash, FlashState } from "./components/flash";
@@ -24,13 +24,12 @@ export class Sentries {
     private readonly _maxCount: number;
     private readonly _root: TransformNode;
     private readonly _sentries = new Set<Sentry>();
-    private _spawnTime = Scalar.RandomRange(0, 30);
+    private _spawnTime = 0;//Scalar.RandomRange(0, 30);
 
     public constructor(world: World, maxCount: number) {
         this._world = world;
         this._maxCount = maxCount;
         this._root = new TransformNode("sentries", this._world.scene);
-        this._world.collisions.register(this._sentries);
     }
 
     public enabled = false;
@@ -65,13 +64,14 @@ export class Sentries {
     }
 }
 
-class Sentry implements Enemy, Collider {
+class Sentry implements Enemy {
     private readonly _world: World;
     private readonly _node: TransformNode;
     private readonly _metadata: SentryMetadata;
     private readonly _shadow: Shadow;
     private readonly _flash: Flash;
     private readonly _health: BarHealth;
+    private readonly _collider: Collider;
 
     private readonly _top: TransformNode;
     private readonly _bottom: TransformNode;
@@ -87,6 +87,9 @@ class Sentry implements Enemy, Collider {
         this._shadow = new Shadow(this._world.sources, this._node);
         this._flash = new Flash(this._node);
         this._health = new BarHealth(this._world.sources, this._node, this._metadata.health);
+
+        this._collider = Collider.FromMetadata(this._node, this._metadata, this, this._onCollide.bind(this));
+        this._world.collisions.register(this._collider);
 
         this._top = findNode(this._node, "top");
         this._bottom = findNode(this._node, "bottom");
@@ -107,12 +110,6 @@ class Sentry implements Enemy, Collider {
 
     // Enemy
     public get points() { return this._metadata.points; }
-
-    // Quadtree.Rect
-    public get x() { return this._node.position.x - this.size * 0.5; }
-    public get y() { return this._node.position.z - this.size * 0.5; }
-    public get width() { return this.size; }
-    public get height() { return this.size; }
 
     public update(deltaTime: number, player: Player, onDestroy: (source: Entity) => void): void {
         if (applyGravity(deltaTime, this._node.position, this.velocity)) {
@@ -164,7 +161,7 @@ class Sentry implements Enemy, Collider {
         return false;
     }
 
-    protected _shoot(direction: Vector3): void {
+    private _shoot(direction: Vector3): void {
         if (this._reloadTime === 0) {
             const angle = Math.acos(Vector3.Dot(this._tank.forward, direction));
             if (angle < CHASE_ANGLE) {
@@ -176,13 +173,13 @@ class Sentry implements Enemy, Collider {
         }
     }
 
-    protected _shootFrom(barrel: Barrel): void {
+    private _shootFrom(barrel: Barrel): void {
         const source = this._world.sources.bullet.sentry;
         const properties = this._metadata.bullet;
         barrel.shootBullet(Bullet, this, source, properties, BULLET_DURATION);
     }
 
-    public onCollide(other: Entity): number {
+    private _onCollide(other: Entity): number {
         if (other.type === EntityType.Sentry || (other.owner && other.owner.type === EntityType.Sentry)) {
             if (other.type !== EntityType.Bullet) {
                 return 0;

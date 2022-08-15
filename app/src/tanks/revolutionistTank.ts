@@ -1,7 +1,5 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { IDisposable } from "@babylonjs/core/scene";
-import { Nullable } from "@babylonjs/core/types";
-import { TargetCollider } from "../collisions";
+import { TargetCollider } from "../colliders/targetCollider";
 import { findNode } from "../common";
 import { AutoTarget } from "../components/autoTarget";
 import { Entity } from "../entity";
@@ -16,7 +14,6 @@ const TARGET_RADIUS = 10;
 export class RevolutionistTank extends BulletTank {
     private readonly _tank: AutoTarget;
     private readonly _center: TransformNode;
-    private _targetCollisionToken: Nullable<IDisposable> = null;
     private _tankReloadTime = 0;
     private _tankRotation = Math.PI / 2;
 
@@ -25,15 +22,14 @@ export class RevolutionistTank extends BulletTank {
 
         this._tank = new AutoTarget(findNode(this._node, this._metadata.tanks![0]!));
         this._center = findNode(this._node, "center");
-    }
 
-    public override dispose(): void {
-        if (this._targetCollisionToken) {
-            this._targetCollisionToken.dispose();
-            this._targetCollisionToken = null;
-        }
+        const targetCollider = new TargetCollider(this._node, TARGET_RADIUS, (other) => {
+            if (this.inBounds && other !== this && other.owner !== this) {
+                this._tank.onCollide(other);
+            }
+        });
 
-        super.dispose();
+        this._world.collisions.register(targetCollider);
     }
 
     public override shoot(): void {
@@ -56,16 +52,6 @@ export class RevolutionistTank extends BulletTank {
         if (this.inBounds && !this.idle && this._tankReloadTime === 0 && this._tank.targetAcquired) {
             this._shootFrom(this._barrels[1]!);
             this._tankReloadTime = this._properties.reloadTime;
-        }
-
-        if (!this._targetCollisionToken) {
-            this._targetCollisionToken = this._world.collisions.register([
-                new TargetCollider(this._node.position, TARGET_RADIUS, (other) => {
-                    if (this.inBounds && other !== this && other.owner !== this) {
-                        this._tank.onCollide(other);
-                    }
-                })
-            ]);
         }
 
         super.update(deltaTime, onDestroy);

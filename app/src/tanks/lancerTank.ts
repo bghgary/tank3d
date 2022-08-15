@@ -28,14 +28,6 @@ export class LancerTank extends PlayerTank {
         this._lances = this._metadata.lances!.map((name) => new Lance(world, this, findNode(this._node, name), this._lanceProperties));
     }
 
-    public override dispose(): void {
-        for (const lance of this._lances) {
-            lance.dispose();
-        }
-
-        super.dispose();
-    }
-
     public override readonly upgradeNames = getUpgradeNames("Lance", "Length");
 
     public override update(deltaTime: number, onDestroy: (source: Entity) => void): void {
