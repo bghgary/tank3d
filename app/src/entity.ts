@@ -27,6 +27,8 @@ export interface Entity {
     readonly rotation: Quaternion;
     readonly velocity: Vector3;
     readonly owner?: Entity;
+    readonly attachment?: boolean;
+    readonly impenetrable?: boolean;
 }
 
 export interface Enemy extends Entity {

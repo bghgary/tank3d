@@ -2,8 +2,8 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { Mesh } from "@babylonjs/core/Meshes/mesh";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
-import { TargetCollider } from "../colliders/targetCollider";
-import { applyCollisionForce, applyMovement, getThreatValue, isTarget } from "../common";
+import { ProximityCollider } from "../colliders/colliders";
+import { applyMovement, getThreatValue, isTarget } from "../common";
 import { FlashState } from "../components/flash";
 import { BarHealth, Health } from "../components/health";
 import { WeaponProperties } from "../components/weapon";
@@ -87,13 +87,16 @@ export abstract class Drone extends Projectile {
         decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
     }
 
-    protected _onCollide(other: Entity): number {
-        if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
-            if (other.type == EntityType.Bullet) {
-                return 1;
-            }
+    public preCollide(other: Entity): boolean {
+        if (other.type === EntityType.Bullet && other.owner!.type === this.owner.type) {
+            return false;
+        }
 
-            applyCollisionForce(this, other);
+        return true;
+    }
+
+    public postCollide(other: Entity): number {
+        if (other.type === this.owner.type || (other.owner && other.owner.type === this.owner.type)) {
             return 0;
         }
 
@@ -102,7 +105,6 @@ export abstract class Drone extends Projectile {
             this._health.takeDamage(other);
         }
 
-        applyCollisionForce(this, other);
         return other.damage.time;
     }
 }
@@ -129,19 +131,19 @@ export class AutoTargetDrone extends Drone {
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, owner, node, barrelNode, properties, duration);
 
-        const targetCollider = new TargetCollider(this._node, TARGET_RADIUS, (other) => {
-            if (isTarget(other, this.owner)) {
-                const distance = Vector3.Distance(this._node.position, other.position);
-                const threatValue = getThreatValue(other, distance);
+        const collider = new ProximityCollider(this._node, TARGET_RADIUS,
+            (entity) => isTarget(entity, this.owner),
+            (entity) => {
+                const distance = Vector3.Distance(this._node.position, entity.position);
+                const threatValue = getThreatValue(entity, distance);
                 if (threatValue > this._targetThreatValue) {
                     this._targetThreatValue = threatValue;
-                    this._target.position.copyFrom(other.position);
-                    this._target.size = other.size;
+                    this._target.position.copyFrom(entity.position);
+                    this._target.size = entity.size;
                 }
-            }
-        });
+            });
 
-        world.collisions.register(targetCollider);
+        world.collisions.registerProximity(collider);
     }
 
     public override shoot(barrelNode: TransformNode, callback?: (barrelForward: Vector3, speed: number) => void): void {

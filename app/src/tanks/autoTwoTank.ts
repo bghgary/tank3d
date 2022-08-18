@@ -1,5 +1,5 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { TargetCollider } from "../colliders/targetCollider";
+import { ProximityCollider } from "../colliders/colliders";
 import { findNode, isTarget } from "../common";
 import { AutoTarget } from "../components/autoTarget";
 import { Entity } from "../entity";
@@ -21,15 +21,15 @@ export class AutoTwoTank extends BulletTank {
         const metadata = this._node.metadata as PlayerTankMetadata;
         this._tanks = metadata.tanks!.map((name) => new AutoTarget(findNode(this._node, name)));
 
-        const targetCollider = new TargetCollider(this._node, TARGET_RADIUS, (other) => {
-            if (this.inBounds && isTarget(other, this)) {
+        const collider = new ProximityCollider(this._node, TARGET_RADIUS,
+            (entity) => this.inBounds && isTarget(entity, this),
+            (entity) => {
                 for (const tank of this._tanks) {
-                    tank.onCollide(other);
+                    tank.onCollide(entity);
                 }
-            }
-        });
+            });
 
-        this._world.collisions.register(targetCollider);
+        this._world.collisions.registerProximity(collider);
     }
 
     public override shoot(): void {

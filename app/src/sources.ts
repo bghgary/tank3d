@@ -165,7 +165,7 @@ function createLance(name: string, diameter: number, length: number, scene: Scen
     const mesh = createCone(name, diameter, length, scene);
     const numVertices = mesh.getTotalVertices();
     const metadata: SizeMetadata = {
-        size: length / 2,
+        size: length,
         meshCollider: {
             indices: [0, ((numVertices / 2) - 1) / 2, numVertices - 1],
         },
@@ -204,9 +204,9 @@ function createShield(name: string, diameter: number, slice: number, scene: Scen
         const candidateIndices = new Array<number>();
         const point = TmpVector3[0];
         for (let index = 0; index < numVertices; ++index) {
-            Vector3.FromArray(positions, index * 3);
+            Vector3.FromArrayToRef(positions, index * 3, point);
             if (Math.abs(point.y) < 0.001) {
-                if (Math.abs(point.x) + Math.abs(point.z) < 0.001) {
+                if (Math.abs(point.x) + Math.abs(point.z) >= 0.001) {
                     candidateIndices.push(index);
                 }
             }
@@ -222,7 +222,7 @@ function createShield(name: string, diameter: number, slice: number, scene: Scen
         for (const index of candidateIndices) {
             const x = positions[index * 3]!;
             if (Math.abs(lastX - x) > 0.001) {
-                if (++count % 4 === 0) {
+                if (count++ % 4 === 0) {
                     indices.push(index);
                 }
                 lastX = x;
@@ -233,7 +233,7 @@ function createShield(name: string, diameter: number, slice: number, scene: Scen
     };
 
     const metadata: SizeMetadata = {
-        size: length / 2,
+        size: diameter,
         meshCollider: {
             indices: getColliderIndices(),
         },

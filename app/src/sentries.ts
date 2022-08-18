@@ -1,8 +1,8 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Collider } from "./colliders/collider";
-import { applyGravity, computeMass, findNode } from "./common";
+import { Collidable, EntityCollider } from "./colliders/colliders";
+import { applyGravity, findNode } from "./common";
 import { Barrel } from "./components/barrel";
 import { Flash, FlashState } from "./components/flash";
 import { BarHealth } from "./components/health";
@@ -24,7 +24,7 @@ export class Sentries {
     private readonly _maxCount: number;
     private readonly _root: TransformNode;
     private readonly _sentries = new Set<Sentry>();
-    private _spawnTime = 0;//Scalar.RandomRange(0, 30);
+    private _spawnTime = Scalar.RandomRange(0, 30);
 
     public constructor(world: World, maxCount: number) {
         this._world = world;
@@ -54,24 +54,22 @@ export class Sentries {
     private _spawn(): void {
         const node = this._world.sources.create(this._world.sources.sentry, this._root);
         const sentry = new Sentry(this._world, node);
+        this._sentries.add(sentry);
 
         const limit = (this._world.size - sentry.size) * 0.5;
         const x = Scalar.RandomRange(-limit, limit);
         const z = Scalar.RandomRange(-limit, limit);
         sentry.position.set(x, SPAWN_DROP_HEIGHT, z);
-
-        this._sentries.add(sentry);
     }
 }
 
-class Sentry implements Enemy {
+class Sentry implements Enemy, Collidable {
     private readonly _world: World;
     private readonly _node: TransformNode;
     private readonly _metadata: SentryMetadata;
     private readonly _shadow: Shadow;
     private readonly _flash: Flash;
     private readonly _health: BarHealth;
-    private readonly _collider: Collider;
 
     private readonly _top: TransformNode;
     private readonly _bottom: TransformNode;
@@ -88,8 +86,8 @@ class Sentry implements Enemy {
         this._flash = new Flash(this._node);
         this._health = new BarHealth(this._world.sources, this._node, this._metadata.health);
 
-        this._collider = Collider.FromMetadata(this._node, this._metadata, this, this._onCollide.bind(this));
-        this._world.collisions.register(this._collider);
+        const collider = EntityCollider.FromMetadata(this._node, this._metadata, this);
+        this._world.collisions.registerEntity(collider);
 
         this._top = findNode(this._node, "top");
         this._bottom = findNode(this._node, "bottom");
@@ -102,11 +100,11 @@ class Sentry implements Enemy {
     public readonly type = EntityType.Sentry;
     public get active() { return this._health.active && this._node.position.y === 0; }
     public get size() { return this._metadata.size; }
-    public get mass() { return computeMass(1, this._metadata.size, this._metadata.height); }
+    public get mass() { return Number.MAX_VALUE; }
     public get damage() { return this._metadata.damage; }
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
-    public readonly velocity = Vector3.ZeroReadOnly;
+    public readonly velocity = new Vector3();
 
     // Enemy
     public get points() { return this._metadata.points; }
@@ -179,16 +177,18 @@ class Sentry implements Enemy {
         barrel.shootBullet(Bullet, this, source, properties, BULLET_DURATION);
     }
 
-    private _onCollide(other: Entity): number {
-        if (other.type === EntityType.Sentry || (other.owner && other.owner.type === EntityType.Sentry)) {
-            if (other.type !== EntityType.Bullet) {
-                return 0;
-            }
-        } else {
-            if (other.damage.value > 0) {
-                this._flash.setState(FlashState.Damage);
-                this._health.takeDamage(other);
-            }
+    public preCollide(other: Entity): boolean {
+        if (other.type === EntityType.Bullet && other.owner!.type === EntityType.Sentry) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public postCollide(other: Entity): number {
+        if (other.damage.value > 0) {
+            this._flash.setState(FlashState.Damage);
+            this._health.takeDamage(other);
         }
 
         return other.damage.time;

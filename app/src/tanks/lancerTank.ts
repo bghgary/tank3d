@@ -3,7 +3,7 @@ import { DeepImmutable } from "@babylonjs/core/types";
 import { findNode } from "../common";
 import { Lance } from "../components/lance";
 import { WeaponProperties } from "../components/weapon";
-import { Entity } from "../entity";
+import { Entity, EntityType } from "../entity";
 import { Sources } from "../sources";
 import { getUpgradeNames } from "../ui/upgrades";
 import { World } from "../worlds/world";
@@ -46,6 +46,14 @@ export class LancerTank extends PlayerTank {
         for (const lance of this._lances) {
             lance.setScale(lanceScale);
         }
+    }
+
+    public override preCollide(other: Entity): boolean {
+        if (other.owner === this && other.type === EntityType.Lance) {
+            return false;
+        }
+
+        return super.preCollide(other);
     }
 
     public static Create(sources: Sources, parent?: TransformNode): TransformNode {

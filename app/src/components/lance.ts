@@ -6,12 +6,17 @@ import { Health } from "./health";
 import { Weapon, WeaponProperties } from "./weapon";
 
 export class Lance extends Weapon {
-    private _health: Health;
+    private readonly _health: Health;
     private _targetScale = 1;
 
     public constructor(world: World, owner: Entity, node: TransformNode, properties: WeaponProperties) {
         super(world, EntityType.Lance, owner, node, properties.damage)
         this._health = new Health(properties.health);
+    }
+
+    public override get size(): number {
+        const scaling = this._node.scaling;
+        return super.size * Math.max(scaling.x, scaling.z);
     }
 
     public setScale(value: number): void {
@@ -23,12 +28,13 @@ export class Lance extends Weapon {
 
         if (!this._health.update(deltaTime)) {
             this._health.reset();
-            this._node.scaling.z = Math.max(this._node.scaling.z * 0.75, 0.5);
+            this._node.scaling.z *= 0.75;
         }
     }
 
-    protected override _takeDamage(other: Entity): void {
+    public postCollide(other: Entity): number {
+        this._node.scaling.z *= 0.95;
         this._health.takeDamage(other);
-        this._node.scaling.z = Math.max(this._node.scaling.z * 0.95, 0.5);
+        return other.damage.time;
     }
 }

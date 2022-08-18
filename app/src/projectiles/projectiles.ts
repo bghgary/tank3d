@@ -3,7 +3,7 @@ import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { Collider } from "../colliders/collider";
+import { CircleCollider, Collidable } from "../colliders/colliders";
 import { computeMass } from "../common";
 import { Flash } from "../components/flash";
 import { Health } from "../components/health";
@@ -62,7 +62,7 @@ export class Projectiles<T extends Projectile> {
     }
 }
 
-export abstract class Projectile implements Entity {
+export abstract class Projectile implements Entity, Collidable {
     protected readonly _node: TransformNode;
     protected readonly _properties: WeaponPropertiesWithMultiplier;
     protected readonly _shadow: Shadow;
@@ -83,8 +83,8 @@ export abstract class Projectile implements Entity {
         this._shadow = new Shadow(world.sources, this._node);
         this._flash = new Flash(this._node);
 
-        const collider = new Collider(this._node, 0.5, this, this._onCollide.bind(this));
-        world.collisions.register(collider);
+        const collider = new CircleCollider(this._node, 1, this);
+        world.collisions.registerEntity(collider);
 
         this._time = duration;
     }
@@ -130,6 +130,7 @@ export abstract class Projectile implements Entity {
     public readonly velocity = new Vector3();
     public readonly owner: Entity;
 
-    // Collider
-    protected abstract _onCollide(other: Entity): number;
+    // Collidable
+    public abstract preCollide(other: Entity): boolean;
+    public abstract postCollide(other: Entity): number;
 }

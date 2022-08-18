@@ -1,7 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Collider } from "../colliders/collider";
-import { applyCollisionForce, applyGravity, applyMovement, applyWallClamp, computeMass } from "../common";
+import { Collidable, EntityCollider } from "../colliders/colliders";
+import { applyGravity, applyMovement, applyWallClamp, computeMass } from "../common";
 import { Flash, FlashState } from "../components/flash";
 import { BarHealth } from "../components/health";
 import { Shadow } from "../components/shadow";
@@ -15,7 +15,7 @@ const IDLE_MOVEMENT_SPEED = 1;
 const IDLE_ROTATION_SPEED = 1;
 const CHASE_DISTANCE = 15;
 
-export class BaseCrasher implements Enemy {
+export class BaseCrasher implements Enemy, Collidable {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
     protected readonly _metadata: CrasherMetadata;
@@ -31,8 +31,8 @@ export class BaseCrasher implements Enemy {
         this._flash = new Flash(this._node);
         this._health = new BarHealth(this._world.sources, node, this._metadata.health);
 
-        const collider = Collider.FromMetadata(this._node, this._metadata, this, this._onCollide.bind(this));
-        this._world.collisions.register(collider);
+        const collider = EntityCollider.FromMetadata(this._node, this._metadata, this);
+        this._world.collisions.registerEntity(collider);
     }
 
     // Entity
@@ -85,19 +85,22 @@ export class BaseCrasher implements Enemy {
         return false;
     }
 
-    protected _onCollide(other: Entity): number {
-        if (other.type === EntityType.Crasher || (other.owner && other.owner.type === EntityType.Crasher)) {
-            if (other.type !== EntityType.Bullet) {
-                applyCollisionForce(this, other);
-                return 0;
-            }
-        } else {
-            if (other.damage.value > 0) {
-                this._flash.setState(FlashState.Damage);
-                this._health.takeDamage(other);
-            }
+    public preCollide(other: Entity): boolean {
+        if (other.type === EntityType.Bullet && other.owner!.type === EntityType.Crasher) {
+            return false;
+        }
 
-            applyCollisionForce(this, other);
+        return true;
+    }
+
+    public postCollide(other: Entity): number {
+        if (other.type === EntityType.Crasher || (other.owner && other.owner.type === EntityType.Crasher)) {
+            return 0;
+        }
+
+        if (other.damage.value > 0) {
+            this._flash.setState(FlashState.Damage);
+            this._health.takeDamage(other);
         }
 
         return other.damage.time;
