@@ -1,15 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { DeepImmutable, Nullable } from "@babylonjs/core/types";
+import { DeepImmutable } from "@babylonjs/core/types";
 
-function distanceSquared(a: DeepImmutable<Vector3>, b: DeepImmutable<Vector3>): number {
-    const dx = a.x - b.x;
-    const dz = a.z - b.z;
-    return dx * dx + dz * dz;
-}
-
-function dot(a: DeepImmutable<Vector3>, b: DeepImmutable<Vector3>): number {
-    return a.x * b.x + a.z * b.z;
-}
+const TmpVector3: [Vector3] = [new Vector3()];
 
 let numAxes = 0;
 const axes = new Array<Vector3>(32);
@@ -20,9 +12,9 @@ for (let i = 0; i < axes.length; ++i) {
 function getAxes(polygon: DeepImmutable<Array<Vector3>>): void {
     const n = polygon.length;
     for (let i = 0; i < n; ++i) {
-        const p0 = polygon[i]!;
-        const p1 = polygon[(i + 1) % n]!;
-        axes[numAxes++]!.set(p0.z - p1.z, 0, p1.x - p0.x);
+        const a = polygon[i]!;
+        const b = polygon[(i + 1) % n]!;
+        axes[numAxes++]!.set(a.z - b.z, 0, b.x - a.x).normalize();
     }
 }
 
@@ -30,7 +22,7 @@ function projectPolygon(polygon: DeepImmutable<Array<Vector3>>, axis: DeepImmuta
     let min = Number.MAX_VALUE;
     let max = -Number.MAX_VALUE;
     for (const point of polygon) {
-        const projection = dot(axis, point);
+        const projection = Vector3.Dot(axis, point);
         if (projection < min) {
             min = projection;
         }
@@ -42,64 +34,113 @@ function projectPolygon(polygon: DeepImmutable<Array<Vector3>>, axis: DeepImmuta
 }
 
 function projectCircle(center: DeepImmutable<Vector3>, radius: number, axis: DeepImmutable<Vector3>): [number, number] {
-    const projection = dot(axis, center);
-    const projectedRadius = radius * axis.length();
-    return [projection - projectedRadius, projection + projectedRadius];
+    const projection = Vector3.Dot(axis, center);
+    return [projection - radius, projection + radius];
 }
 
-function overlap(a: [number, number], b: [number, number]): boolean {
-    return a[1] >= b[0] && b[1] >= a[0];
+function getOverlap(a: [number, number], b: [number, number]): number {
+    return Math.min(a[1], b[1]) - Math.max(a[0], b[0]);
 }
 
-export function collideCircleWithCircle(center0: DeepImmutable<Vector3>, radius0: number, center1: DeepImmutable<Vector3>, radius1: number): boolean {
-    const distance = radius0 + radius1;
-    const distance2 = distanceSquared(center0, center1);
-    return (distance2 < distance * distance);
+export function collideCircleWithCircle(center1: DeepImmutable<Vector3>, radius1: number, center2: DeepImmutable<Vector3>, radius2: number, mtv: Vector3): boolean {
+    const contactDistance = radius1 + radius2;
+    const delta = TmpVector3[0];
+    center1.subtractToRef(center2, delta);
+    const distance2 = delta.lengthSquared();
+    if (distance2 > contactDistance * contactDistance) {
+        return false;
+    }
+
+    const distance = Math.sqrt(distance2);
+    delta.scaleToRef(contactDistance / distance - 1, mtv);
+    return true;
 }
 
-export function collidePolygonWithPolygon(polygon1: DeepImmutable<Array<Vector3>>, polygon2: DeepImmutable<Array<Vector3>>): boolean {
+function collideSAT(
+    center1: DeepImmutable<Vector3>, project1: (axis: DeepImmutable<Vector3>) => [number, number],
+    center2: DeepImmutable<Vector3>, project2: (axis: DeepImmutable<Vector3>) => [number, number],
+    mtv: Vector3): boolean {
+
+    let minOverlap = Number.MAX_VALUE;
+    let minAxis: Vector3 = axes[0]!;
+    for (let index = 0; index < numAxes; ++index) {
+        const axis = axes[index]!;
+        const projection1 = project1(axis);
+        const projection2 = project2(axis);
+
+        const overlap = getOverlap(projection1, projection2);
+        if (overlap < 0) {
+            return false;
+        }
+
+        if (overlap < minOverlap) {
+            minOverlap = overlap;
+            minAxis = axis;
+        }
+    }
+
+    const delta = TmpVector3[0];
+    center1.subtractToRef(center2, delta);
+    mtv.copyFrom(minAxis).scaleInPlace(minOverlap * Math.sign(Vector3.Dot(delta, minAxis)));
+    return true;
+}
+
+export function collidePolygonWithPolygon(
+    center1: DeepImmutable<Vector3>, polygon1: DeepImmutable<Array<Vector3>>,
+    center2: DeepImmutable<Vector3>, polygon2: DeepImmutable<Array<Vector3>>,
+    mtv: Vector3): boolean {
+
     numAxes = 0;
     getAxes(polygon1);
     getAxes(polygon2);
 
-    for (let i = 0; i < numAxes; ++i) {
-        const axis = axes[i]!;
-        const projection1 = projectPolygon(polygon1, axis);
-        const projection2 = projectPolygon(polygon2, axis);
-        if (!overlap(projection1, projection2)) {
-            return false;
-        }
-    }
-
-    return true;
+    return collideSAT(
+        center1, (axis) => projectPolygon(polygon1, axis),
+        center2, (axis) => projectPolygon(polygon2, axis),
+        mtv);
 }
 
-export function collideCircleWithPolygon(center: DeepImmutable<Vector3>, radius: number, polygon: DeepImmutable<Array<Vector3>>): boolean {
+export function collideCircleWithPolygon(
+    center1: DeepImmutable<Vector3>, radius1: number,
+    center2: DeepImmutable<Vector3>, polygon2: DeepImmutable<Array<Vector3>>,
+    mtv: Vector3): boolean {
+
     numAxes = 0;
 
-    let minDistance2 = Number.MAX_VALUE;
-    let closestPoint: Nullable<Vector3> = null;
-    for (const point of polygon) {
-        const distance2 = distanceSquared(center, point);
-        if (distance2 < minDistance2) {
-            minDistance2 = distance2;
-            closestPoint = point;
+    if (polygon2.length > 0) {
+        const axis = axes[numAxes++]!;
+
+        const delta = TmpVector3[0];
+        let minDistance2 = Number.MAX_VALUE;
+        for (const point of polygon2) {
+            center1.subtractToRef(point, delta);
+            const distance2 = delta.lengthSquared();
+            if (distance2 < minDistance2) {
+                minDistance2 = distance2;
+                axis.copyFrom(delta);
+            }
         }
-    }
-    if (closestPoint) {
-        axes[numAxes++]!.set(closestPoint.x - center.x, 0, closestPoint.z - center.z);
-    }
 
-    getAxes(polygon);
-
-    for (let i = 0; i < numAxes; ++i) {
-        const axis = axes[i]!;
-        const projection1 = projectCircle(center, radius, axis);
-        const projection2 = projectPolygon(polygon, axis);
-        if (!overlap(projection1, projection2)) {
-            return false;
-        }
+        axis.normalize();
     }
 
+    getAxes(polygon2);
+
+    return collideSAT(
+        center1, (axis) => projectCircle(center1, radius1, axis),
+        center2, (axis) => projectPolygon(polygon2, axis),
+        mtv);
+}
+
+export function collidePolygonWithCircle(
+    center1: DeepImmutable<Vector3>, polygon1: DeepImmutable<Array<Vector3>>,
+    center2: DeepImmutable<Vector3>, radius2: number,
+    mtv: Vector3): boolean {
+
+    if (!collideCircleWithPolygon(center2, radius2, center1, polygon1, mtv)) {
+        return false;
+    }
+
+    mtv.scaleInPlace(-1);
     return true;
 }

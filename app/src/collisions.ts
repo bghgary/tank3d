@@ -1,7 +1,10 @@
+import { Vector3 } from "@babylonjs/core";
 import Quadtree from "@timohausmann/quadtree-js";
 import { Collidable, Collider, EntityCollider, ProximityCollider } from "./colliders/colliders";
 import { Entity } from "./entity";
 import { World } from "./worlds/world";
+
+const TmpVector3: [Vector3] = [new Vector3()];
 
 function moveBy(entity: Entity, dx: number, dz: number): void {
     if (entity.attachment) {
@@ -26,21 +29,12 @@ function applyCollisionForce(target: Entity, other: Entity): void {
     target.velocity.z += dz * factor;
 }
 
-function applyImpenetrability(entity1: Entity, entity2: Entity): void {
-    if (entity1.impenetrable || entity2.impenetrable) {
-        const dx = entity1.position.x - entity2.position.x;
-        const dz = entity1.position.z - entity2.position.z;
-        const distance = Math.sqrt(dx * dx + dz * dz);
-        const contactDistance = (entity1.size + entity2.size) * 0.5;
-        if (distance < contactDistance) {
-            const factor = contactDistance / distance - 1;
-            const totalMass = entity1.mass + entity2.mass;
-            const factor1 = factor * entity2.mass / totalMass;
-            moveBy(entity1, dx * factor1, dz * factor1);
-            const factor2 = factor * entity1.mass / totalMass;
-            moveBy(entity2, -dx * factor2, -dz * factor2);
-        }
-    }
+function applyImpenetrability(entity1: Entity, entity2: Entity, mtv: Vector3): void {
+    const totalMass = entity1.mass + entity2.mass;
+    const factor1 = entity2.mass / totalMass;
+    moveBy(entity1, mtv.x * factor1, mtv.z * factor1);
+    const factor2 = -entity1.mass / totalMass;
+    moveBy(entity2, mtv.x * factor2, mtv.z * factor2);
 }
 
 export class Collisions {
@@ -97,7 +91,8 @@ export class Collisions {
         for (const collider1 of this._proximityColliders) {
             for (const collider2 of this._quadtree.retrieve<Collider>(collider1)) {
                 if (collider1 !== collider2 && isEntityCollider(collider2)) {
-                    if (collider1.preCollide(collider2.entity) && Collider.Collide(collider1, collider2)) {
+                    const mtv = TmpVector3[0];
+                    if (collider1.preCollide(collider2.entity) && Collider.Collide(collider1, collider2, mtv)) {
                         collider1.postCollide(collider2.entity);
                     }
                 }
@@ -106,27 +101,32 @@ export class Collisions {
 
         const collided = new Set<Collider>();
         for (const collider1 of this._entityColliders) {
-            if (!collider1.entity.active) {
+            const entity1 = collider1.entity;
+            if (!entity1.active) {
                 continue;
             }
 
             for (const collider2 of this._quadtree.retrieve<Collider>(collider1)) {
                 if (collider1 !== collider2 && isEntityCollider(collider2) && !collided.has(collider1)) {
-                    const preCollide1 = collider1.entity.preCollide(collider2.entity);
-                    const preCollide2 = collider2.entity.preCollide(collider1.entity);
+                    const entity2 = collider2.entity;
+                    const preCollide1 = entity1.preCollide(entity2);
+                    const preCollide2 = entity2.preCollide(entity1);
                     if (preCollide1 || preCollide2) {
-                        if (Collider.Collide(collider1, collider2)) {
+                        const mtv = TmpVector3[0];
+                        if (Collider.Collide(collider1, collider2, mtv)) {
                             collided.add(collider2);
 
                             if (preCollide1) {
-                                this._postCollide(collider1.entity, collider2.entity);
+                                this._postCollide(entity1, entity2);
                             }
 
                             if (preCollide2) {
-                                this._postCollide(collider2.entity, collider1.entity);
+                                this._postCollide(entity2, entity1);
                             }
 
-                            applyImpenetrability(collider1.entity, collider2.entity);
+                            if (entity1.impenetrable || entity2.impenetrable) {
+                                applyImpenetrability(entity1, entity2, mtv);
+                            }
                         }
                     }
                 }

@@ -6,7 +6,7 @@ import { DeepImmutable, Nullable } from "@babylonjs/core/types";
 import { findNode } from "../common";
 import { Entity } from "../entity";
 import { SizeMetadata } from "../metadata";
-import { collideCircleWithCircle, collideCircleWithPolygon, collidePolygonWithPolygon } from "./colliderMath";
+import { collideCircleWithCircle, collideCircleWithPolygon, collidePolygonWithCircle, collidePolygonWithPolygon } from "./colliderMath";
 
 export abstract class Collider implements Quadtree.Rect {
     protected readonly _node: TransformNode;
@@ -36,18 +36,22 @@ export abstract class Collider implements Quadtree.Rect {
     public get width() { return this._absoluteSize; }
     public get height() { return this._absoluteSize; }
 
-    public static Collide(collider1: Collider, collider2: Collider): boolean {
-        const halfSize1 = collider1._absoluteSize * 0.5;
-        const halfSize2 = collider2._absoluteSize * 0.5;
+    public static Collide(collider1: Collider, collider2: Collider, mtv: Vector3): boolean {
+        const center1 = collider1._node.absolutePosition;
+        const center2 = collider2._node.absolutePosition;
+        const polygon1 = collider1._absolutePolygon;
+        const polygon2 = collider2._absolutePolygon;
+        const radius1 = collider1._absoluteSize * 0.5;
+        const radius2 = collider2._absoluteSize * 0.5;
 
-        if (!collider1._absolutePolygon && !collider2._absolutePolygon) {
-            return collideCircleWithCircle(collider1._node.absolutePosition, halfSize1, collider2._node.absolutePosition, halfSize2);
-        } else if (collider1._absolutePolygon && collider2._absolutePolygon) {
-            return collidePolygonWithPolygon(collider1._absolutePolygon, collider2._absolutePolygon);
-        } else if (collider1._absolutePolygon) {
-            return collideCircleWithPolygon(collider2._node.absolutePosition, halfSize2, collider1._absolutePolygon);
-        } else if (collider2._absolutePolygon) {
-            return collideCircleWithPolygon(collider1._node.absolutePosition, halfSize1, collider2._absolutePolygon);
+        if (polygon1 && polygon2) {
+            return collidePolygonWithPolygon(center1, polygon1, center2, polygon2, mtv);
+        } else if (!polygon1 && !polygon2) {
+            return collideCircleWithCircle(center1, radius1, center2, radius2, mtv);
+        } else if (polygon1) {
+            return collidePolygonWithCircle(center1, polygon1, center2, radius2, mtv);
+        } else if (polygon2) {
+            return collideCircleWithPolygon(center1, radius1, center2, polygon2, mtv);
         }
 
         return false;
@@ -82,16 +86,13 @@ export class CircleCollider extends EntityCollider {}
 export class PolygonCollider extends EntityCollider {
     protected readonly _points: DeepImmutable<Array<Vector3>>;
     protected readonly _absolutePoints: Array<Vector3>;
-    protected _matrixChanged = true;
 
     protected override get _absolutePolygon(): Nullable<DeepImmutable<Array<Vector3>>> {
-        if (this._matrixChanged) {
-            this._matrixChanged = false;
-            const mesh = (this._node as AbstractMesh);
-            const matrix = mesh.getWorldMatrix();
-            for (let i = 0; i < this._points.length; ++i) {
-                Vector3.TransformCoordinatesToRef(this._points[i]!, matrix, this._absolutePoints[i]!);
-            }
+        const mesh = (this._node as AbstractMesh);
+        const matrix = mesh.getWorldMatrix();
+        for (let i = 0; i < this._points.length; ++i) {
+            Vector3.TransformCoordinatesToRef(this._points[i]!, matrix, this._absolutePoints[i]!);
+            this._absolutePoints[i]!.y = 0;
         }
 
         return this._absolutePoints;
@@ -113,10 +114,6 @@ export class PolygonCollider extends EntityCollider {
 
         this._points = points;
         this._absolutePoints = this._points.map(() => new Vector3());
-
-        mesh.onAfterWorldMatrixUpdateObservable.add(() => {
-            this._matrixChanged = true;
-        });
     }
 }
 
