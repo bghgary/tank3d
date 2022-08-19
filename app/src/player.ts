@@ -201,11 +201,11 @@ export class Player {
     public readonly onDestroyedObservable = new Observable<void>();
 
     public update(deltaTime: number): void {
-        this._tank.rotate(deltaTime);
+        this._tank.applyRotation(deltaTime);
 
         const x = (this._commandState.get(Command.Left) ? -1 : 0) + (this._commandState.get(Command.Right) ? 1 : 0);
         const z = (this._commandState.get(Command.Up) ? 1 : 0) + (this._commandState.get(Command.Down) ? -1 : 0);
-        this._tank.move(deltaTime, x, z, this._world.size + 10);
+        this._tank.applyMovement(deltaTime, x, z, this._world.size + 10);
 
         if (this._commandState.get(Command.Shoot) && this._tank.inBounds) {
             this._tank.shoot();
@@ -242,7 +242,6 @@ export class Player {
             const x = Scalar.RandomRange(-limit, limit);
             const z = Scalar.RandomRange(-limit, limit);
             this._tank.position.set(x, 0, z);
-            this._tank.velocity.set(0, 0, 0);
 
             this.onDestroyedObservable.notifyObservers();
         });

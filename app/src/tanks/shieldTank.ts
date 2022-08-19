@@ -1,26 +1,24 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { findNode } from "../common";
 import { Shield } from "../components/shield";
+import { Entity, EntityType } from "../entity";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { BulletTank } from "./bulletTank";
 import { PlayerTank } from "./playerTank";
 
 export class ShieldTank extends BulletTank {
-    private _shields: Array<Shield>;
-
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
-
-        this._shields = this._metadata.shields!.map((name) => new Shield(world, this, findNode(this._node, name)));
+        this._metadata.shields!.map((name) => new Shield(world, this, findNode(this._node, name)));
     }
 
-    public override dispose(): void {
-        for (const shield of this._shields) {
-            shield.dispose();
+    public override preCollide(other: Entity): boolean {
+        if (other.owner === this && other.type === EntityType.Shield) {
+            return false;
         }
 
-        super.dispose();
+        return super.preCollide(other);
     }
 
     public static Create(sources: Sources, parent?: TransformNode): TransformNode {

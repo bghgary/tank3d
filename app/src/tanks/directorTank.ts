@@ -1,8 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
-import { TargetCollider } from "../collisions";
+import { ProximityCollider } from "../colliders/colliders";
 import { getThreatValue, isTarget } from "../common";
 import { Barrel } from "../components/barrel";
 import { WeaponProperties } from "../components/weapon";
@@ -25,9 +24,8 @@ export class DirectorTank extends BarrelTank {
 
     private readonly _circleRadius: number;
     private _barrelIndex = 0;
-    private _targetCollisionToken: Nullable<IDisposable> = null;
+    private _proximityCollider: Nullable<ProximityCollider> = null;
     private _targetThreatValue = Number.MAX_VALUE;
-    private _defendTime = 0;
 
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
@@ -45,17 +43,9 @@ export class DirectorTank extends BarrelTank {
 
         const parent = node.parent as TransformNode;
         this._drones = new SingleTargetDrones(world, parent, this._droneProperties);
-    }
-
-    public override dispose(): void {
-        if (this._targetCollisionToken) {
-            this._targetCollisionToken.dispose();
-            this._targetCollisionToken = null;
-        }
-
-        this._drones.dispose();
-
-        super.dispose();
+        this._node.onDisposeObservable.add(() => {
+            this._drones.dispose();
+        });
     }
 
     public override readonly upgradeNames = getUpgradeNames("Drone");
@@ -89,9 +79,9 @@ export class DirectorTank extends BarrelTank {
 
         const target = this._drones.target;
         if ((this._autoShoot && this.inBounds) || this._autoRotate) {
-            if (this._targetCollisionToken) {
-                this._targetCollisionToken.dispose();
-                this._targetCollisionToken = null;
+            if (this._proximityCollider) {
+                this._world.collisions.unregisterProximity(this._proximityCollider);
+                this._proximityCollider = null;
             }
 
             target.radius = 0;
@@ -104,8 +94,7 @@ export class DirectorTank extends BarrelTank {
 
             this._droneProperties.speed = this._properties.weaponSpeed;
         } else {
-            this._defendTime = Math.max(this._defendTime - deltaTime, 0);
-            if (this._defendTime === 0) {
+            if (this._targetThreatValue === 0) {
                 target.radius = this._circleRadius;
                 target.position.copyFrom(this._node.position);
                 target.size = 1;
@@ -114,22 +103,21 @@ export class DirectorTank extends BarrelTank {
 
             this._targetThreatValue = 0;
 
-            if (!this._targetCollisionToken) {
-                this._targetCollisionToken = this._world.collisions.register([
-                    new TargetCollider(this._node.position, TARGET_RADIUS, (other) => {
-                        if (this.inBounds && isTarget(other, this)) {
-                            const threatValue = getThreatValue(other, Vector3.Distance(this.position, other.position));
-                            if (threatValue > this._targetThreatValue) {
-                                this._targetThreatValue = threatValue;
-                                target.radius = 0;
-                                target.position.copyFrom(other.position);
-                                target.size = other.size;
-                                this._droneProperties.speed = this._properties.weaponSpeed;
-                                this._defendTime = 1;
-                            }
+            if (!this._proximityCollider) {
+                this._proximityCollider = new ProximityCollider(this._node, TARGET_RADIUS,
+                    (entity) => this.inBounds && isTarget(entity, this),
+                    (entity) => {
+                        const threatValue = getThreatValue(entity, Vector3.Distance(this.position, entity.position));
+                        if (threatValue > this._targetThreatValue) {
+                            this._targetThreatValue = threatValue;
+                            target.radius = 0;
+                            target.position.copyFrom(entity.position);
+                            target.size = entity.size;
+                            this._droneProperties.speed = this._properties.weaponSpeed;
                         }
-                    })
-                ]);
+                    });
+
+                this._world.collisions.registerProximity(this._proximityCollider);
             }
         }
 

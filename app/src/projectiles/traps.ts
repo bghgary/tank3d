@@ -1,7 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { applyCollisionForce, applyMovement } from "../common";
+import { applyMovement } from "../common";
 import { FlashState } from "../components/flash";
 import { Health } from "../components/health";
 import { WeaponProperties } from "../components/weapon";
@@ -38,9 +38,16 @@ export class Trap extends Projectile {
         super.update(deltaTime, onDestroy);
     }
 
-    public onCollide(other: Entity): number {
-        if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
-            applyCollisionForce(this, other);
+    public preCollide(other: Entity): boolean {
+        if (other.type === EntityType.Bullet && other.owner!.type === this.owner.type) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public postCollide(other: Entity): number {
+        if (other.type === this.owner.type || (other.owner && other.owner.type === this.owner.type)) {
             return 0;
         }
 
@@ -49,7 +56,6 @@ export class Trap extends Projectile {
             this._health.takeDamage(other);
         }
 
-        applyCollisionForce(this, other);
         return other.damage.time;
     }
 }

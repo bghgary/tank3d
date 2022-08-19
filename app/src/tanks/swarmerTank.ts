@@ -31,12 +31,10 @@ export class SwarmerTank extends BarrelTank {
         const parent = node.parent as TransformNode;
         this._singleTargetDrones = new SingleTargetDrones(world, parent, this._droneProperties);
         this._autoTargetDrones = new AutoTargetDrones(world, parent, this._droneProperties);
-    }
-
-    public override dispose(): void {
-        this._singleTargetDrones.dispose();
-        this._autoTargetDrones.dispose();
-        super.dispose();
+        this._node.onDisposeObservable.add(() => {
+            this._singleTargetDrones.dispose();
+            this._autoTargetDrones.dispose();
+        });
     }
 
     public override readonly upgradeNames = getUpgradeNames("Drone");

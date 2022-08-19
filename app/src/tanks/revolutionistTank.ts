@@ -1,11 +1,8 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { IDisposable } from "@babylonjs/core/scene";
-import { Nullable } from "@babylonjs/core/types";
-import { TargetCollider } from "../collisions";
+import { ProximityCollider } from "../colliders/colliders";
 import { findNode } from "../common";
 import { AutoTarget } from "../components/autoTarget";
 import { Entity } from "../entity";
-import { PlayerTankMetadata } from "../metadata";
 import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { BulletTank } from "./bulletTank";
@@ -17,26 +14,20 @@ const TARGET_RADIUS = 10;
 export class RevolutionistTank extends BulletTank {
     private readonly _tank: AutoTarget;
     private readonly _center: TransformNode;
-    private _targetCollisionToken: Nullable<IDisposable> = null;
     private _tankReloadTime = 0;
     private _tankRotation = Math.PI / 2;
 
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         super(world, node, previousTank);
 
+        this._tank = new AutoTarget(findNode(this._node, this._metadata.tanks![0]!));
         this._center = findNode(this._node, "center");
 
-        const metadata = this._node.metadata as PlayerTankMetadata;
-        this._tank = new AutoTarget(findNode(this._node, metadata.tanks![0]!));
-    }
+        const collider = new ProximityCollider(this._node, TARGET_RADIUS,
+            (other) => this.inBounds && other !== this && other.owner !== this,
+            (other) => this._tank.onCollide(other));
 
-    public override dispose(): void {
-        if (this._targetCollisionToken) {
-            this._targetCollisionToken.dispose();
-            this._targetCollisionToken = null;
-        }
-
-        super.dispose();
+        this._world.collisions.registerProximity(collider);
     }
 
     public override shoot(): void {
@@ -59,16 +50,6 @@ export class RevolutionistTank extends BulletTank {
         if (this.inBounds && !this.idle && this._tankReloadTime === 0 && this._tank.targetAcquired) {
             this._shootFrom(this._barrels[1]!);
             this._tankReloadTime = this._properties.reloadTime;
-        }
-
-        if (!this._targetCollisionToken) {
-            this._targetCollisionToken = this._world.collisions.register([
-                new TargetCollider(this._node.position, TARGET_RADIUS, (other) => {
-                    if (this.inBounds && other !== this && other.owner !== this) {
-                        this._tank.onCollide(other);
-                    }
-                })
-            ]);
         }
 
         super.update(deltaTime, onDestroy);

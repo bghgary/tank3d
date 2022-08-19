@@ -10,6 +10,10 @@ import { World } from "./worlds/world";
 
 const DROP_HEIGHT = 5;
 
+export interface CrasherConstructor {
+    new(world: World, node: TransformNode): BaseCrasher;
+}
+
 export class Crashers {
     private readonly _world: World;
     private readonly _maxCount: number;
@@ -21,7 +25,6 @@ export class Crashers {
         this._world = world;
         this._maxCount = maxCount;
         this._root = new TransformNode("crashers", this._world.scene);
-        this._world.collisions.register(this._crashers);
     }
 
     public speedCrashersEnabled = false;
@@ -43,26 +46,15 @@ export class Crashers {
         }
     }
 
+    private _createCrasher(constructor: CrasherConstructor, source: TransformNode): BaseCrasher {
+        const node = this._world.sources.create(source, this._root);
+        return new constructor(this._world, node);
+    }
+
     private _addCrasher(crasher: BaseCrasher, x: number, z: number, rotation: number): void {
         crasher.position.set(x, DROP_HEIGHT, z);
         Quaternion.FromEulerAnglesToRef(0, rotation, 0, crasher.rotation);
         this._crashers.add(crasher);
-    }
-
-    private _createCrasher(source: TransformNode): BaseCrasher {
-        return new BaseCrasher(this._world, this._world.sources.create(source, this._root));
-    }
-
-    private _createBulletCrasher(source: TransformNode): BaseCrasher {
-        return new BulletCrasher(this._world, this._world.sources.create(source, this._root));
-    }
-
-    private _createTwinCrasher(source: TransformNode): BaseCrasher {
-        return new TwinCrasher(this._world, this._world.sources.create(source, this._root));
-    }
-
-    private _createDroneCrasher(source: TransformNode): BaseCrasher {
-        return new DroneCrasher(this._world, this._world.sources.create(source, this._root));
     }
 
     private _spawnCrashers(): void {
@@ -85,14 +77,14 @@ export class Crashers {
         const n = Math.random();
         if (this.speedCrashersEnabled && n < 0.05) {
             createClump(1, 3, (x, z, rotation) => {
-                const crasher = this._createBulletCrasher(sources.crasher.speed);
+                const crasher = this._createCrasher(BulletCrasher, sources.crasher.speed);
                 this._addCrasher(crasher, x, z, rotation);
             });
         } else if (n < 0.95) {
             const create = [
-                () => this._createCrasher(sources.crasher.small),
-                () => this._createCrasher(sources.crasher.big),
-                () => this._createBulletCrasher(sources.crasher.shooter),
+                () => this._createCrasher(BaseCrasher, sources.crasher.small),
+                () => this._createCrasher(BaseCrasher, sources.crasher.big),
+                () => this._createCrasher(BulletCrasher, sources.crasher.shooter),
             ];
 
             createClump(4, 7, (x, z, rotation) => {
@@ -102,9 +94,9 @@ export class Crashers {
             });
         } else {
             const create = [
-                () => this._createBulletCrasher(sources.crasher.destroyer),
-                () => this._createTwinCrasher(sources.crasher.twin),
-                () => this._createDroneCrasher(sources.crasher.drone),
+                () => this._createCrasher(BulletCrasher, sources.crasher.destroyer),
+                () => this._createCrasher(TwinCrasher, sources.crasher.twin),
+                () => this._createCrasher(DroneCrasher, sources.crasher.drone),
             ];
 
             const n1 = Math.random();

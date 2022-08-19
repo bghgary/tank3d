@@ -1,9 +1,9 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
-import { Collisions, TargetCollider } from "../collisions";
-import { applyCollisionForce, getThreatValue } from "../common";
+import { ProximityCollider } from "../colliders/colliders";
+import { Collisions } from "../collisions";
+import { getThreatValue } from "../common";
 import { WeaponProperties } from "../components/weapon";
 import { Entity } from "../entity";
 import { TmpVector3 } from "../math";
@@ -13,6 +13,7 @@ import { World } from "../worlds/world";
 import { SniperTank } from "./sniperTank";
 
 const TARGET_RADIUS = 10;
+const MAX_BOUNCE_COUNT = 3;
 
 export class ReflectorTank extends SniperTank {
     protected override readonly _bulletConstructor = ReflectorBullet;
@@ -25,8 +26,10 @@ export class ReflectorTank extends SniperTank {
 
 class ReflectorBullet extends Bullet {
     private readonly _collisions: Collisions;
-    private _targetCollisionToken: Nullable<IDisposable> = null;
+    private _proximityCollider: Nullable<ProximityCollider> = null;
+    private _targetColliderReady = 0;
     private _targetThreatValue = 0;
+    private _bounces = MAX_BOUNCE_COUNT;
     private readonly _targetDirection = new Vector3();
 
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
@@ -36,55 +39,41 @@ class ReflectorBullet extends Bullet {
     }
 
     public override update(deltaTime: number, onDestroy: () => void): void {
-        if (this._targetCollisionToken) {
+        if (this._proximityCollider && --this._targetColliderReady === 0) {
             if (this._targetThreatValue > 0) {
                 this.velocity.copyFrom(this._targetDirection).scaleInPlace(this._targetVelocity.length());
                 this._targetVelocity.copyFrom(this.velocity);
-
-                this._targetThreatValue = 0;
+                --this._bounces;
             }
 
-            this._targetCollisionToken.dispose();
-            this._targetCollisionToken = null;
+            this._collisions.unregisterProximity(this._proximityCollider);
+            this._proximityCollider = null;
+            this._targetThreatValue = 0;
         }
 
-        super.update(deltaTime, () => {
-            if (this._targetCollisionToken) {
-                this._targetCollisionToken.dispose();
-                this._targetCollisionToken = null;
-            }
-
-            onDestroy();
-        });
+        super.update(deltaTime, onDestroy);
     }
 
-    public override onCollide(other: Entity): number {
-        if (this.owner.type === other.type || (other.owner && this.owner.type === other.owner.type)) {
-            return 1;
-        }
-
-        if (!this._targetCollisionToken) {
-            this._targetCollisionToken = this._collisions.register([
-                new TargetCollider(this._node.position, TARGET_RADIUS, (target) => {
-                    if (target !== other && target !== this.owner && target.owner !== this.owner) {
-                        const deltaPosition = TmpVector3[0].copyFrom(target.position).subtractInPlace(this._node.position);
-                        const targetDistance = deltaPosition.length();
-                        const threatValue = getThreatValue(target, targetDistance);
-                        if (threatValue > this._targetThreatValue) {
-                            this._targetThreatValue = threatValue;
-                            this._targetDirection.copyFrom(deltaPosition).normalizeFromLength(targetDistance);
-                        }
+    public override postCollide(other: Entity): number {
+        if (this._bounces > 0 && !this._proximityCollider) {
+            this._proximityCollider = new ProximityCollider(this._node, TARGET_RADIUS,
+                (entity) => entity !== other && entity !== this.owner && entity.owner !== this.owner,
+                (entity) => {
+                    const deltaPosition = TmpVector3[0].copyFrom(entity.position).subtractInPlace(this._node.position);
+                    const targetDistance = deltaPosition.length();
+                    const threatValue = getThreatValue(entity, targetDistance);
+                    if (threatValue > this._targetThreatValue) {
+                        this._targetThreatValue = threatValue;
+                        this._targetDirection.copyFrom(deltaPosition).normalizeFromLength(targetDistance);
                     }
-                })
-            ]);
+                });
+
+            this._collisions.registerProximity(this._proximityCollider);
+
+            // Wait until collisions have executed.
+            this._targetColliderReady = 2;
         }
 
-        if (other.damage.value > 0) {
-            // No flash for bullet.
-            this._health.takeDamage(other);
-        }
-
-        applyCollisionForce(this, other);
-        return other.damage.time;
+        return super.postCollide(other);
     }
 }

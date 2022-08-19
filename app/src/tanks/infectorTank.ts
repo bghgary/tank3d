@@ -2,9 +2,8 @@ import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable, DeepImmutableObject } from "@babylonjs/core/types";
 import { WeaponProperties } from "../components/weapon";
-import { Entity, EntityType } from "../entity";
+import { Enemy, Entity, EntityType } from "../entity";
 import { DroneConstructor, SingleTargetDrone } from "../projectiles/drones";
-import { Shape } from "../shapes";
 import { Sources } from "../sources";
 import { getUpgradeNames } from "../ui/upgrades";
 import { World } from "../worlds/world";
@@ -13,13 +12,17 @@ import { PlayerTank, TankProperties } from "./playerTank";
 
 const BASE_MAX_CLONE_COUNT = 10;
 
+function isCubeShape(entity: Entity): boolean {
+    return entity.type === EntityType.Shape && (entity as Enemy).points === 10;
+}
+
 interface InfectorTankInternal extends Entity {
     _addDrone(position: DeepImmutable<Vector3>, rotation: DeepImmutable<Quaternion>): void;
 }
 
 export class InfectorTank extends DirectorTank {
     protected override readonly _maxDroneCount: number = 1;
-    protected override readonly _droneConstructor: DroneConstructor<SingleTargetDrone> = infectorDrone;
+    protected override readonly _droneConstructor: DroneConstructor<SingleTargetDrone> = InfectorDrone;
     protected override readonly _droneSource = this._world.sources.drone.tankInfector;
 
     private readonly _removeEmptyDestroyedObserver: () => void;
@@ -56,6 +59,14 @@ export class InfectorTank extends DirectorTank {
         this._properties.reloadTime = 3;
     }
 
+    public override preCollide(other: Entity): boolean {
+        if (isCubeShape(other)) {
+            return false;
+        }
+
+        return super.preCollide(other);
+    }
+
     protected _addDrone(position: DeepImmutable<Vector3>, rotation: DeepImmutable<Quaternion>): void {
         if (this._drones.count < this._maxCloneCount) {
             const drone = this._barrels[0]!.addDrone(this._drones, this._droneConstructor, this, this._droneSource, Number.POSITIVE_INFINITY);
@@ -66,7 +77,7 @@ export class InfectorTank extends DirectorTank {
     }
 }
 
-class infectorDrone extends SingleTargetDrone {
+class InfectorDrone extends SingleTargetDrone {
     private readonly _removeEntityDestroyedObserver: () => void;
 
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
@@ -91,11 +102,11 @@ class infectorDrone extends SingleTargetDrone {
         });
     }
 
-    public override onCollide(other: Entity): number {
-        if (other.type === EntityType.Shape && (other as Shape).points === 10) {
-            return 1;
+    public override preCollide(other: Entity): boolean {
+        if (isCubeShape(other)) {
+            return false;
         }
 
-        return super.onCollide(other);
+        return super.preCollide(other);
     }
 }

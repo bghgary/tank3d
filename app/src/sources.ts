@@ -1,3 +1,4 @@
+import { VertexBuffer } from "@babylonjs/core/Buffers/buffer";
 import { Material } from "@babylonjs/core/Materials/material";
 import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
@@ -11,7 +12,8 @@ import { Scene } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
 import { WeaponProperties } from "./components/weapon";
 import { createShadowMaterial } from "./materials/shadowMaterial";
-import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LanceMetadata, LandmineMetadata, PlayerTankMetadata, SentryMetadata, ShapeMetadata, ShieldMetadata, SizeMetadata } from "./metadata";
+import { TmpVector3 } from "./math";
+import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LandmineMetadata, PlayerTankMetadata, SentryMetadata, ShapeMetadata, SizeMetadata } from "./metadata";
 import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
@@ -161,24 +163,14 @@ function createCone(name: string, diameter: number, length: number, scene: Scene
 
 function createLance(name: string, diameter: number, length: number, scene: Scene): Mesh {
     const mesh = createCone(name, diameter, length, scene);
-    mesh.position.z = 0.4;
-    (mesh.metadata as LanceMetadata) = {
-        colliders: ["collider0", "collider1", "collider2"],
+    const numVertices = mesh.getTotalVertices();
+    const metadata: SizeMetadata = {
+        size: length,
+        meshCollider: {
+            indices: [0, ((numVertices / 2) - 1) / 2, numVertices - 1],
+        },
     };
-
-    const createCollider = (name: string, z: number): void => {
-        const node = new TransformNode(name, scene);
-        node.position.z = z;
-        (node.metadata as SizeMetadata) = {
-            size: diameter * (1 - z / length),
-        };
-        node.parent = mesh;
-    };
-
-    createCollider("collider0", 0);
-    createCollider("collider1", length * 0.5);
-    createCollider("collider2", length);
-
+    mesh.metadata = metadata;
     return mesh;
 }
 
@@ -204,24 +196,49 @@ function createShield(name: string, diameter: number, slice: number, scene: Scen
 
     const mesh = Mesh.MergeMeshes([sphere, disc])!;
     mesh.name = name;
-    (mesh.metadata as ShieldMetadata) = {
-        colliders: ["collider0", "collider1", "collider2", "collider3", "collider4"],
+
+    const getColliderIndices = () => {
+        const positions = mesh.getVerticesData(VertexBuffer.PositionKind)!;
+        const numVertices = mesh.getTotalVertices();
+
+        const candidateIndices = new Array<number>();
+        const point = TmpVector3[0];
+        for (let index = 0; index < numVertices; ++index) {
+            Vector3.FromArrayToRef(positions, index * 3, point);
+            if (Math.abs(point.y) < 0.001) {
+                if (Math.abs(point.x) + Math.abs(point.z) >= 0.001) {
+                    candidateIndices.push(index);
+                }
+            }
+        }
+
+        candidateIndices.sort((a, b) => {
+            return positions[a * 3]! - positions[b * 3]!;
+        });
+
+        const indices = new Array<number>();
+        let count = 0;
+        let lastX = Number.MAX_VALUE;
+        for (const index of candidateIndices) {
+            const x = positions[index * 3]!;
+            if (Math.abs(lastX - x) > 0.001) {
+                if (count++ % 4 === 0) {
+                    indices.push(index);
+                }
+                lastX = x;
+            }
+        }
+
+        return indices;
     };
 
-    const createCollider = (name: string, x: number): void => {
-        const node = new TransformNode(name, scene);
-        node.position.x = x;
-        (node.metadata as SizeMetadata) = {
-            size: (sphereRadius - Math.sqrt(x * x + offset * offset)) * 2
-        };
-        node.parent = mesh;
+    const metadata: SizeMetadata = {
+        size: diameter,
+        meshCollider: {
+            indices: getColliderIndices(),
+        },
     };
-
-    createCollider("collider0", discRadius * -1.0);
-    createCollider("collider1", discRadius * -0.6);
-    createCollider("collider2", discRadius * 0.0);
-    createCollider("collider3", discRadius * 0.6);
-    createCollider("collider4", discRadius * 1.0);
+    mesh.metadata = metadata;
 
     return mesh;
 }
@@ -254,6 +271,7 @@ export class Sources {
         }
         readonly box: Mesh;
         readonly cylinder: Mesh;
+        readonly triangularPrism: Mesh;
         readonly dodecahedron: Mesh;
         readonly goldberg11: Mesh;
         readonly health: Mesh;
@@ -273,28 +291,30 @@ export class Sources {
     };
 
     public readonly bullet: {
-        readonly tank: TransformNode;
+        readonly bossKeeper: TransformNode;
         readonly crasher: TransformNode;
-        readonly sentry: TransformNode;
         readonly landmine: TransformNode;
-        readonly boss: TransformNode;
-        readonly tankLauncher: TransformNode;
+        readonly sentry: TransformNode;
+        readonly tank: TransformNode;
         readonly tankBomber: TransformNode;
+        readonly tankLauncher: TransformNode;
         readonly tankPoison: TransformNode;
     };
 
     public readonly drone: {
-        readonly tank: TransformNode;
+        readonly bossFortress: TransformNode;
         readonly crasher: TransformNode;
-        readonly tankSpawner: TransformNode;
+        readonly tank: TransformNode;
         readonly tankInfector: TransformNode;
+        readonly tankSpawner: TransformNode;
     };
 
     public readonly trap: {
+        readonly bossFortress: TransformNode;
         readonly tankTri: TransformNode;
         readonly tankQuad: TransformNode;
         readonly tankDodeca: TransformNode;
-    }
+    };
 
     public readonly shape: {
         readonly cube: TransformNode;
@@ -318,6 +338,7 @@ export class Sources {
 
     public readonly boss: {
         readonly keeper: TransformNode;
+        readonly fortress: TransformNode;
     };
 
     public readonly tank: {
@@ -396,6 +417,7 @@ export class Sources {
             },
             box: this._createBoxComponent(components),
             cylinder: this._createCylinderComponent(components),
+            triangularPrism: this._createTriangularPrismComponent(components),
             dodecahedron: this._createDodecahedronComponent(components),
             goldberg11: this._createGoldberg11Component(components),
             health: this._createHealthComponent(components),
@@ -417,28 +439,30 @@ export class Sources {
         const bullets = new TransformNode("bullets", this._scene);
         bullets.parent = sources;
         this.bullet = {
-            tank: this._createBulletSource(bullets, "tank", this._color.blue),
+            bossKeeper: this._createBulletSource(bullets, "bossKeeper", this._color.yellow),
             crasher: this._createBulletSource(bullets, "crasher", this._color.pink),
-            sentry: this._createBulletSource(bullets, "sentry", this._color.purple),
             landmine: this._createBulletSource(bullets, "landmine", this._color.gray),
-            boss: this._createBulletSource(bullets, "boss", this._color.orange),
-            tankLauncher: this._createLauncherTankMissileSource(bullets),
+            sentry: this._createBulletSource(bullets, "sentry", this._color.purple),
+            tank: this._createBulletSource(bullets, "tank", this._color.blue),
             tankBomber: this._createBomberTankBombSource(bullets),
+            tankLauncher: this._createLauncherTankMissileSource(bullets),
             tankPoison: this._createPoisonTankBulletSource(bullets),
         };
 
         const drones = new TransformNode("drones", this._scene);
         drones.parent = sources;
         this.drone = {
-            tank: this._createDroneSource(drones, "tank", this._color.blue),
+            bossFortress: this._createDroneSource(drones, "bossFortress", this._color.orange),
             crasher: this._createDroneSource(drones, "crasher", this._color.pink),
-            tankSpawner: this._createSpawnerTankDroneSource(drones),
+            tank: this._createDroneSource(drones, "tank", this._color.blue),
             tankInfector: this._createInfectorTankDroneSource(drones),
+            tankSpawner: this._createSpawnerTankDroneSource(drones),
         };
 
         const traps = new TransformNode("traps", this._scene);
         traps.parent = sources;
         this.trap = {
+            bossFortress: this._createTrapSource(traps, "bossFortress", this._color.orange, this._component.star.tri),
             tankTri: this._createTrapSource(traps, "tankTri", this._color.blue, this._component.star.tri),
             tankQuad: this._createTrapSource(traps, "tankQuad", this._color.blue, this._component.star.quad),
             tankDodeca: this._createTrapSource(traps, "tankDodeca", this._color.blue, this._component.star.dodeca),
@@ -472,6 +496,7 @@ export class Sources {
         bosses.parent = sources;
         this.boss = {
             keeper: this._createKeeperBossSource(bosses),
+            fortress: this._createFortressBossSource(bosses),
         };
 
         const tanks = new TransformNode("tanks", this._scene);
@@ -577,9 +602,8 @@ export class Sources {
     }
 
     private _createSquareMarkerComponent(parent: TransformNode): Mesh {
-        const mesh = MeshBuilder.CreateDisc("marker.square", { radius: 0.707 * MARKER_SCALE, tessellation: 4 }, this._scene);
+        const mesh = MeshBuilder.CreatePlane("marker.square", { size: MARKER_SCALE }, this._scene);
         mesh.rotation.x = Math.PI / 2;
-        mesh.rotation.z = Math.PI / 4;
         mesh.bakeCurrentTransformIntoVertices();
         mesh.registerInstancedBuffer("color", 3);
         mesh.layerMask = Minimap.LayerMask;
@@ -588,10 +612,19 @@ export class Sources {
     }
 
     private _createTriangleMarkerComponent(parent: TransformNode): Mesh {
-        const mesh = MeshBuilder.CreateDisc("marker.triangle", { radius: 0.8 * MARKER_SCALE, tessellation: 3 }, this._scene);
-        mesh.rotation.x = Math.PI / 2;
-        mesh.rotation.z = Math.PI / 2;
-        mesh.bakeCurrentTransformIntoVertices();
+        const mesh = new Mesh("marker.triangle", this._scene);
+        const points = new Float32Array(9);
+        const radius = 0.7698 * MARKER_SCALE; // scale to match area of box
+        const angle = 2 * Math.PI / 3;
+        for (let i = 0, theta = 0; i < 9; i += 3, theta += angle) {
+            points[i + 0] = -radius * Math.sin(theta);
+            points[i + 1] = 0;
+            points[i + 2] = radius * Math.cos(theta);
+        }
+
+        mesh.setVerticesData(VertexBuffer.PositionKind, points);
+        mesh.setIndices(new Uint16Array([0, 1, 2]));
+        mesh.createNormals(false);
         mesh.registerInstancedBuffer("color", 3);
         mesh.layerMask = Minimap.LayerMask;
         mesh.parent = parent;
@@ -616,8 +649,53 @@ export class Sources {
 
     private _createCylinderComponent(parent: TransformNode): Mesh {
         const mesh = MeshBuilder.CreateCylinder("cylinder", {}, this._scene);
+        mesh.scaling.y = 0.5;
+        mesh.bakeCurrentTransformIntoVertices();
         mesh.registerInstancedBuffer("color", 3);
         mesh.parent = parent;
+        return mesh;
+    }
+
+    private _createTriangularPrismComponent(parent: TransformNode): Mesh {
+        const mesh = new Mesh("triangularPrism", this._scene, parent);
+
+        const radius = 0.7698; // scale to match area of box
+        const angle = 2 * Math.PI / 3;
+        const points = new Array<Vector3>(6);
+        for (let i = 0, theta = 0; i < 3; ++i, theta += angle) {
+            const x = -radius * Math.sin(theta);
+            const z = radius * Math.cos(theta);
+            points[i] = new Vector3(x, 0.5, z);
+            points[i + 3] = new Vector3(x, -0.5, z);
+        }
+
+        const positions = new Array<number>();
+        const indices = new Array<number>();
+        const addPoint = (p: number) => {
+            positions.push(points[p]!.x);
+            positions.push(points[p]!.y);
+            positions.push(points[p]!.z);
+            indices.push(indices.length);
+        };
+        const addTriangle = (p0: number, p1: number, p2: number) => {
+            addPoint(p0);
+            addPoint(p1);
+            addPoint(p2);
+        };
+
+        addTriangle(0, 1, 2);
+        addTriangle(1, 0, 3);
+        addTriangle(1, 3, 4);
+        addTriangle(2, 1, 4);
+        addTriangle(2, 4, 5);
+        addTriangle(0, 2, 5);
+        addTriangle(0, 5, 3);
+        addTriangle(5, 4, 3);
+
+        mesh.setVerticesData(VertexBuffer.PositionKind, new Float32Array(positions));
+        mesh.setIndices(new Uint16Array(indices));
+        mesh.createNormals(false);
+        mesh.registerInstancedBuffer("color", 3);
         return mesh;
     }
 
@@ -1107,6 +1185,10 @@ export class Sources {
         const metadata: SentryMetadata = {
             displayName: "Sentry",
             size: 1.2,
+            meshCollider: {
+                name: "top",
+                indices: [2, 3, 4, 5],
+            },
             health: 1000,
             damage: { value: 50, time: 1 },
             points: 200,
@@ -1163,7 +1245,7 @@ export class Sources {
         const source = this._createSource(parent, "landmine", metadata);
 
         const body = createInstance(this._component.cylinder, "body", source, this._color.gray);
-        body.scaling.set(1, 0.2, 1);
+        body.scaling.set(1, 0.3, 1);
 
         const barrelMetadata: BarrelMetadata = {
             diameter: 0.3,
@@ -1194,6 +1276,10 @@ export class Sources {
         const metadata: BossMetadata = {
             displayName: "Keeper",
             size: 4,
+            meshCollider: {
+                name: "body",
+                indices: [2, 3, 4, 5],
+            },
             height: 2,
             speed: 1,
             health: 2000,
@@ -1216,7 +1302,7 @@ export class Sources {
         source.parent = parent;
         source.metadata = metadata;
 
-        const body = createInstance(this._component.box, "body", source, this._color.orange);
+        const body = createInstance(this._component.box, "body", source, this._color.yellow);
         body.scaling.set(bodyWidth, bodyHeight, bodyWidth);
 
         const angle = Math.PI * 0.25;
@@ -1235,7 +1321,7 @@ export class Sources {
         }];
 
         for (let index = 0; index < tankTransforms.length; ++index) {
-            const tankNodeName = metadata.tanks[index]!;
+            const tankNodeName = metadata.tanks![index]!;
             const tankTransform = tankTransforms[index]!;
 
             const offset = new TransformNode("offset");
@@ -1243,13 +1329,115 @@ export class Sources {
             offset.rotation.y = tankTransform.rotation;
             offset.parent = source;
 
-            const tank = createInstance(this._component.sphere, tankNodeName, offset, this._color.orange);
+            const tank = createInstance(this._component.sphere, tankNodeName, offset, this._color.yellow);
             tank.metadata = tankMetadata;
 
             this._createSimpleBarrel(tank, "barrel", barrelDiameter, barrelLength);
         }
 
-        createInstance(this._component.marker.square, "marker", body, this._color.orange);
+        createInstance(this._component.marker.square, "marker", body, this._color.yellow);
+
+        return source;
+    }
+
+    private _createFortressBossSource(parent: TransformNode): TransformNode {
+        const bodyWidth = 4;
+        const bodyHeight = 1.3;
+
+        const droneBarrelParameters: BarrelParameters = {
+            segments: [
+                { diameter: 0.45, length: 0.3 },
+            ],
+            baseDiameter: 0.55,
+        };
+
+        const trapBarrelParameters: BarrelParameters = {
+            segments: [
+                { diameter: 0.6, length: 0.4 },
+                { diameter: 1.0, length: 0.3 },
+            ],
+        };
+
+        const trapMetadata: DeepImmutable<WeaponProperties> = {
+            speed: 5,
+            damage: { value: 30, time: 0.2 },
+            health: 60,
+        };
+
+        const droneMetadata: DeepImmutable<WeaponProperties> = {
+            speed: 5,
+            damage: { value: 5, time: 0.2 },
+            health: 10,
+        };
+
+        const metadata: BossMetadata = {
+            displayName: "Fortress",
+            size: 4,
+            meshCollider: {
+                name: "body",
+                indices: [0, 1, 2],
+            },
+            height: 2,
+            speed: 1,
+            health: 4000,
+            damage: { value: 80, time: 1 },
+            points: 600,
+            barrels: [
+                "droneBarrelL0", "trapBarrel0", "droneBarrelR0",
+                "droneBarrelL1", "trapBarrel1", "droneBarrelR1",
+                "droneBarrelL2", "trapBarrel2", "droneBarrelR2",
+            ],
+            trap: trapMetadata,
+            drone: droneMetadata,
+        };
+
+        const source = new TransformNode("fortress", this._scene);
+        source.parent = parent;
+        source.metadata = metadata;
+
+        const body = createInstance(this._component.triangularPrism, "body", source, this._color.orange);
+        body.scaling.set(bodyWidth, bodyHeight, bodyWidth);
+
+        const droneOffset = 0.2;
+        const positions = body.getVerticesData(VertexBuffer.PositionKind)!;
+        const points = [
+            new Vector3(positions[0], 0, positions[2]),
+            new Vector3(positions[3], 0, positions[5]),
+            new Vector3(positions[6], 0, positions[8]),
+        ];
+
+        for (let i = 0; i < 3; ++i) {
+            const a = points[i]!;
+            const b = points[(i + 1) % 3]!;
+            const trap = a.add(b).scaleInPlace(0.5);
+            const vector = b.subtract(a);
+            const droneL = trap.add(vector.scale(-droneOffset));
+            const droneR = trap.add(vector.scale(+droneOffset));
+            const normal = Vector3.Up().cross(vector.normalize());
+
+            const trapBarrel = createBarrel(`trapBarrel${i}`, trapBarrelParameters, this._scene);
+            trapBarrel.position.copyFrom(trap);
+            trapBarrel.setDirection(normal);
+            trapBarrel.scaling.set(1 / body.scaling.x, 1 / body.scaling.y, 1 / body.scaling.z);
+            trapBarrel.material = this._material.gray;
+            trapBarrel.parent = body;
+
+            const droneBarrelL = createBarrel(`droneBarrelL${i}`, droneBarrelParameters, this._scene);
+            droneBarrelL.position.copyFrom(droneL);
+            droneBarrelL.setDirection(normal);
+            droneBarrelL.scaling.set(1 / body.scaling.x, 1 / body.scaling.y, 1 / body.scaling.z);
+            droneBarrelL.material = this._material.gray;
+            droneBarrelL.parent = body;
+
+            const droneBarrelR = createBarrel(`droneBarrelR${i}`, droneBarrelParameters, this._scene);
+            droneBarrelR.position.copyFrom(droneR);
+            droneBarrelR.setDirection(normal);
+            droneBarrelR.scaling.set(1 / body.scaling.x, 1 / body.scaling.y, 1 / body.scaling.z);
+            droneBarrelR.material = this._material.gray;
+            droneBarrelR.parent = body;
+        }
+
+        createInstance(this._component.marker.triangle, "marker", body, this._color.orange);
 
         return source;
     }

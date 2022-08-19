@@ -1,12 +1,12 @@
 import { Scalar } from "@babylonjs/core/Maths/math.scalar";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Collider } from "./collisions";
-import { applyCollisionForce, applyGravity, applyMovement, applyWallBounce, computeMass } from "./common";
+import { Collidable, EntityCollider } from "./colliders/colliders";
+import { applyGravity, applyMovement, applyWallBounce, computeMass } from "./common";
 import { Flash, FlashState } from "./components/flash";
 import { BarHealth } from "./components/health";
 import { Shadow } from "./components/shadow";
-import { Entity, EntityType } from "./entity";
+import { Enemy, Entity, EntityType } from "./entity";
 import { decayScalar } from "./math";
 import { ShapeMetadata } from "./metadata";
 import { World } from "./worlds/world";
@@ -16,14 +16,10 @@ const IDLE_MOVEMENT_SPEED = 0.05;
 const SPAWN_TIME = 1;
 const SPAWN_DROP_HEIGHT = 5;
 
-export interface Shape extends Entity {
-    readonly points: number;
-}
-
 export class Shapes {
     private readonly _world: World;
     private readonly _root: TransformNode;
-    private readonly _shapes = new Set<ShapeImpl>();
+    private readonly _shapes = new Set<Shape>();
     private readonly _spawns = new Set<{ time: number }>();
 
     public constructor(world: World, maxCount: number) {
@@ -33,8 +29,6 @@ export class Shapes {
         for (let index = 0; index < maxCount; ++index) {
             this._shapes.add(this._createShape(0));
         }
-
-        this._world.collisions.register(this._shapes);
     }
 
     public update(deltaTime: number): void {
@@ -55,7 +49,7 @@ export class Shapes {
         }
     }
 
-    private _createShape(dropHeight: number): ShapeImpl {
+    private _createShape(dropHeight: number): Shape {
         const sources = [
             this._world.sources.shape.cube,
             this._world.sources.shape.tetrahedron,
@@ -66,7 +60,7 @@ export class Shapes {
         const n = Math.random();
         const source = sources[n < 0.6 ? 0 : n < 0.95 ? 1 : n < 0.99 ? 2 : 3]!;
         const node = this._world.sources.create(source, this._root);
-        const shape = new ShapeImpl(this._world, node);
+        const shape = new Shape(this._world, node);
 
         const limit = (this._world.size - shape.size) * 0.5;
         const x = Scalar.RandomRange(-limit, limit);
@@ -76,7 +70,7 @@ export class Shapes {
         const randomAngle = Scalar.RandomRange(0, Scalar.TwoPi);
         const speed = IDLE_MOVEMENT_SPEED / shape.mass;
         shape.velocity.x = Math.cos(randomAngle) * speed;
-        shape.velocity.y = Math.sin(randomAngle) * speed;
+        shape.velocity.z = Math.sin(randomAngle) * speed;
 
         Quaternion.FromEulerAnglesToRef(0, Scalar.RandomRange(0, Scalar.TwoPi), 0, shape.rotation);
 
@@ -87,7 +81,7 @@ export class Shapes {
     }
 }
 
-class ShapeImpl implements Shape, Collider {
+class Shape implements Enemy, Collidable {
     private readonly _world: World;
     private readonly _node: TransformNode;
     private readonly _metadata: ShapeMetadata;
@@ -102,13 +96,12 @@ class ShapeImpl implements Shape, Collider {
         this._flash = new Flash(this._node);
         this._health = new BarHealth(this._world.sources, this._node, this._metadata.health);
         this._shadow = new Shadow(this._world.sources, this._node);
+
+        const collider = EntityCollider.FromMetadata(this._node, this._metadata, this);
+        this._world.collisions.registerEntity(collider);
     }
 
-    public dispose(): void {
-        this._node.dispose();
-    }
-
-    public get points() { return this._metadata.points; }
+    public rotationVelocity = 0;
 
     // Entity
     public get displayName() { return this._metadata.displayName; }
@@ -121,13 +114,8 @@ class ShapeImpl implements Shape, Collider {
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
 
-    // Quadtree.Rect
-    public get x() { return this._node.position.x - this.size * 0.5; }
-    public get y() { return this._node.position.z - this.size * 0.5; }
-    public get width() { return this.size; }
-    public get height() { return this.size; }
-
-    public rotationVelocity = 0;
+    // Enemy
+    public get points() { return this._metadata.points; }
 
     public update(deltaTime: number, onDestroy: (source: Entity) => void): void {
         if (applyGravity(deltaTime, this._node.position, this.velocity)) {
@@ -151,9 +139,12 @@ class ShapeImpl implements Shape, Collider {
         }
     }
 
-    public onCollide(other: Entity): number {
+    public preCollide(): boolean {
+        return true;
+    }
+
+    public postCollide(other: Entity): number {
         if (other.type === EntityType.Shape) {
-            applyCollisionForce(this, other);
             this.rotationVelocity = -this.rotationVelocity;
             return 0;
         }
@@ -163,7 +154,6 @@ class ShapeImpl implements Shape, Collider {
             this._health.takeDamage(other);
         }
 
-        applyCollisionForce(this, other);
         return other.damage.time;
     }
 }

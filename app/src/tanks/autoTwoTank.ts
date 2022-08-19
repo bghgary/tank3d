@@ -1,7 +1,5 @@
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { IDisposable } from "@babylonjs/core/scene";
-import { Nullable } from "@babylonjs/core/types";
-import { TargetCollider } from "../collisions";
+import { ProximityCollider } from "../colliders/colliders";
 import { findNode, isTarget } from "../common";
 import { AutoTarget } from "../components/autoTarget";
 import { Entity } from "../entity";
@@ -15,7 +13,6 @@ const TARGET_RADIUS = 10;
 
 export class AutoTwoTank extends BulletTank {
     private readonly _tanks: Array<AutoTarget>;
-    private _targetCollisionToken: Nullable<IDisposable> = null;
     private _barrelIndex = 0;
 
     public constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
@@ -23,15 +20,16 @@ export class AutoTwoTank extends BulletTank {
 
         const metadata = this._node.metadata as PlayerTankMetadata;
         this._tanks = metadata.tanks!.map((name) => new AutoTarget(findNode(this._node, name)));
-    }
 
-    public override dispose(): void {
-        if (this._targetCollisionToken) {
-            this._targetCollisionToken.dispose();
-            this._targetCollisionToken = null;
-        }
+        const collider = new ProximityCollider(this._node, TARGET_RADIUS,
+            (entity) => this.inBounds && isTarget(entity, this),
+            (entity) => {
+                for (const tank of this._tanks) {
+                    tank.onCollide(entity);
+                }
+            });
 
-        super.dispose();
+        this._world.collisions.registerProximity(collider);
     }
 
     public override shoot(): void {
@@ -49,18 +47,6 @@ export class AutoTwoTank extends BulletTank {
     public override update(deltaTime: number, onDestroy: (entity: Entity) => void): void {
         for (const tank of this._tanks) {
             tank.update(deltaTime);
-        }
-
-        if (!this._targetCollisionToken) {
-            this._targetCollisionToken = this._world.collisions.register([
-                new TargetCollider(this._node.position, TARGET_RADIUS, (other) => {
-                    if (this.inBounds && isTarget(other, this)) {
-                        for (const tank of this._tanks) {
-                            tank.onCollide(other);
-                        }
-                    }
-                })
-            ]);
         }
 
         super.update(deltaTime, onDestroy);

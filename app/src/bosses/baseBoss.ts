@@ -1,7 +1,7 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { Collider } from "../collisions";
-import { applyCollisionForce, applyGravity, applyMovement, applyWallClamp, computeMass } from "../common";
+import { Collidable, EntityCollider } from "../colliders/colliders";
+import { applyGravity, applyMovement, applyWallClamp, computeMass } from "../common";
 import { Flash, FlashState } from "../components/flash";
 import { BarHealth } from "../components/health";
 import { Shadow } from "../components/shadow";
@@ -10,7 +10,7 @@ import { BossMetadata } from "../metadata";
 import { Player } from "../player";
 import { World } from "../worlds/world";
 
-export abstract class BaseBoss implements Enemy, Collider {
+export abstract class BaseBoss implements Enemy, Collidable {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
     protected readonly _metadata: BossMetadata;
@@ -25,6 +25,9 @@ export abstract class BaseBoss implements Enemy, Collider {
         this._shadow = new Shadow(this._world.sources, node);
         this._flash = new Flash(this._node);
         this._health = new BarHealth(this._world.sources, node, this._metadata.health);
+
+        const collider = EntityCollider.FromMetadata(this._node, this._metadata, this);
+        this._world.collisions.registerEntity(collider);
     }
 
     // Entity
@@ -40,12 +43,6 @@ export abstract class BaseBoss implements Enemy, Collider {
 
     // Enemy
     public get points() { return this._metadata.points; }
-
-    // Quadtree.Rect
-    public get x() { return this._node.position.x - this.size * 0.5; }
-    public get y() { return this._node.position.z - this.size * 0.5; }
-    public get width() { return this.size; }
-    public get height() { return this.size; }
 
     public update(deltaTime: number, player: Player, onDestroy: (source: Entity) => void): void {
         if (applyGravity(deltaTime, this._node.position, this.velocity)) {
@@ -66,19 +63,22 @@ export abstract class BaseBoss implements Enemy, Collider {
 
     protected abstract _update(deltaTime: number, player: Player): void;
 
-    public onCollide(other: Entity): number {
-        if (other.type === EntityType.Boss || (other.owner && other.owner.type === EntityType.Boss)) {
-            if (other.type !== EntityType.Bullet) {
-                applyCollisionForce(this, other);
-                return 0;
-            }
-        } else {
-            if (other.damage.value > 0) {
-                this._flash.setState(FlashState.Damage);
-                this._health.takeDamage(other);
-            }
+    public preCollide(other: Entity): boolean {
+        if (other.type === EntityType.Bullet && other.owner!.type === EntityType.Boss) {
+            return false;
+        }
 
-            applyCollisionForce(this, other);
+        return true;
+    }
+
+    public postCollide(other: Entity): number {
+        if (other.type === EntityType.Boss || (other.owner && other.owner.type === EntityType.Boss)) {
+            return 0;
+        }
+
+        if (other.damage.value > 0) {
+            this._flash.setState(FlashState.Damage);
+            this._health.takeDamage(other);
         }
 
         return other.damage.time;

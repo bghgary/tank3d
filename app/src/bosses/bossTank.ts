@@ -56,7 +56,7 @@ export class BossTank {
             const maxAngle = Math.atan(TARGET_RADIUS / targetDistance);
             if (Math.abs(angle - targetAngle) < maxAngle) {
                 for (const barrel of this._barrels) {
-                    barrel.shootBullet(Bullet, this._owner, this._world.sources.bullet.boss, this._metadata.bullet, 3);
+                    barrel.shootBullet(Bullet, this._owner, this._world.sources.bullet.bossKeeper, this._metadata.bullet, 3);
                 }
 
                 this._reloadTime = this._metadata.reload;

@@ -1,9 +1,8 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { IDisposable } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
-import { Collider } from "../collisions";
-import { applyCollisionForce, applyMovement, applyWallClamp, computeMass } from "../common";
+import { Collidable, EntityCollider } from "../colliders/colliders";
+import { applyMovement, applyWallClamp, computeMass } from "../common";
 import { Damage, DamageZero } from "../components/damage";
 import { Flash, FlashState } from "../components/flash";
 import { BarHealth } from "../components/health";
@@ -73,7 +72,7 @@ function multiply(properties: DeepImmutable<TankProperties>, value: Partial<Deep
     };
 }
 
-export abstract class PlayerTank implements Entity, Collider {
+export abstract class PlayerTank implements Entity, Collidable {
     protected readonly _world: World;
     protected readonly _node: TransformNode;
     protected readonly _metadata: PlayerTankMetadata;
@@ -88,8 +87,6 @@ export abstract class PlayerTank implements Entity, Collider {
     protected _properties: TankProperties;
     protected _damage: Damage = { value: 0, time: 1 };
 
-    private readonly _collisionToken: IDisposable;
-
     protected constructor(world: World, node: TransformNode, previousTank?: PlayerTank) {
         this._world = world;
 
@@ -103,6 +100,7 @@ export abstract class PlayerTank implements Entity, Collider {
         if (previousTank) {
             this._node.position.copyFrom(previousTank._node.position);
             this._node.rotationQuaternion!.copyFrom(previousTank._node.rotationQuaternion!);
+            this._node.computeWorldMatrix();
 
             this._shadow = previousTank._shadow;
             this._shadow.setParent(this._node);
@@ -110,23 +108,21 @@ export abstract class PlayerTank implements Entity, Collider {
             this._health = previousTank._health;
             this._health.setParent(this._node);
 
-            this._idle = previousTank._idle;
-            this._flash.setState(this._idle ? FlashState.Idle : FlashState.None);
+            this._setIdle(previousTank._idle);
 
             previousTank.dispose();
         } else {
             this._shadow = new Shadow(this._world.sources, this._node);
             this._health = new BarHealth(this._world.sources, this._node, this._properties.maxHealth, this._properties.healthRegen);
-            this._flash.setState(FlashState.Idle);
-            this._idle = true;
+            this._setIdle(true);
         }
 
-        this._collisionToken = this._world.collisions.register([this]);
+        const collider = EntityCollider.FromMetadata(this._node, this._metadata, this);
+        this._world.collisions.registerEntity(collider);
     }
 
     public dispose(): void {
         this._node.dispose();
-        this._collisionToken.dispose();
     }
 
     // Entity
@@ -139,12 +135,6 @@ export abstract class PlayerTank implements Entity, Collider {
     public get position() { return this._node.position; }
     public get rotation() { return this._node.rotationQuaternion!; }
     public readonly velocity = new Vector3();
-
-    // Quadtree.Rect
-    public get x() { return this._node.position.x - this.size * 0.5; }
-    public get y() { return this._node.position.z - this.size * 0.5; }
-    public get width() { return this.size; }
-    public get height() { return this.size; }
 
     public abstract readonly upgradeNames: Map<UpgradeType, string>;
     public readonly cameraRadiusMultiplier: number = 1;
@@ -168,7 +158,7 @@ export abstract class PlayerTank implements Entity, Collider {
         this._autoRotate = !this._autoRotate;
     }
 
-    public rotate(deltaTime: number): void {
+    public applyRotation(deltaTime: number): void {
         if (this._autoRotate) {
             this._node.addRotation(0, this._autoRotateSpeed * deltaTime, 0);
         } else {
@@ -176,13 +166,12 @@ export abstract class PlayerTank implements Entity, Collider {
         }
     }
 
-    public move(deltaTime: number, x: number, z: number, limit: number): void {
+    public applyMovement(deltaTime: number, x: number, z: number, limit: number): void {
         const targetVelocity = TmpVector3[0].setAll(0);
         if (x !== 0 || z !== 0) {
             const moveFactor = this._properties.moveSpeed / Math.sqrt(x * x + z * z);
             targetVelocity.set(x * moveFactor, 0, z * moveFactor);
-            this._flash.setState(FlashState.None);
-            this._idle = false;
+            this._setIdle(false);
         }
 
         decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
@@ -192,8 +181,7 @@ export abstract class PlayerTank implements Entity, Collider {
     }
 
     public shoot(): void {
-        this._flash.setState(FlashState.None);
-        this._idle = false;
+        this._setIdle(false);
     }
 
     public secondary(_active: boolean): void {
@@ -224,19 +212,21 @@ export abstract class PlayerTank implements Entity, Collider {
         this._node.position.setAll(0);
         this.velocity.setAll(0);
         this._node.setEnabled(true);
-        this._flash.setState(FlashState.Idle);
-        this._idle = true;
+        this._setIdle(true);
         this._autoRotate = false;
         this._autoShoot = false;
     }
 
-    public onCollide(other: Entity): number {
-        if (other.owner === this && (other.type === EntityType.Bullet || other.type === EntityType.Lance || other.type === EntityType.Shield)) {
-            return 0;
+    public preCollide(other: Entity): boolean {
+        if (other.owner === this && other.type === EntityType.Bullet) {
+            return false;
         }
 
+        return true;
+    }
+
+    public postCollide(other: Entity): number {
         if (this._idle || other.owner === this) {
-            applyCollisionForce(this, other);
             return 0;
         }
 
@@ -245,7 +235,11 @@ export abstract class PlayerTank implements Entity, Collider {
             this._health.takeDamage(other);
         }
 
-        applyCollisionForce(this, other);
         return other.damage.time;
+    }
+
+    private _setIdle(value: boolean): void {
+        this._idle = value;
+        this._flash.setState(this._idle ? FlashState.Idle : FlashState.None);
     }
 }

@@ -27,11 +27,9 @@ export class DetectorTank extends BarrelTank {
 
         const parent = node.parent as TransformNode;
         this._drones = new AutoTargetDrones(world, parent, this._droneProperties);
-    }
-
-    public override dispose(): void {
-        this._drones.dispose();
-        super.dispose();
+        this._node.onDisposeObservable.add(() => {
+            this._drones.dispose();
+        });
     }
 
     public override readonly upgradeNames = getUpgradeNames("Drone");
