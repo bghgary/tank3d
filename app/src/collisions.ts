@@ -1,4 +1,4 @@
-import { Vector3 } from "@babylonjs/core";
+import { Vector3 } from "@babylonjs/core/Maths/math.vector";
 import Quadtree from "@timohausmann/quadtree-js";
 import { Collidable, Collider, EntityCollider, ProximityCollider } from "./colliders/colliders";
 import { Entity } from "./entity";
