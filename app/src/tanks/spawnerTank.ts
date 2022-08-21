@@ -46,7 +46,7 @@ class SpawnerDrone extends SingleTargetDrone {
 
     public override update(deltaTime: number, onDestroy: () => void): void {
         if (this.target) {
-            if (this._reloadTime === 0 && this.target.radius === 0) {
+            if (this._reloadTime === 0 && this.target.defendRadius === 0) {
                 const angle = Math.acos(Vector3.Dot(this._node.forward, this._targetDirection));
                 const maxAngle = Math.atan(this.target.size / this._targetDistance);
                 if (angle < maxAngle) {

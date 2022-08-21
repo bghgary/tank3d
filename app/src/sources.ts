@@ -382,6 +382,7 @@ export class Sources {
         readonly revolutionist: TransformNode;
         readonly reflector: TransformNode;
         readonly grower: TransformNode;
+        readonly deceiver: TransformNode;
     };
 
     public constructor(world: World) {
@@ -542,6 +543,7 @@ export class Sources {
             revolutionist: this._createRevolutionistTankSource(tanks),
             reflector: this._createReflectorTankSource(tanks),
             grower: this._createGrowerTankSource(tanks),
+            deceiver: this._createDeceiverTankSource(tanks),
         };
     }
 
@@ -1595,10 +1597,10 @@ export class Sources {
             size: 1,
             barrels: ["barrel"],
             multiplier: {
-                reloadTime: 3,
                 weaponSpeed: 0.8,
-                weaponDamage: 2.5,
-                weaponHealth: 2.5,
+                weaponDamage: 2,
+                weaponHealth: 2,
+                reloadTime: 3,
             },
         };
 
@@ -1837,9 +1839,9 @@ export class Sources {
             barrels: ["barrel"],
             multiplier: {
                 weaponSpeed: 0.8,
-                weaponDamage: 3.5,
-                weaponHealth: 3.5,
-                reloadTime: 3,
+                weaponDamage: 3,
+                weaponHealth: 3,
+                reloadTime: 4,
             },
         };
 
@@ -2425,8 +2427,8 @@ export class Sources {
             barrels: ["barrel"],
             multiplier: {
                 weaponSpeed: 2,
-                reloadTime: 3,
                 weaponHealth: 2,
+                reloadTime: 3,
             },
         };
 
@@ -2452,14 +2454,41 @@ export class Sources {
             size: 1,
             barrels: ["barrel"],
             multiplier: {
-                reloadTime: 4,
                 weaponSpeed: 0.8,
-                weaponDamage: 2.5,
-                weaponHealth: 2.5,
+                weaponDamage: 2,
+                weaponHealth: 2,
+                reloadTime: 4,
             },
         };
 
         const source = this._createTankBody(parent, "grower", metadata);
+
+        this._createBarrel(source, "barrel", barrelParameters);
+
+        return source;
+    }
+
+    private _createDeceiverTankSource(parent: TransformNode): TransformNode {
+        const barrelParameters: BarrelParameters = {
+            segments: [
+                { diameter: 0.40, length: 0.54 },
+                { diameter: 0.80, length: 0.30 },
+            ],
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Deceiver",
+            size: 1,
+            barrels: ["barrel"],
+            multiplier: {
+                weaponSpeed: 0.8,
+                weaponDamage: 2,
+                weaponHealth: 2,
+                reloadTime: 4,
+            },
+        };
+
+        const source = this._createTankBody(parent, "deceiver", metadata);
 
         this._createBarrel(source, "barrel", barrelParameters);
 

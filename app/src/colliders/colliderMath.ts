@@ -42,7 +42,7 @@ function getOverlap(a: [number, number], b: [number, number]): number {
     return Math.min(a[1], b[1]) - Math.max(a[0], b[0]);
 }
 
-export function collideCircleWithCircle(center1: DeepImmutable<Vector3>, radius1: number, center2: DeepImmutable<Vector3>, radius2: number, mtv: Vector3): boolean {
+export function collideCircleWithCircle(center1: DeepImmutable<Vector3>, radius1: number, center2: DeepImmutable<Vector3>, radius2: number, mtv?: Vector3): boolean {
     const contactDistance = radius1 + radius2;
     const delta = TmpVector3[0];
     center1.subtractToRef(center2, delta);
@@ -51,15 +51,18 @@ export function collideCircleWithCircle(center1: DeepImmutable<Vector3>, radius1
         return false;
     }
 
-    const distance = Math.sqrt(distance2);
-    delta.scaleToRef(contactDistance / distance - 1, mtv);
+    if (mtv) {
+        const distance = Math.sqrt(distance2);
+        delta.scaleToRef(contactDistance / distance - 1, mtv);
+    }
+
     return true;
 }
 
 function collideSAT(
     center1: DeepImmutable<Vector3>, project1: (axis: DeepImmutable<Vector3>) => [number, number],
     center2: DeepImmutable<Vector3>, project2: (axis: DeepImmutable<Vector3>) => [number, number],
-    mtv: Vector3): boolean {
+    mtv?: Vector3): boolean {
 
     let minOverlap = Number.MAX_VALUE;
     let minAxis: Vector3 = axes[0]!;
@@ -79,16 +82,19 @@ function collideSAT(
         }
     }
 
-    const delta = TmpVector3[0];
-    center1.subtractToRef(center2, delta);
-    mtv.copyFrom(minAxis).scaleInPlace(minOverlap * Math.sign(Vector3.Dot(delta, minAxis)));
+    if (mtv) {
+        const delta = TmpVector3[0];
+        center1.subtractToRef(center2, delta);
+        mtv.copyFrom(minAxis).scaleInPlace(minOverlap * Math.sign(Vector3.Dot(delta, minAxis)));
+    }
+
     return true;
 }
 
 export function collidePolygonWithPolygon(
     center1: DeepImmutable<Vector3>, polygon1: DeepImmutable<Array<Vector3>>,
     center2: DeepImmutable<Vector3>, polygon2: DeepImmutable<Array<Vector3>>,
-    mtv: Vector3): boolean {
+    mtv?: Vector3): boolean {
 
     numAxes = 0;
     getAxes(polygon1);
@@ -103,7 +109,7 @@ export function collidePolygonWithPolygon(
 export function collideCircleWithPolygon(
     center1: DeepImmutable<Vector3>, radius1: number,
     center2: DeepImmutable<Vector3>, polygon2: DeepImmutable<Array<Vector3>>,
-    mtv: Vector3): boolean {
+    mtv?: Vector3): boolean {
 
     numAxes = 0;
 
@@ -135,12 +141,15 @@ export function collideCircleWithPolygon(
 export function collidePolygonWithCircle(
     center1: DeepImmutable<Vector3>, polygon1: DeepImmutable<Array<Vector3>>,
     center2: DeepImmutable<Vector3>, radius2: number,
-    mtv: Vector3): boolean {
+    mtv?: Vector3): boolean {
 
     if (!collideCircleWithPolygon(center2, radius2, center1, polygon1, mtv)) {
         return false;
     }
 
-    mtv.scaleInPlace(-1);
+    if (mtv) {
+        mtv.scaleInPlace(-1);
+    }
+
     return true;
 }

@@ -109,10 +109,14 @@ export class Collisions {
             for (const collider2 of this._quadtree.retrieve<Collider>(collider1)) {
                 if (collider1 !== collider2 && isEntityCollider(collider2) && !collided.has(collider1)) {
                     const entity2 = collider2.entity;
+                    if (!entity2.active) {
+                        continue;
+                    }
+
                     const preCollide1 = entity1.preCollide(entity2);
                     const preCollide2 = entity2.preCollide(entity1);
                     if (preCollide1 || preCollide2) {
-                        const mtv = TmpVector3[0];
+                        const mtv = (entity1.impenetrable || entity2.impenetrable) ? TmpVector3[0] : undefined;
                         if (Collider.Collide(collider1, collider2, mtv)) {
                             collided.add(collider2);
 
@@ -124,7 +128,7 @@ export class Collisions {
                                 this._postCollide(entity2, entity1);
                             }
 
-                            if (entity1.impenetrable || entity2.impenetrable) {
+                            if (mtv) {
                                 applyImpenetrability(entity1, entity2, mtv);
                             }
                         }

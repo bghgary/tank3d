@@ -22,7 +22,7 @@ export class Bullets extends Projectiles<Bullet> {
 }
 
 export class Bullet extends Projectile {
-    protected readonly _targetVelocity: DeepImmutable<Vector3> = new Vector3();
+    protected readonly _velocityTarget: DeepImmutable<Vector3> = new Vector3();
     protected readonly _health: Health;
 
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
@@ -32,7 +32,7 @@ export class Bullet extends Projectile {
 
     public override shoot(barrelNode: TransformNode, callback?: (barrelForward: Vector3, speed: number) => void): void {
         super.shoot(barrelNode, (barrelForward, speed) => {
-            this._targetVelocity.copyFrom(barrelForward).scaleInPlace(speed);
+            this._velocityTarget.copyFrom(barrelForward).scaleInPlace(speed);
 
             if (callback) {
                 callback(barrelForward, speed);
@@ -44,7 +44,7 @@ export class Bullet extends Projectile {
 
     public override update(deltaTime: number, onDestroy: () => void): void {
         applyMovement(deltaTime, this._node.position, this.velocity);
-        decayVector3ToRef(this.velocity, this._targetVelocity, deltaTime, 2, this.velocity);
+        decayVector3ToRef(this.velocity, this._velocityTarget, deltaTime, 2, this.velocity);
         super.update(deltaTime, onDestroy);
     }
 

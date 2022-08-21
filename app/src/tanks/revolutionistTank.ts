@@ -9,7 +9,7 @@ import { BulletTank } from "./bulletTank";
 import { PlayerTank } from "./playerTank";
 
 const ROTATION_SPEED = -1;
-const TARGET_RADIUS = 10;
+const PROXIMITY_RADIUS = 10;
 
 export class RevolutionistTank extends BulletTank {
     private readonly _tank: AutoTarget;
@@ -23,7 +23,7 @@ export class RevolutionistTank extends BulletTank {
         this._tank = new AutoTarget(findNode(this._node, this._metadata.tanks![0]!));
         this._center = findNode(this._node, "center");
 
-        const collider = new ProximityCollider(this._node, TARGET_RADIUS,
+        const collider = new ProximityCollider(this._node, PROXIMITY_RADIUS,
             (other) => this.inBounds && other !== this && other.owner !== this,
             (other) => this._tank.onCollide(other));
 

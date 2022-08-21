@@ -12,7 +12,7 @@ import { decayVector3ToRef, TmpVector3 } from "../math";
 import { World } from "../worlds/world";
 import { Projectile, ProjectileConstructor, Projectiles } from "./projectiles";
 
-const TARGET_RADIUS = 10;
+const PROXIMITY_RADIUS = 10;
 
 export type DroneConstructor<T extends Drone> = ProjectileConstructor<T>;
 
@@ -31,13 +31,13 @@ export abstract class Drones<T extends Drone> extends Projectiles<T> {
 }
 
 export interface DroneTarget {
-    radius: number;
-    position: Vector3;
+    defendRadius: number;
+    readonly position: Vector3;
     size: number;
 }
 
 export class SingleTargetDrones extends Drones<SingleTargetDrone> {
-    public readonly target: DroneTarget = { radius: 0, position: new Vector3(), size: 1 };
+    public readonly target: DroneTarget = { defendRadius: 0, position: new Vector3(), size: 1 };
 
     public override add(constructor: DroneConstructor<SingleTargetDrone>, owner: Entity, source: Mesh, barrelNode: TransformNode, duration: number): SingleTargetDrone {
         const drone = super.add(constructor, owner, source, barrelNode, duration);
@@ -69,9 +69,9 @@ export abstract class Drone extends Projectile {
         this._targetDistance = this._targetDirection.length();
         direction.normalizeFromLength(Math.max(this._targetDistance, 0.01));
 
-        if (target.radius > 0) {
+        if (target.defendRadius > 0) {
             const position = TmpVector3[1];
-            direction.scaleToRef(-target.radius, position);
+            direction.scaleToRef(-target.defendRadius, position);
             position.addInPlace(target.position);
             position.addInPlaceFromFloats(-direction.z, direction.y, direction.x);
             position.subtractToRef(this._node.position, direction);
@@ -83,8 +83,8 @@ export abstract class Drone extends Projectile {
         this._node.setDirection(direction.normalize());
 
         const speed = this._properties.speed * Math.min(this._targetDistance, 1);
-        const targetVelocity = TmpVector3[2].copyFrom(forward).scaleInPlace(speed);
-        decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
+        const velocityTarget = TmpVector3[2].copyFrom(forward).scaleInPlace(speed);
+        decayVector3ToRef(this.velocity, velocityTarget, deltaTime, 2, this.velocity);
     }
 
     public preCollide(other: Entity): boolean {
@@ -124,14 +124,14 @@ export class SingleTargetDrone extends Drone {
 }
 
 export class AutoTargetDrone extends Drone {
-    private readonly _targetVelocity: DeepImmutable<Vector3> = new Vector3();
-    private readonly _target: DroneTarget = { radius: 0, position: new Vector3(), size: 1 };
+    private readonly _velocityTarget: DeepImmutable<Vector3> = new Vector3();
+    private readonly _target: DroneTarget = { defendRadius: 0, position: new Vector3(), size: 1 };
     private _targetThreatValue = 0;
 
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
         super(world, owner, node, barrelNode, properties, duration);
 
-        const collider = new ProximityCollider(this._node, TARGET_RADIUS,
+        const collider = new ProximityCollider(this._node, PROXIMITY_RADIUS,
             (entity) => isTarget(entity, this.owner),
             (entity) => {
                 const distance = Vector3.Distance(this._node.position, entity.position);
@@ -148,7 +148,7 @@ export class AutoTargetDrone extends Drone {
 
     public override shoot(barrelNode: TransformNode, callback?: (barrelForward: Vector3, speed: number) => void): void {
         super.shoot(barrelNode, (barrelForward, speed) => {
-            this._targetVelocity.copyFrom(barrelForward).scaleInPlace(speed);
+            this._velocityTarget.copyFrom(barrelForward).scaleInPlace(speed);
 
             if (callback) {
                 callback(barrelForward, speed);
@@ -160,12 +160,11 @@ export class AutoTargetDrone extends Drone {
         applyMovement(deltaTime, this._node.position, this.velocity);
 
         if (this._targetThreatValue === 0) {
-            decayVector3ToRef(this.velocity, this._targetVelocity, deltaTime, 2, this.velocity);
+            decayVector3ToRef(this.velocity, this._velocityTarget, deltaTime, 2, this.velocity);
         } else {
             this._chase(deltaTime, this._target);
+            this._targetThreatValue = 0;
         }
-
-        this._targetThreatValue = 0;
 
         super.update(deltaTime, onDestroy);
     }

@@ -52,7 +52,7 @@ export class FortressBoss extends BaseBoss {
     }
 
     protected _update(deltaTime: number, player: Player): void {
-        const targetVelocity = TmpVector3[0].setAll(0);
+        const velocityTarget = TmpVector3[0].setAll(0);
         let trackingPlayer = false;
 
         if (player.active) {
@@ -60,21 +60,21 @@ export class FortressBoss extends BaseBoss {
             player.position.subtractToRef(this._node.position, deltaPosition);
             const distance = deltaPosition.length();
             if (distance < CHASE_DISTANCE) {
-                deltaPosition.scaleToRef(this._metadata.speed / Math.max(distance, 0.01), targetVelocity);
+                deltaPosition.scaleToRef(this._metadata.speed / Math.max(distance, 0.01), velocityTarget);
                 trackingPlayer = true;
             }
         }
 
-        decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
+        decayVector3ToRef(this.velocity, velocityTarget, deltaTime, 2, this.velocity);
 
         this._node.addRotation(0, -IDLE_ROTATION_SPEED * deltaTime, 0);
 
         const target = this._drones.target;
         if (trackingPlayer) {
-            target.radius = 0;
+            target.defendRadius = 0;
             target.position.copyFrom(player.position);
         } else {
-            target.radius = this._metadata.size;
+            target.defendRadius = this._metadata.size;
             target.position.copyFrom(this._node.position);
         }
         this._drones.update(deltaTime);

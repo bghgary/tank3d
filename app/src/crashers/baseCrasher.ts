@@ -58,8 +58,8 @@ export class BaseCrasher implements Enemy, Collidable {
 
             const direction = TmpVector3[0];
             const speed = this._chase(deltaTime, player, direction) ? this._metadata.speed : IDLE_MOVEMENT_SPEED;
-            const targetVelocity = TmpVector3[1].copyFrom(this._node.forward).scaleInPlace(speed);
-            decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
+            const velocityTarget = TmpVector3[1].copyFrom(this._node.forward).scaleInPlace(speed);
+            decayVector3ToRef(this.velocity, velocityTarget, deltaTime, 2, this.velocity);
 
             this._flash.update(deltaTime);
             if (!this._health.update(deltaTime)) {

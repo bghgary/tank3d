@@ -12,7 +12,7 @@ import { Sources } from "../sources";
 import { World } from "../worlds/world";
 import { SniperTank } from "./sniperTank";
 
-const TARGET_RADIUS = 10;
+const PROXIMITY_RADIUS = 10;
 const MAX_BOUNCE_COUNT = 3;
 
 export class ReflectorTank extends SniperTank {
@@ -41,14 +41,14 @@ class ReflectorBullet extends Bullet {
     public override update(deltaTime: number, onDestroy: () => void): void {
         if (this._proximityCollider && --this._targetColliderReady === 0) {
             if (this._targetThreatValue > 0) {
-                this.velocity.copyFrom(this._targetDirection).scaleInPlace(this._targetVelocity.length());
-                this._targetVelocity.copyFrom(this.velocity);
+                this.velocity.copyFrom(this._targetDirection).scaleInPlace(this._velocityTarget.length());
+                this._velocityTarget.copyFrom(this.velocity);
                 --this._bounces;
+                this._targetThreatValue = 0;
             }
 
             this._collisions.unregisterProximity(this._proximityCollider);
             this._proximityCollider = null;
-            this._targetThreatValue = 0;
         }
 
         super.update(deltaTime, onDestroy);
@@ -56,7 +56,7 @@ class ReflectorBullet extends Bullet {
 
     public override postCollide(other: Entity): number {
         if (this._bounces > 0 && !this._proximityCollider) {
-            this._proximityCollider = new ProximityCollider(this._node, TARGET_RADIUS,
+            this._proximityCollider = new ProximityCollider(this._node, PROXIMITY_RADIUS,
                 (entity) => entity !== other && entity !== this.owner && entity.owner !== this.owner,
                 (entity) => {
                     const deltaPosition = TmpVector3[0].copyFrom(entity.position).subtractInPlace(this._node.position);

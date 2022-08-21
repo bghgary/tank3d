@@ -167,14 +167,14 @@ export abstract class PlayerTank implements Entity, Collidable {
     }
 
     public applyMovement(deltaTime: number, x: number, z: number, limit: number): void {
-        const targetVelocity = TmpVector3[0].setAll(0);
+        const velocityTarget = TmpVector3[0].setAll(0);
         if (x !== 0 || z !== 0) {
             const moveFactor = this._properties.moveSpeed / Math.sqrt(x * x + z * z);
-            targetVelocity.set(x * moveFactor, 0, z * moveFactor);
+            velocityTarget.set(x * moveFactor, 0, z * moveFactor);
             this._setIdle(false);
         }
 
-        decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
+        decayVector3ToRef(this.velocity, velocityTarget, deltaTime, 2, this.velocity);
 
         applyMovement(deltaTime, this._node.position, this.velocity);
         applyWallClamp(this._node.position, this.size, limit);

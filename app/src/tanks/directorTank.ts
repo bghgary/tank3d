@@ -13,7 +13,7 @@ import { World } from "../worlds/world";
 import { BarrelTank } from "./barrelTank";
 import { PlayerTank, TankProperties } from "./playerTank";
 
-const TARGET_RADIUS = 10;
+const PROXIMITY_RADIUS = 10;
 
 export class DirectorTank extends BarrelTank {
     protected readonly _droneProperties: WeaponProperties;
@@ -84,7 +84,7 @@ export class DirectorTank extends BarrelTank {
                 this._proximityCollider = null;
             }
 
-            target.radius = 0;
+            target.defendRadius = 0;
             if (this._autoShoot) {
                 target.position.copyFrom(this._world.pointerPosition);
             } else {
@@ -95,22 +95,22 @@ export class DirectorTank extends BarrelTank {
             this._droneProperties.speed = this._properties.weaponSpeed;
         } else {
             if (this._targetThreatValue === 0) {
-                target.radius = this._circleRadius;
+                target.defendRadius = this._circleRadius;
                 target.position.copyFrom(this._node.position);
                 target.size = 1;
                 this._droneProperties.speed = this._properties.weaponSpeed * 0.5;
+            } else {
+                this._targetThreatValue = 0;
             }
 
-            this._targetThreatValue = 0;
-
             if (!this._proximityCollider) {
-                this._proximityCollider = new ProximityCollider(this._node, TARGET_RADIUS,
+                this._proximityCollider = new ProximityCollider(this._node, PROXIMITY_RADIUS,
                     (entity) => this.inBounds && isTarget(entity, this),
                     (entity) => {
                         const threatValue = getThreatValue(entity, Vector3.Distance(this.position, entity.position));
                         if (threatValue > this._targetThreatValue) {
                             this._targetThreatValue = threatValue;
-                            target.radius = 0;
+                            target.defendRadius = 0;
                             target.position.copyFrom(entity.position);
                             target.size = entity.size;
                             this._droneProperties.speed = this._properties.weaponSpeed;

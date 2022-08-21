@@ -18,7 +18,7 @@ export class KeeperBoss extends BaseBoss {
     }
 
     protected _update(deltaTime: number, player: Player): void {
-        const targetVelocity = TmpVector3[0].setAll(0);
+        const velocityTarget = TmpVector3[0].setAll(0);
         let tanksActive = false;
 
         if (player.active) {
@@ -26,12 +26,12 @@ export class KeeperBoss extends BaseBoss {
             player.position.subtractToRef(this._node.position, deltaPosition);
             const distance = deltaPosition.length();
             if (distance < CHASE_DISTANCE) {
-                deltaPosition.scaleToRef(this._metadata.speed / Math.max(distance, 0.01), targetVelocity);
+                deltaPosition.scaleToRef(this._metadata.speed / Math.max(distance, 0.01), velocityTarget);
                 tanksActive = true;
             }
         }
 
-        decayVector3ToRef(this.velocity, targetVelocity, deltaTime, 2, this.velocity);
+        decayVector3ToRef(this.velocity, velocityTarget, deltaTime, 2, this.velocity);
 
         for (const tank of this._tanks) {
             tank.update(deltaTime, tanksActive, player);

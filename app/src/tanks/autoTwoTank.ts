@@ -9,7 +9,7 @@ import { World } from "../worlds/world";
 import { BulletTank } from "./bulletTank";
 import { PlayerTank } from "./playerTank";
 
-const TARGET_RADIUS = 10;
+const PROXIMITY_RADIUS = 10;
 
 export class AutoTwoTank extends BulletTank {
     private readonly _tanks: Array<AutoTarget>;
@@ -21,7 +21,7 @@ export class AutoTwoTank extends BulletTank {
         const metadata = this._node.metadata as PlayerTankMetadata;
         this._tanks = metadata.tanks!.map((name) => new AutoTarget(findNode(this._node, name)));
 
-        const collider = new ProximityCollider(this._node, TARGET_RADIUS,
+        const collider = new ProximityCollider(this._node, PROXIMITY_RADIUS,
             (entity) => this.inBounds && isTarget(entity, this),
             (entity) => {
                 for (const tank of this._tanks) {

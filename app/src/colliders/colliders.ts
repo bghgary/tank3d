@@ -5,6 +5,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { DeepImmutable, Nullable } from "@babylonjs/core/types";
 import { findNode } from "../common";
 import { Entity } from "../entity";
+import { max } from "../math";
 import { SizeMetadata } from "../metadata";
 import { collideCircleWithCircle, collideCircleWithPolygon, collidePolygonWithCircle, collidePolygonWithPolygon } from "./colliderMath";
 
@@ -36,7 +37,7 @@ export abstract class Collider implements Quadtree.Rect {
     public get width() { return this._absoluteSize; }
     public get height() { return this._absoluteSize; }
 
-    public static Collide(collider1: Collider, collider2: Collider, mtv: Vector3): boolean {
+    public static Collide(collider1: Collider, collider2: Collider, mtv?: Vector3): boolean {
         const center1 = collider1._node.absolutePosition;
         const center2 = collider2._node.absolutePosition;
         const polygon1 = collider1._absolutePolygon;
@@ -44,14 +45,18 @@ export abstract class Collider implements Quadtree.Rect {
         const radius1 = collider1._absoluteSize * 0.5;
         const radius2 = collider2._absoluteSize * 0.5;
 
-        if (polygon1 && polygon2) {
-            return collidePolygonWithPolygon(center1, polygon1, center2, polygon2, mtv);
-        } else if (!polygon1 && !polygon2) {
+        if (!polygon1 && !polygon2) {
             return collideCircleWithCircle(center1, radius1, center2, radius2, mtv);
-        } else if (polygon1) {
-            return collidePolygonWithCircle(center1, polygon1, center2, radius2, mtv);
-        } else if (polygon2) {
-            return collideCircleWithPolygon(center1, radius1, center2, polygon2, mtv);
+        } else {
+            if (collideCircleWithCircle(center1, radius1, center2, radius2)) {
+                if (polygon1 && polygon2) {
+                    return collidePolygonWithPolygon(center1, polygon1, center2, polygon2, mtv);
+                } else if (polygon1) {
+                    return collidePolygonWithCircle(center1, polygon1, center2, radius2, mtv);
+                } else if (polygon2) {
+                    return collideCircleWithPolygon(center1, radius1, center2, polygon2, mtv);
+                }
+            }
         }
 
         return false;
@@ -101,16 +106,8 @@ export class PolygonCollider extends EntityCollider {
     public constructor(mesh: AbstractMesh, indices: DeepImmutable<Array<number>>, entity: Entity & Collidable) {
         const positions = mesh.getVerticesData(VertexBuffer.PositionKind)!;
         const points = indices.map((index) => Vector3.FromArray(positions, index * 3));
-
-        let maxRadiusSquared = 0;
-        for (const point of points) {
-            const radiusSquared = point.lengthSquared();
-            if (radiusSquared > maxRadiusSquared) {
-                maxRadiusSquared = radiusSquared;
-            }
-        }
-
-        super(mesh, Math.sqrt(maxRadiusSquared), entity);
+        const radius = Math.sqrt(max(points, (point) => point.lengthSquared()));
+        super(mesh, radius * 2, entity);
 
         this._points = points;
         this._absolutePoints = this._points.map(() => new Vector3());

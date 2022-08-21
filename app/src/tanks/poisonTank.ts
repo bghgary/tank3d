@@ -21,7 +21,7 @@ export class PoisonTank extends SniperTank {
 
 class PoisonBullet extends Bullet {
     public override update(deltaTime: number, onDestroy: () => void): void {
-        this._node.addRotation(0, this._targetVelocity.length() * deltaTime, 0);
+        this._node.addRotation(0, this._velocityTarget.length() * deltaTime, 0);
         super.update(deltaTime, onDestroy);
     }
 }
