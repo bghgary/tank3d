@@ -383,6 +383,7 @@ export class Sources {
         readonly reflector: TransformNode;
         readonly grower: TransformNode;
         readonly deceiver: TransformNode;
+        readonly triplet: TransformNode;
     };
 
     public constructor(world: World) {
@@ -544,6 +545,7 @@ export class Sources {
             reflector: this._createReflectorTankSource(tanks),
             grower: this._createGrowerTankSource(tanks),
             deceiver: this._createDeceiverTankSource(tanks),
+            triplet: this._createTripletTankSource(tanks),
         };
     }
 
@@ -2491,6 +2493,37 @@ export class Sources {
         const source = this._createTankBody(parent, "deceiver", metadata);
 
         this._createBarrel(source, "barrel", barrelParameters);
+
+        return source;
+    }
+
+    private _createTripletTankSource(parent: TransformNode): TransformNode {
+        const barrelDiameter = 0.4;
+        const barrelLength = 0.75;
+        const sideBarrelLength = 0.65;
+        const sideBarrelOffset = barrelDiameter * 0.35;
+        const sideBarrelAngle = Tools.ToRadians(15);
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Triplet",
+            size: 1,
+            barrels: ["barrel", "barrelL", "barrelR"],
+            multiplier: {
+                reloadTime: 1.5,
+            },
+        };
+
+        const source = this._createTankBody(parent, "triplet", metadata);
+
+        this._createSimpleBarrel(source, "barrel", barrelDiameter, barrelLength);
+
+        const barrelL = this._createSimpleBarrel(source, "barrelL", barrelDiameter, sideBarrelLength);
+        barrelL.position.x = -sideBarrelOffset;
+        barrelL.rotation.y = -sideBarrelAngle;
+
+        const barrelR = this._createSimpleBarrel(source, "barrelR", barrelDiameter, sideBarrelLength);
+        barrelR.position.x = +sideBarrelOffset;
+        barrelR.rotation.y = +sideBarrelAngle;
 
         return source;
     }

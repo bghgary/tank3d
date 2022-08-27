@@ -35,6 +35,7 @@ import { SpawnerTank } from "./tanks/spawnerTank";
 import { SpinnerTank } from "./tanks/spinnerTank";
 import { SwarmerTank } from "./tanks/swarmerTank";
 import { TrapperTank } from "./tanks/trapperTank";
+import { TripletTank } from "./tanks/tripletTank";
 import { TwinSniperTank } from "./tanks/twinSniperTank";
 import { TwinTank } from "./tanks/twinTank";
 import { WarshipTank } from "./tanks/warshipTank";
@@ -88,6 +89,9 @@ export const EvolutionRootNode: EvolutionNode = {
                 },
                 {
                     Tank: DoubleTwinTank,
+                },
+                {
+                    Tank: TripletTank,
                 },
             ],
         },
