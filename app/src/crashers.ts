@@ -28,6 +28,7 @@ export class Crashers {
     }
 
     public speedCrashersEnabled = false;
+    public partyCrashersEnabled = false;
 
     public update(deltaTime: number, player: Player): void {
         for (const crasher of this._crashers) {
@@ -80,7 +81,7 @@ export class Crashers {
                 const crasher = this._createCrasher(BulletCrasher, sources.crasher.speed);
                 this._addCrasher(crasher, x, z, rotation);
             });
-        } else if (n < 0.95) {
+        } else if (n < 0.9) {
             const create = [
                 () => this._createCrasher(BaseCrasher, sources.crasher.small),
                 () => this._createCrasher(BaseCrasher, sources.crasher.big),
@@ -90,6 +91,11 @@ export class Crashers {
             createClump(4, 7, (x, z, rotation) => {
                 const n1 = Math.random();
                 const crasher = create[n1 < 0.6 ? 0 : n1 < 0.9 ? 1 : 2]!();
+                this._addCrasher(crasher, x, z, rotation);
+            });
+        } else if (n < 0.95) {
+            createClump(1, 1, (x, z, rotation) => {
+                const crasher = this._createCrasher(BaseCrasher, sources.crasher.huge);
                 this._addCrasher(crasher, x, z, rotation);
             });
         } else {

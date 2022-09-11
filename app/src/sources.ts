@@ -326,6 +326,7 @@ export class Sources {
     public readonly crasher: {
         readonly small: TransformNode;
         readonly big: TransformNode;
+        readonly huge: TransformNode;
         readonly shooter: TransformNode;
         readonly destroyer: TransformNode;
         readonly twin: TransformNode;
@@ -487,6 +488,7 @@ export class Sources {
         this.crasher = {
             small: this._createSmallCrasherSource(crashers),
             big: this._createBigCrasherSource(crashers),
+            huge: this._createHugeCrasherSource(crashers),
             shooter: this._createShooterCrasherSource(crashers),
             destroyer: this._createDestroyerCrasherSource(crashers),
             twin: this._createTwinCrasherSource(crashers),
@@ -1026,6 +1028,23 @@ export class Sources {
         return this._createCrasherSource(parent, "big", metadata);
     }
 
+    private _createHugeCrasherSource(parent: TransformNode): TransformNode {
+        const metadata: CrasherMetadata = {
+            displayName: "Huge Crasher",
+            size: 1.4,
+            speed: CRASHER_SPEED * 0.6,
+            health: 500,
+            damage: { value: 100, time: 1 },
+            points: 250,
+        };
+
+        const source = this._createCrasherSource(parent, "huge", metadata);
+
+        createInstance(this._component.marker.triangle, "marker", source, this._color.pink);
+
+        return source;
+    }
+
     private _createShooterCrasherSource(parent: TransformNode): TransformNode {
         const metadata: BulletCrasherMetadata = {
             displayName: "Shooter Crasher",
@@ -1088,6 +1107,9 @@ export class Sources {
     }
 
     private _createDestroyerCrasherSource(parent: TransformNode): TransformNode {
+        const barrelDiameter = 0.4;
+        const barrelLength = 1.1;
+
         const metadata: BulletCrasherMetadata = {
             displayName: "Destroyer Crasher",
             size: 1.4,
@@ -1109,7 +1131,7 @@ export class Sources {
 
         const source = this._createCrasherSource(parent, "destroyer", metadata);
 
-        this._createSimpleBarrel(source, "barrel", 0.4, 1.1);
+        this._createSimpleBarrel(source, "barrel", barrelDiameter, barrelLength);
 
         createInstance(this._component.marker.triangle, "marker", source, this._color.pink);
 
