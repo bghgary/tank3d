@@ -38,6 +38,7 @@ import { SprayerTank } from "./tanks/sprayerTank";
 import { SwarmerTank } from "./tanks/swarmerTank";
 import { TrapperTank } from "./tanks/trapperTank";
 import { TripletTank } from "./tanks/tripletTank";
+import { TwinMachineTank } from "./tanks/twinMachineTank";
 import { TwinSniperTank } from "./tanks/twinSniperTank";
 import { TwinTank } from "./tanks/twinTank";
 import { WarshipTank } from "./tanks/warshipTank";
@@ -97,6 +98,9 @@ export const EvolutionRootNode: EvolutionNode = {
                 },
                 {
                     Tank: GunnerTank,
+                },
+                {
+                    Tank: TwinMachineTank,
                 },
             ],
         },
@@ -200,6 +204,9 @@ export const EvolutionRootNode: EvolutionNode = {
                 },
                 {
                     Tank: SprayerTank,
+                },
+                {
+                    Tank: TwinMachineTank,
                 },
             ],
         },

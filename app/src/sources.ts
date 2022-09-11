@@ -386,6 +386,7 @@ export class Sources {
         readonly triplet: TransformNode;
         readonly gunner: TransformNode;
         readonly sprayer: TransformNode;
+        readonly twinMachine: TransformNode;
     };
 
     public constructor(world: World) {
@@ -550,6 +551,7 @@ export class Sources {
             triplet: this._createTripletTankSource(tanks),
             gunner: this._createGunnerTankSource(tanks),
             sprayer: this._createSprayerTankSource(tanks),
+            twinMachine: this._createTwinMachineTankSource(tanks),
         };
     }
 
@@ -2597,6 +2599,41 @@ export class Sources {
 
         this._createBarrel(source, "barrel", barrelParameters);
         this._createBarrel(source, "barrelSmall", smallBarrelParameters);
+
+        return source;
+    }
+
+    private _createTwinMachineTankSource(parent: TransformNode): TransformNode {
+        const barrelOffset = 0.21;
+        const barrelAngle = 0.05;
+        const barrelParameters: BarrelParameters = {
+            segments: [
+                { diameter: 0.35, length: 0.4 },
+                { diameter: 0.5, length: 0.35 },
+            ],
+            diameter: 0.45,
+            angleVariance: Tools.ToRadians(15),
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Twin Machine",
+            size: 1,
+            barrels: ["barrelL", "barrelR"],
+            multiplier: {
+                weaponHealth: 0.5,
+                reloadTime: 0.6,
+            },
+        };
+
+        const source = this._createTankBody(parent, "twinMachine", metadata);
+
+        const barrelL = this._createBarrel(source, "barrelL", barrelParameters);
+        barrelL.position.x = -barrelOffset;
+        barrelL.rotation.y = -barrelAngle;
+
+        const barrelR = this._createBarrel(source, "barrelR", barrelParameters);
+        barrelR.position.x = +barrelOffset;
+        barrelR.rotation.y = +barrelAngle;
 
         return source;
     }
