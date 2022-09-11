@@ -3,16 +3,17 @@ import { Sources } from "../sources";
 import { BulletTank } from "./bulletTank";
 import { PlayerTank } from "./playerTank";
 
-export class TripletTank extends BulletTank {
+export class GunnerTank extends BulletTank {
     private _barrelToggle = true;
 
     public override shoot(): void {
         if (this._reloadTime === 0) {
             if (this._barrelToggle) {
                 this._shootFrom(this._barrels[0]!);
-            } else {
                 this._shootFrom(this._barrels[1]!);
+            } else {
                 this._shootFrom(this._barrels[2]!);
+                this._shootFrom(this._barrels[3]!);
             }
 
             this._reloadTime = this._properties.reloadTime / 2;
@@ -23,6 +24,6 @@ export class TripletTank extends BulletTank {
     }
 
     public static Create(sources: Sources, parent?: TransformNode): TransformNode {
-        return sources.create(sources.tank.triplet, parent);
+        return sources.create(sources.tank.gunner, parent);
     }
 }

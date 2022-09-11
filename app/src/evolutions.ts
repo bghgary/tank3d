@@ -15,6 +15,7 @@ import { DoubleTwinTank } from "./tanks/doubleTwinTank";
 import { FlankGuardTank } from "./tanks/flankGuardTank";
 import { GatlingGunTank } from "./tanks/gatlingGunTank";
 import { GrowerTank } from "./tanks/growerTank";
+import { GunnerTank } from "./tanks/gunnerTank";
 import { HunterTank } from "./tanks/hunterTank";
 import { InfectorTank } from "./tanks/infectorTank";
 import { LancerTank } from "./tanks/lancerTank";
@@ -33,6 +34,7 @@ import { ShieldTank } from "./tanks/shieldTank";
 import { SniperTank } from "./tanks/sniperTank";
 import { SpawnerTank } from "./tanks/spawnerTank";
 import { SpinnerTank } from "./tanks/spinnerTank";
+import { SprayerTank } from "./tanks/sprayerTank";
 import { SwarmerTank } from "./tanks/swarmerTank";
 import { TrapperTank } from "./tanks/trapperTank";
 import { TripletTank } from "./tanks/tripletTank";
@@ -92,6 +94,9 @@ export const EvolutionRootNode: EvolutionNode = {
                 },
                 {
                     Tank: TripletTank,
+                },
+                {
+                    Tank: GunnerTank,
                 },
             ],
         },
@@ -192,6 +197,9 @@ export const EvolutionRootNode: EvolutionNode = {
                 },
                 {
                     Tank: BlasterTank,
+                },
+                {
+                    Tank: SprayerTank,
                 },
             ],
         },

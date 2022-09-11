@@ -384,6 +384,8 @@ export class Sources {
         readonly grower: TransformNode;
         readonly deceiver: TransformNode;
         readonly triplet: TransformNode;
+        readonly gunner: TransformNode;
+        readonly sprayer: TransformNode;
     };
 
     public constructor(world: World) {
@@ -546,6 +548,8 @@ export class Sources {
             grower: this._createGrowerTankSource(tanks),
             deceiver: this._createDeceiverTankSource(tanks),
             triplet: this._createTripletTankSource(tanks),
+            gunner: this._createGunnerTankSource(tanks),
+            sprayer: this._createSprayerTankSource(tanks),
         };
     }
 
@@ -2524,6 +2528,75 @@ export class Sources {
         const barrelR = this._createSimpleBarrel(source, "barrelR", barrelDiameter, sideBarrelLength);
         barrelR.position.x = +sideBarrelOffset;
         barrelR.rotation.y = +sideBarrelAngle;
+
+        return source;
+    }
+
+    private _createGunnerTankSource(parent: TransformNode): TransformNode {
+        const barrelDiameter = 0.2;
+        const barrelLength = 0.75;
+        const barrelOffsetX = barrelDiameter * 0.5;
+        const sideBarrelOffsetZ = 0.1;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Gunner",
+            size: 1,
+            barrels: ["barrelL", "barrelR", "sideBarrelL", "sideBarrelR"],
+            multiplier: {
+                reloadTime: 2,
+            },
+        };
+
+        const source = this._createTankBody(parent, "gunner", metadata);
+
+        const barrelL = this._createSimpleBarrel(source, "barrelL", barrelDiameter, barrelLength);
+        barrelL.position.x = -barrelOffsetX;
+
+        const barrelR = this._createSimpleBarrel(source, "barrelR", barrelDiameter, barrelLength);
+        barrelR.position.x = +barrelOffsetX;
+
+        const sideBarrelL = this._createSimpleBarrel(source, "sideBarrelL", barrelDiameter, barrelLength);
+        sideBarrelL.position.x = -barrelOffsetX * 3;
+        sideBarrelL.position.z = -sideBarrelOffsetZ;
+
+        const sideBarrelR = this._createSimpleBarrel(source, "sideBarrelR", barrelDiameter, barrelLength);
+        sideBarrelR.position.x = +barrelOffsetX * 3;
+        sideBarrelR.position.z = -sideBarrelOffsetZ;
+
+        return source;
+    }
+
+    private _createSprayerTankSource(parent: TransformNode): TransformNode {
+        const barrelParameters: BarrelParameters = {
+            segments: [
+                { diameter: 0.45, length: 0.4 },
+                { diameter: 0.6, length: 0.35 },
+            ],
+            diameter: 0.45,
+            angleVariance: Tools.ToRadians(15),
+        };
+
+        const smallBarrelParameters: BarrelParameters = {
+            segments: [
+                { diameter: 0.35, length: 0.85 },
+            ],
+            angleVariance: Tools.ToRadians(5),
+        };
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Sprayer",
+            size: 1,
+            barrels: ["barrel", "barrelSmall"],
+            multiplier: {
+                weaponHealth: 0.5,
+                reloadTime: 0.7,
+            },
+        };
+
+        const source = this._createTankBody(parent, "sprayer", metadata);
+
+        this._createBarrel(source, "barrel", barrelParameters);
+        this._createBarrel(source, "barrelSmall", smallBarrelParameters);
 
         return source;
     }
