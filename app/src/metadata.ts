@@ -73,6 +73,11 @@ export interface BulletCrasherMetadata extends BarrelCrasherMetadata {
     readonly bullet: DeepImmutable<WeaponProperties>;
 }
 
+export interface PartyCrasherMetadata extends CrasherMetadata {
+    readonly barrels: Array<string>;
+    readonly bullet: DeepImmutable<WeaponProperties>;
+}
+
 export interface DroneCrasherMetadata extends BarrelCrasherMetadata {
     readonly drone: DeepImmutable<WeaponProperties>;
 }

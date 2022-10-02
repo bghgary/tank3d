@@ -4,6 +4,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { BaseCrasher } from "./crashers/baseCrasher";
 import { BulletCrasher } from "./crashers/bulletCrasher";
 import { DroneCrasher } from "./crashers/droneCrasher";
+import { PartyCrasher } from "./crashers/partyCrasher";
 import { TwinCrasher } from "./crashers/twinCrasher";
 import { Player } from "./player";
 import { World } from "./worlds/world";
@@ -79,6 +80,11 @@ export class Crashers {
         if (this.speedCrashersEnabled && n < 0.05) {
             createClump(1, 3, (x, z, rotation) => {
                 const crasher = this._createCrasher(BulletCrasher, sources.crasher.speed);
+                this._addCrasher(crasher, x, z, rotation);
+            });
+        } else if (this.partyCrashersEnabled && n < 0.1) {
+            createClump(2, 4, (x, z, rotation) => {
+                const crasher = this._createCrasher(PartyCrasher, sources.crasher.party);
                 this._addCrasher(crasher, x, z, rotation);
             });
         } else if (n < 0.9) {

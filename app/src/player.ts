@@ -198,8 +198,6 @@ export class Player {
 
     public readonly onLevelChangedObservable = new Observable<number>();
 
-    public readonly onDestroyedObservable = new Observable<void>();
-
     public update(deltaTime: number): void {
         this._tank.applyRotation(deltaTime);
 
@@ -242,8 +240,6 @@ export class Player {
             const x = Scalar.RandomRange(-limit, limit);
             const z = Scalar.RandomRange(-limit, limit);
             this._tank.position.set(x, 0, z);
-
-            this.onDestroyedObservable.notifyObservers();
         });
     }
 

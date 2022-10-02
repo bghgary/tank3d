@@ -34,34 +34,24 @@ export class BoxWorld extends World {
         });
 
         this._player.onLevelChangedObservable.add((level) => {
-            if (level >= 20) {
-                this._sentries.enabled = true;
-                this._landmines.enabled = true;
-                this._crashers.speedCrashersEnabled = true;
+            const level20 = level >= 20;
+            const level40 = level >= 40;
 
+            this._sentries.enabled = level20;
+            this._landmines.enabled = level20;
+            this._crashers.speedCrashersEnabled = level20;
+            this._crashers.partyCrashersEnabled = level20;
+
+            if (level20) {
                 if (this._keeperBoss === undefined) {
                     this._keeperBoss = this._bosses.addKeeper();
                 }
             }
 
-            if (level >= 40) {
+            if (level40) {
                 if (this._fortressBoss === undefined) {
                     this._fortressBoss = this._bosses.addFortress();
                 }
-            }
-        });
-
-        this._player.onDestroyedObservable.add(() => {
-            this._sentries.enabled = false;
-            this._landmines.enabled = false;
-            this._crashers.speedCrashersEnabled = false;
-
-            if (this._keeperBoss === null) {
-                delete this._keeperBoss;
-            }
-
-            if (this._fortressBoss === null) {
-                delete this._fortressBoss;
             }
         });
     }

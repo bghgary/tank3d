@@ -13,7 +13,7 @@ import { DeepImmutable } from "@babylonjs/core/types";
 import { WeaponProperties } from "./components/weapon";
 import { createShadowMaterial } from "./materials/shadowMaterial";
 import { TmpVector3 } from "./math";
-import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LandmineMetadata, PlayerTankMetadata, SentryMetadata, ShapeMetadata, SizeMetadata } from "./metadata";
+import { BarrelMetadata, BarrelProjectileMetadata, BombMetadata, BossMetadata, BossTankMetadata, BulletCrasherMetadata, CrasherMetadata, DroneCrasherMetadata, LandmineMetadata, PartyCrasherMetadata, PlayerTankMetadata, SentryMetadata, ShapeMetadata, SizeMetadata } from "./metadata";
 import { Minimap } from "./minimap";
 import { World } from "./worlds/world";
 
@@ -288,6 +288,7 @@ export class Sources {
             dodeca: Mesh;
         };
         readonly tetrahedron: Mesh;
+        readonly cone: Mesh;
     };
 
     public readonly bullet: {
@@ -332,6 +333,7 @@ export class Sources {
         readonly twin: TransformNode;
         readonly drone: TransformNode;
         readonly speed: TransformNode;
+        readonly party: TransformNode;
     };
 
     public readonly sentry: TransformNode;
@@ -440,6 +442,7 @@ export class Sources {
                 dodeca: this._createDodecaStarComponent(components),
             },
             tetrahedron: this._createTetrahedronComponent(components),
+            cone: this._createConeComponent(components),
         };
 
         const bullets = new TransformNode("bullets", this._scene);
@@ -494,6 +497,7 @@ export class Sources {
             twin: this._createTwinCrasherSource(crashers),
             drone: this._createDroneCrasherSource(crashers),
             speed: this._createSpeedCrasherSource(crashers),
+            party: this._createPartyCrasherSource(crashers),
         }
 
         this.sentry = this._createSentrySource(sources);
@@ -737,6 +741,24 @@ export class Sources {
     private _createTetrahedronComponent(parent: TransformNode): Mesh {
         const mesh = MeshBuilder.CreatePolyhedron("tetrahedron", { type: 0 }, this._scene);
         mesh.rotation.z = Math.PI / 6;
+        mesh.bakeCurrentTransformIntoVertices();
+        mesh.registerInstancedBuffer("color", 3);
+        mesh.parent = parent;
+        return mesh;
+    }
+
+    private _createConeComponent(parent: TransformNode): Mesh {
+        const diameter = 2.5;
+        const length = 2.5;
+        const mesh = MeshBuilder.CreateCylinder("cone", {
+            tessellation: Math.round(36 * diameter),
+            cap: Mesh.CAP_START,
+            height: length,
+            diameterBottom: diameter,
+            diameterTop: 0,
+        }, this._scene);
+        mesh.position.z = length / 2;
+        mesh.rotation.x = Math.PI / 2;
         mesh.bakeCurrentTransformIntoVertices();
         mesh.registerInstancedBuffer("color", 3);
         mesh.parent = parent;
@@ -993,10 +1015,10 @@ export class Sources {
         return source;
     }
 
-    private _createCrasherSource(parent: TransformNode, name: string, metadata: CrasherMetadata): TransformNode {
+    private _createCrasherSource(parent: TransformNode, name: string, metadata: CrasherMetadata, component: Mesh = this._component.tetrahedron): TransformNode {
         const source = this._createSource(parent, name, metadata);
 
-        const body = createInstance(this._component.tetrahedron, "body", source, this._color.pink);
+        const body = createInstance(component, "body", source, this._color.pink);
         body.scaling.setAll(metadata.size * 0.4);
 
         return source;
@@ -1102,6 +1124,44 @@ export class Sources {
 
         const barrel = this._createBarrel(source, "barrel", barrelParameters);
         barrel.rotationQuaternion = Quaternion.FromEulerAngles(0, Math.PI, 0);
+
+        return source;
+    }
+
+    private _createPartyCrasherSource(parent: TransformNode): TransformNode {
+        const metadata: PartyCrasherMetadata = {
+            displayName: "Party Crasher",
+            size: 0.7,
+            speed: CRASHER_SPEED * 1.2,
+            health: 75,
+            damage: { value: 30, time: 1 },
+            points: 75,
+            barrels: ["barrel0", "barrel1", "barrel2", "barrel3", "barrel4", "barrel5", "barrel6", "barrel7"],
+            bullet: {
+                speed: CRASHER_PROJECTILE_SPEED * 0.6,
+                damage: {
+                    value: CRASHER_PROJECTILE_DAMAGE_VALUE * 2,
+                    time: CRASHER_PROJECTILE_DAMAGE_TIME,
+                },
+                health: CRASHER_PROJECTILE_HEALTH * 2.5,
+            },
+        };
+
+        const source = this._createCrasherSource(parent, "party", metadata, this._component.cone);
+
+        const barrelMetadata: BarrelMetadata = {
+            diameter: 0.3,
+            length: 0.2,
+            angleVariance: Tools.ToRadians(5),
+            speedVariance: 0.1,
+        };
+
+        const length = metadata.barrels.length;
+        for (let index = 0; index < length; ++index) {
+            const barrel = createFakeBarrel(metadata.barrels[index]!, barrelMetadata, this._scene);
+            barrel.rotationQuaternion = Quaternion.FromEulerAngles(0, 2 * Math.PI * (index / length), 0);
+            barrel.parent = source;
+        }
 
         return source;
     }
