@@ -7,7 +7,7 @@ import { Weapon, WeaponProperties } from "./weapon";
 
 export class Lance extends Weapon {
     private readonly _health: Health;
-    private _targetScale = 1;
+    private _decayFactor = 0.5;
 
     public constructor(world: World, owner: Entity, node: TransformNode, properties: WeaponProperties) {
         super(world, EntityType.Lance, owner, node, properties.damage)
@@ -19,12 +19,26 @@ export class Lance extends Weapon {
         return super.size * Math.max(scaling.x, scaling.z);
     }
 
-    public setScale(value: number): void {
-        this._targetScale = value;
+    public get currentScale(): number {
+        return this._node.scaling.z;
+    }
+
+    public set currentScale(value: number) {
+        this._node.scaling.z = value;
+    }
+
+    public targetScale = 1;
+
+    public get decayFactor(): number {
+        return this._decayFactor;
+    }
+
+    public set decayFactor(value: number) {
+        this._decayFactor = value;
     }
 
     public update(deltaTime: number): void {
-        this._node.scaling.z = decayScalar(this._node.scaling.z, this._targetScale, deltaTime, 0.5);
+        this._node.scaling.z = decayScalar(this._node.scaling.z, this.targetScale, deltaTime, this._decayFactor);
 
         if (!this._health.update(deltaTime)) {
             this._health.reset();

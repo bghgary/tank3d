@@ -131,7 +131,7 @@ function createBarrel(name: string, parameters: BarrelParameters, scene: Scene):
     const mesh = Mesh.MergeMeshes(meshes)!;
     mesh.name = name;
     mesh.metadata = {
-        diameter: diameter,
+        diameter: diameter * 0.75,
         length: totalLength,
         angleVariance: parameters.angleVariance,
         speedVariance: parameters.speedVariance,
@@ -288,7 +288,8 @@ export class Sources {
             dodeca: Mesh;
         };
         readonly tetrahedron: Mesh;
-        readonly cone: Mesh;
+        readonly largeCone: Mesh;
+        readonly smallCone: Mesh;
     };
 
     public readonly bullet: {
@@ -315,6 +316,7 @@ export class Sources {
         readonly tankTri: TransformNode;
         readonly tankQuad: TransformNode;
         readonly tankDodeca: TransformNode;
+        readonly tankJavelin: TransformNode;
     };
 
     public readonly shape: {
@@ -390,6 +392,7 @@ export class Sources {
         readonly gunner: TransformNode;
         readonly sprayer: TransformNode;
         readonly twinMachine: TransformNode;
+        readonly javelin: TransformNode;
     };
 
     public constructor(world: World) {
@@ -442,7 +445,8 @@ export class Sources {
                 dodeca: this._createDodecaStarComponent(components),
             },
             tetrahedron: this._createTetrahedronComponent(components),
-            cone: this._createConeComponent(components),
+            largeCone: this._createConeComponent(components, 2.5, 2.5),
+            smallCone: this._createConeComponent(components, 1, 1),
         };
 
         const bullets = new TransformNode("bullets", this._scene);
@@ -475,6 +479,7 @@ export class Sources {
             tankTri: this._createTrapSource(traps, "tankTri", this._color.blue, this._component.star.tri),
             tankQuad: this._createTrapSource(traps, "tankQuad", this._color.blue, this._component.star.quad),
             tankDodeca: this._createTrapSource(traps, "tankDodeca", this._color.blue, this._component.star.dodeca),
+            tankJavelin: this._createJavelinTrapSource(traps, "tankJavelin"),
         };
 
         const shapes = new TransformNode("shapes", this._scene);
@@ -558,6 +563,7 @@ export class Sources {
             gunner: this._createGunnerTankSource(tanks),
             sprayer: this._createSprayerTankSource(tanks),
             twinMachine: this._createTwinMachineTankSource(tanks),
+            javelin: this._createJavelinTankSource(tanks),
         };
     }
 
@@ -747,9 +753,7 @@ export class Sources {
         return mesh;
     }
 
-    private _createConeComponent(parent: TransformNode): Mesh {
-        const diameter = 2.5;
-        const length = 2.5;
+    private _createConeComponent(parent: TransformNode, diameter: number, length: number): Mesh {
         const mesh = MeshBuilder.CreateCylinder("cone", {
             tessellation: Math.round(36 * diameter),
             cap: Mesh.CAP_START,
@@ -880,6 +884,15 @@ export class Sources {
         return source;
     }
 
+    private _createJavelinTrapSource(parent: TransformNode, name: string): TransformNode {
+        const source = this._createSource(parent, name);
+
+        const body = createInstance(this._component.smallCone, "body", source, this._color.gray);
+        body.scaling.set(1, 1, 2);
+
+        return source;
+    }
+
     private _createLauncherTankMissileSource(parent: TransformNode): TransformNode {
         const metadata: BarrelProjectileMetadata = {
             barrels: ["barrel"],
@@ -912,7 +925,7 @@ export class Sources {
         source.metadata = metadata;
 
         const barrelMetadata: BarrelMetadata = {
-            diameter: 0.3,
+            diameter: 0.2,
             length: 0.2,
             angleVariance: Tools.ToRadians(5),
             speedVariance: 0.1,
@@ -1147,10 +1160,10 @@ export class Sources {
             },
         };
 
-        const source = this._createCrasherSource(parent, "party", metadata, this._component.cone);
+        const source = this._createCrasherSource(parent, "party", metadata, this._component.largeCone);
 
         const barrelMetadata: BarrelMetadata = {
-            diameter: 0.3,
+            diameter: 0.2,
             length: 0.2,
             angleVariance: Tools.ToRadians(5),
             speedVariance: 0.1,
@@ -1340,7 +1353,7 @@ export class Sources {
         body.scaling.set(1, 0.3, 1);
 
         const barrelMetadata: BarrelMetadata = {
-            diameter: 0.3,
+            diameter: 0.2,
             length: 0.2,
             angleVariance: Tools.ToRadians(60),
             speedVariance: 0.7,
@@ -2716,6 +2729,39 @@ export class Sources {
         const barrelR = this._createBarrel(source, "barrelR", barrelParameters);
         barrelR.position.x = +barrelOffset;
         barrelR.rotation.y = +barrelAngle;
+
+        return source;
+    }
+
+    private _createJavelinTankSource(parent: TransformNode): TransformNode {
+        const lanceDiameter = 0.4;
+        const lanceLength = 0.8;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Javelin",
+            size: 1,
+            barrels: ["barrel"],
+            lances: ["lance"],
+            multiplier: {
+                weaponSpeed: 1.2,
+                weaponDamage: 2.5,
+                weaponHealth: 2,
+            },
+        };
+
+        const source = this._createTankBody(parent, "javelin", metadata);
+
+        const lance = createLance("lance", lanceDiameter, lanceLength, this._scene);
+        lance.material = this._material.gray;
+        lance.position.z = 0.4;
+        lance.parent = source;
+
+        const barrel = createFakeBarrel("barrel", {
+            diameter: lanceDiameter,
+            length: 0,
+            angleVariance: Tools.ToRadians(3),
+        }, this._scene);
+        barrel.parent = source;
 
         return source;
     }

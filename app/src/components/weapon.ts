@@ -58,7 +58,7 @@ export abstract class Weapon implements Entity, Collidable {
     public readonly attachment = true;
 
     public preCollide(other: Entity): boolean {
-        if (other === this.owner) {
+        if (other === this.owner || other.owner === this.owner) {
             return false;
         }
 

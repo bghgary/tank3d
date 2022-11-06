@@ -77,8 +77,7 @@ export abstract class Projectile implements Entity, Collidable {
         this._node = node;
         const barrelMetadata = barrelNode.metadata as BarrelMetadata;
         this._properties = new WeaponPropertiesWithMultiplier(properties, barrelMetadata.multiplier);
-        const barrelDiameter = barrelMetadata.diameter * barrelNode.absoluteScaling.x;
-        this._node.scaling.setAll(barrelDiameter * 0.75);
+        this._node.scaling.setAll(barrelMetadata.diameter * barrelNode.absoluteScaling.x);
 
         this._shadow = new Shadow(world.sources, this._node);
         this._flash = new Flash(this._node);
@@ -122,7 +121,7 @@ export abstract class Projectile implements Entity, Collidable {
     public get displayName() { return this.owner.displayName; }
     public abstract readonly type: EntityType;
     public get active() { return this._health.active; }
-    public get size() { return this._node.scaling.x; }
+    public get size() { return (this._node.scaling.x + this._node.scaling.y + this._node.scaling.z) / 3; }
     public get mass() { return computeMass(1, this.size); }
     public get damage() { return this._properties.damage; }
     public get position() { return this._node.position; }

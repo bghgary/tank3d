@@ -18,6 +18,7 @@ import { GrowerTank } from "./tanks/growerTank";
 import { GunnerTank } from "./tanks/gunnerTank";
 import { HunterTank } from "./tanks/hunterTank";
 import { InfectorTank } from "./tanks/infectorTank";
+import { JavelinTank } from "./tanks/javelinTank";
 import { LancerTank } from "./tanks/lancerTank";
 import { LauncherTank } from "./tanks/launcherTank";
 import { MachineGunTank } from "./tanks/machineGunTank";
@@ -218,6 +219,9 @@ export const EvolutionRootNode: EvolutionNode = {
                 },
                 {
                     Tank: SpinnerTank,
+                },
+                {
+                    Tank: JavelinTank,
                 },
             ],
         },

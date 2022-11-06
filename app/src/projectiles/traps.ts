@@ -23,6 +23,7 @@ export class Traps extends Projectiles<Trap> {
 }
 
 export class Trap extends Projectile {
+    protected readonly _velocityDecayFactor: number = 2;
     protected readonly _health: Health;
 
     public constructor(world: World, owner: Entity, node: TransformNode, barrelNode: TransformNode, properties: DeepImmutable<WeaponProperties>, duration: number) {
@@ -34,7 +35,7 @@ export class Trap extends Projectile {
 
     public override update(deltaTime: number, onDestroy: () => void): void {
         applyMovement(deltaTime, this._node.position, this.velocity);
-        decayVector3ToRef(this.velocity, Vector3.ZeroReadOnly, deltaTime, 2, this.velocity);
+        decayVector3ToRef(this.velocity, Vector3.ZeroReadOnly, deltaTime, this._velocityDecayFactor, this.velocity);
         super.update(deltaTime, onDestroy);
     }
 
