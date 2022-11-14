@@ -11,6 +11,7 @@ import { DeceiverTank } from "./tanks/deceiverTank";
 import { DestroyerTank } from "./tanks/destroyerTank";
 import { DetectorTank } from "./tanks/detectorTank";
 import { DirectorTank } from "./tanks/directorTank";
+import { DoubleLancerTank } from "./tanks/doubleLancerTank";
 import { DoubleTwinTank } from "./tanks/doubleTwinTank";
 import { FlankGuardTank } from "./tanks/flankGuardTank";
 import { GatlingGunTank } from "./tanks/gatlingGunTank";
@@ -132,6 +133,9 @@ export const EvolutionRootNode: EvolutionNode = {
                 {
                     Tank: RevolutionistTank,
                 },
+                {
+                    Tank: DoubleLancerTank,
+                },
             ],
         },
         {
@@ -222,6 +226,9 @@ export const EvolutionRootNode: EvolutionNode = {
                 },
                 {
                     Tank: JavelinTank,
+                },
+                {
+                    Tank: DoubleLancerTank,
                 },
             ],
         },

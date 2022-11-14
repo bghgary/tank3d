@@ -147,33 +147,6 @@ function createFakeBarrel(name: string, metadata: BarrelMetadata, scene: Scene):
     return node;
 }
 
-function createCone(name: string, diameter: number, length: number, scene: Scene): Mesh {
-    const mesh = MeshBuilder.CreateCylinder(name, {
-        tessellation: Math.round(36 * diameter),
-        cap: Mesh.NO_CAP,
-        height: length,
-        diameterBottom: diameter,
-        diameterTop: 0,
-    }, scene);
-    mesh.position.z = length / 2;
-    mesh.rotation.x = Math.PI / 2;
-    mesh.bakeCurrentTransformIntoVertices();
-    return mesh;
-}
-
-function createLance(name: string, diameter: number, length: number, scene: Scene): Mesh {
-    const mesh = createCone(name, diameter, length, scene);
-    const numVertices = mesh.getTotalVertices();
-    const metadata: SizeMetadata = {
-        size: length,
-        meshCollider: {
-            indices: [0, ((numVertices / 2) - 1) / 2, numVertices - 1],
-        },
-    };
-    mesh.metadata = metadata;
-    return mesh;
-}
-
 function createShield(name: string, diameter: number, slice: number, scene: Scene): Mesh {
     const discRadius = diameter / 2;
     const theta = slice * Math.PI;
@@ -288,8 +261,7 @@ export class Sources {
             dodeca: Mesh;
         };
         readonly tetrahedron: Mesh;
-        readonly largeCone: Mesh;
-        readonly smallCone: Mesh;
+        readonly cone: Mesh;
     };
 
     public readonly bullet: {
@@ -393,6 +365,7 @@ export class Sources {
         readonly sprayer: TransformNode;
         readonly twinMachine: TransformNode;
         readonly javelin: TransformNode;
+        readonly doubleLancer: TransformNode;
     };
 
     public constructor(world: World) {
@@ -445,8 +418,7 @@ export class Sources {
                 dodeca: this._createDodecaStarComponent(components),
             },
             tetrahedron: this._createTetrahedronComponent(components),
-            largeCone: this._createConeComponent(components, 2.5, 2.5),
-            smallCone: this._createConeComponent(components, 1, 1),
+            cone: this._createConeComponent(components),
         };
 
         const bullets = new TransformNode("bullets", this._scene);
@@ -564,6 +536,7 @@ export class Sources {
             sprayer: this._createSprayerTankSource(tanks),
             twinMachine: this._createTwinMachineTankSource(tanks),
             javelin: this._createJavelinTankSource(tanks),
+            doubleLancer: this._createDoubleLancerTankSource(tanks),
         };
     }
 
@@ -753,9 +726,12 @@ export class Sources {
         return mesh;
     }
 
-    private _createConeComponent(parent: TransformNode, diameter: number, length: number): Mesh {
+    private _createConeComponent(parent: TransformNode): Mesh {
+        const diameter = 1;
+        const length = 1;
+        const tessellation = Math.round(18 * diameter) * 2;
         const mesh = MeshBuilder.CreateCylinder("cone", {
-            tessellation: Math.round(36 * diameter),
+            tessellation: tessellation,
             cap: Mesh.CAP_START,
             height: length,
             diameterBottom: diameter,
@@ -765,6 +741,15 @@ export class Sources {
         mesh.rotation.x = Math.PI / 2;
         mesh.bakeCurrentTransformIntoVertices();
         mesh.registerInstancedBuffer("color", 3);
+
+        const metadata: SizeMetadata = {
+            size: length,
+            meshCollider: {
+                indices: [0, tessellation / 2, tessellation + 1],
+            },
+        };
+        mesh.metadata = metadata;
+
         mesh.parent = parent;
         return mesh;
     }
@@ -887,7 +872,7 @@ export class Sources {
     private _createJavelinTrapSource(parent: TransformNode, name: string): TransformNode {
         const source = this._createSource(parent, name);
 
-        const body = createInstance(this._component.smallCone, "body", source, this._color.gray);
+        const body = createInstance(this._component.cone, "body", source, this._color.gray);
         body.scaling.set(1, 1, 2);
 
         return source;
@@ -1028,11 +1013,11 @@ export class Sources {
         return source;
     }
 
-    private _createCrasherSource(parent: TransformNode, name: string, metadata: CrasherMetadata, component: Mesh = this._component.tetrahedron): TransformNode {
+    private _createCrasherSource(parent: TransformNode, name: string, metadata: CrasherMetadata, size = 1, component = this._component.tetrahedron): TransformNode {
         const source = this._createSource(parent, name, metadata);
 
         const body = createInstance(component, "body", source, this._color.pink);
-        body.scaling.setAll(metadata.size * 0.4);
+        body.scaling.setAll(metadata.size * 0.4 * size);
 
         return source;
     }
@@ -1160,7 +1145,7 @@ export class Sources {
             },
         };
 
-        const source = this._createCrasherSource(parent, "party", metadata, this._component.largeCone);
+        const source = this._createCrasherSource(parent, "party", metadata, 2.5, this._component.cone);
 
         const barrelMetadata: BarrelMetadata = {
             diameter: 0.2,
@@ -1757,8 +1742,8 @@ export class Sources {
 
         const source = this._createTankBody(parent, "lancer", metadata);
 
-        const lance = createLance("lance", lanceDiameter, lanceLength, this._scene);
-        lance.material = this._material.gray;
+        const lance = createInstance(this._component.cone, "lance", source, this._color.gray);
+        lance.scaling.set(lanceDiameter, lanceDiameter, lanceLength);
         lance.position.z = 0.4;
         lance.parent = source;
 
@@ -2336,9 +2321,9 @@ export class Sources {
 
         const source = this._createTankBody(parent, "spinner", metadata);
 
-        const cone = createCone("cone", coneDiameter, coneLength, this._scene);
+        const cone = createInstance(this._component.cone, "cone", source, this._color.gray);
+        cone.scaling.set(coneDiameter, coneDiameter, coneLength);
         cone.position.z = 0.4;
-        cone.material = this._material.gray;
         cone.parent = source;
 
         const sphere = createInstance(this._component.sphere, "spinner", source, this._color.gray);
@@ -2751,8 +2736,8 @@ export class Sources {
 
         const source = this._createTankBody(parent, "javelin", metadata);
 
-        const lance = createLance("lance", lanceDiameter, lanceLength, this._scene);
-        lance.material = this._material.gray;
+        const lance = createInstance(this._component.cone, "lance", source, this._color.gray);
+        lance.scaling.set(lanceDiameter, lanceDiameter, lanceLength);
         lance.position.z = 0.4;
         lance.parent = source;
 
@@ -2762,6 +2747,36 @@ export class Sources {
             angleVariance: Tools.ToRadians(3),
         }, this._scene);
         barrel.parent = source;
+
+        return source;
+    }
+
+    private _createDoubleLancerTankSource(parent: TransformNode): TransformNode {
+        const lanceDiameter = 0.6;
+        const lanceLength = 0.6;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Double Lancer",
+            size: 1,
+            lances: ["lanceFront", "lanceBack"],
+            multiplier: {
+                weaponDamage: 4,
+                weaponHealth: 2,
+            },
+        };
+
+        const source = this._createTankBody(parent, "doubleLancer", metadata);
+
+        const lanceFront = createInstance(this._component.cone, "lanceFront", source, this._color.gray);
+        lanceFront.scaling.set(lanceDiameter, lanceDiameter, lanceLength);
+        lanceFront.position.z = 0.4;
+        lanceFront.parent = source;
+
+        const lanceBack = createInstance(this._component.cone, "lanceBack", source, this._color.gray);
+        lanceBack.scaling.set(lanceDiameter, lanceDiameter, lanceLength);
+        lanceBack.position.z = -0.4;
+        lanceBack.rotation.y = Math.PI;
+        lanceBack.parent = source;
 
         return source;
     }
