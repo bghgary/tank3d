@@ -367,6 +367,7 @@ export class Sources {
         readonly twinMachine: TransformNode;
         readonly javelin: TransformNode;
         readonly doubleLancer: TransformNode;
+        readonly spear: TransformNode;
     };
 
     public constructor(world: World) {
@@ -539,6 +540,7 @@ export class Sources {
             twinMachine: this._createTwinMachineTankSource(tanks),
             javelin: this._createJavelinTankSource(tanks),
             doubleLancer: this._createDoubleLancerTankSource(tanks),
+            spear: this._createSpearTankSource(tanks),
         };
     }
 
@@ -2807,6 +2809,30 @@ export class Sources {
         lanceBack.position.z = -0.4;
         lanceBack.rotation.y = Math.PI;
         lanceBack.parent = source;
+
+        return source;
+    }
+
+    private _createSpearTankSource(parent: TransformNode): TransformNode {
+        const lanceDiameter = 0.4;
+        const lanceLength = 0.9;
+
+        const metadata: PlayerTankMetadata = {
+            displayName: "Spear",
+            size: 1,
+            lances: ["lance"],
+            multiplier: {
+                weaponDamage: 4,
+                weaponHealth: 2,
+            },
+        };
+
+        const source = this._createTankBody(parent, "spear", metadata);
+
+        const lance = createInstance(this._component.cone, "lance", source, this._color.gray);
+        lance.scaling.set(lanceDiameter, lanceDiameter, lanceLength);
+        lance.position.z = 0.4;
+        lance.parent = source;
 
         return source;
     }
