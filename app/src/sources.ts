@@ -1,6 +1,5 @@
 import { VertexBuffer } from "@babylonjs/core/Buffers/buffer";
 import { Material } from "@babylonjs/core/Materials/material";
-import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
 import { Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 import { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
@@ -10,6 +9,7 @@ import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
 import { Tools } from "@babylonjs/core/Misc/tools";
 import { Scene } from "@babylonjs/core/scene";
 import { DeepImmutable } from "@babylonjs/core/types";
+import { CustomMaterial } from "@babylonjs/materials/custom/customMaterial";
 import { WeaponProperties } from "./components/weapon";
 import { createShadowMaterial } from "./materials/shadowMaterial";
 import { TmpVector3 } from "./math";
@@ -230,6 +230,7 @@ export class Sources {
     }
 
     private readonly _material: {
+        readonly cone: Material;
         readonly gray: Material;
         readonly green: Material;
         readonly shadow: Material;
@@ -385,6 +386,7 @@ export class Sources {
         }
 
         this._material = {
+            cone: this._createConeMaterial("cone"),
             gray: this._createMaterial("gray", this._color.gray),
             green: this._createMaterial("green", this._color.green),
             shadow: createShadowMaterial(this._scene),
@@ -552,8 +554,17 @@ export class Sources {
         return instantiate(source, parent);
     }
 
+    private _createConeMaterial(name: string): Material {
+        const material = new CustomMaterial(name, this._scene);
+
+        // HACK: Don't normalize the vertex normal.
+        material.CustomParts.Vertex_After_WorldPosComputed = "#ifdef NORMAL\nvNormalW = normalWorld * normalUpdated;\n#endif";
+
+        return material;
+    }
+
     private _createMaterial(name: string, color: Color3): Material {
-        const material = new StandardMaterial(name, this._scene);
+        const material = new CustomMaterial(name, this._scene);
         material.diffuseColor = color;
         return material;
     }
@@ -740,6 +751,24 @@ export class Sources {
         mesh.position.z = length / 2;
         mesh.rotation.x = Math.PI / 2;
         mesh.bakeCurrentTransformIntoVertices();
+
+        // HACK: This makes the shader support non-uniform scaling when the instance is scaled.
+        mesh.scaling.z = 1.01;
+
+        // Special material for cones.
+        mesh.material = this._material.cone;
+
+        const positions = mesh.getVerticesData(VertexBuffer.PositionKind)!;
+        const normals = mesh.getVerticesData(VertexBuffer.NormalKind)!;
+        for (let i = 0; i < mesh.getTotalVertices(); ++i) {
+            if (Math.abs(positions[i * 3 + 1]!) < 0.1 && positions[i * 3 + 2]! > 0) {
+                normals[i * 3 + 0] = 0;
+                normals[i * 3 + 1] = 0;
+                normals[i * 3 + 2] = 0;
+            }
+        }
+        mesh.setVerticesData(VertexBuffer.NormalKind, normals);
+
         mesh.registerInstancedBuffer("color", 3);
 
         const metadata: SizeMetadata = {
@@ -774,9 +803,10 @@ export class Sources {
 
         const path = [new Vector3(0, 0, -0.3), new Vector3(0, 0, 0.3)];
         const mesh = MeshBuilder.ExtrudeShape(name, { shape: shape, path: path, cap: Mesh.CAP_ALL }, this._scene);
-        mesh.registerInstancedBuffer("color", 3);
         mesh.rotation.x = Math.PI / 2;
         mesh.bakeCurrentTransformIntoVertices();
+        mesh.material = this._material.cone;
+        mesh.registerInstancedBuffer("color", 3);
         mesh.parent = parent;
         return mesh;
     }

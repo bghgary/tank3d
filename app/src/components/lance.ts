@@ -22,7 +22,7 @@ export class Lance extends Weapon {
     }
 
     public get currentScale(): number {
-        return this._node.scaling.z * this._originalScale;
+        return this._node.scaling.z / this._originalScale;
     }
 
     public set currentScale(value: number) {

@@ -1,3 +1,4 @@
+import "@babylonjs/core/Engines/Extensions/engine.rawTexture";
 import { Quaternion } from "@babylonjs/core/Maths/math.vector";
 import { Observable } from "@babylonjs/core/Misc/observable";
 import { Nullable } from "@babylonjs/core/types";
